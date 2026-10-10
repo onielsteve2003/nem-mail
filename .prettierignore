@@ -1,0 +1,11 @@
+package-lock.json
+build/
+dist/
+.svelte-kit/
+coverage/
+test-results/
+playwright-report/
+android/
+ios/
+context/
+CLAUDE.md
