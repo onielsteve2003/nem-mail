@@ -1,0 +1,12 @@
+/*
+ * Ionic theme variables. Temporary Aurora Noir accent until the design
+ * tokens (T2.1) and theme engine (T2.2) map every Ionic variable.
+ */
+:root {
+	--ion-color-primary: #7c5cff;
+	--ion-color-primary-rgb: 124, 92, 255;
+	--ion-color-primary-contrast: #ffffff;
+	--ion-color-primary-contrast-rgb: 255, 255, 255;
+	--ion-color-primary-shade: #6d51e0;
+	--ion-color-primary-tint: #896cff;
+}

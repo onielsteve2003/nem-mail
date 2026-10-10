@@ -1,5 +1,8 @@
 <script lang="ts">
 	import { APP_NAME, APP_TAGLINE } from '@nem/shared';
+
+	const REPO_URL = 'https://github.com/onielsteve2003/nem-mail';
+	const REPO_LABEL = 'View on GitHub';
 </script>
 
 <svelte:head>
@@ -9,6 +12,7 @@
 <main>
 	<h1>{APP_NAME}</h1>
 	<p>{APP_TAGLINE} Coming soon.</p>
+	<ion-button href={REPO_URL} target="_blank" rel="noopener noreferrer">{REPO_LABEL}</ion-button>
 </main>
 
 <style>
@@ -17,6 +21,7 @@
 		display: grid;
 		place-content: center;
 		text-align: center;
+		justify-items: center;
 		gap: 0.5rem;
 		background: #0b0b14;
 		color: #f4f2ff;

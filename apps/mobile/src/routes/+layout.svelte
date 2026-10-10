@@ -1,12 +1,19 @@
 <script lang="ts">
+	import '@ionic/core/css/core.css';
+	import '#lib/styles/ionic.css';
 	import favicon from '#lib/assets/favicon.svg';
+	import { setupIonic } from '#lib/ionic.js';
 	import type { LayoutProps } from './$types';
 
 	let { children }: LayoutProps = $props();
+
+	setupIonic();
 </script>
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-{@render children()}
+<ion-app>
+	{@render children()}
+</ion-app>

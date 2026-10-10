@@ -38,6 +38,7 @@
     "#features/*": "./src/lib/features/*"
   },
   "dependencies": {
+    "@ionic/core": "9.0.7",
     "@nem/shared": "*"
   }
 }
