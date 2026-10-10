@@ -1,0 +1,22 @@
+{
+  "name": "nem-mail",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Nem Mail - an AI-powered, Gmail-style mobile mail app built with SvelteKit, Ionic and Capacitor.",
+  "license": "MIT",
+  "author": "Onah Stephen",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w apps/mobile",
+    "build": "npm run build --workspaces --if-present",
+    "check": "npm run check --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
+  }
+}

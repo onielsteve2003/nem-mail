@@ -14,3 +14,7 @@ playwright-report/
 ios/App/Pods/
 android/.gradle/
 android/app/build/
+
+# Local-only AI/planning docs (never push)
+context/
+CLAUDE.md
