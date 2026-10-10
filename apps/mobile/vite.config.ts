@@ -1,5 +1,7 @@
+/// <reference types="vitest/config" />
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
+import { svelteTesting } from '@testing-library/svelte/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
@@ -12,6 +14,18 @@ export default defineConfig({
 			},
 			// SPA mode: one static build serves the web demo, the PWA and Capacitor's webDir.
 			adapter: adapter({ pages: 'build', assets: 'build', fallback: 'index.html', strict: true })
-		})
-	]
+		}),
+		// Resolves Svelte's browser build under Vitest and cleans up the DOM after each test.
+		svelteTesting()
+	],
+	test: {
+		environment: 'jsdom',
+		include: ['src/**/*.test.ts'],
+		setupFiles: ['./vitest-setup.ts'],
+		coverage: {
+			provider: 'v8',
+			include: ['src/**/*.{ts,svelte}'],
+			exclude: ['src/**/*.test.ts', 'src/app.d.ts']
+		}
+	}
 });
