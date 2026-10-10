@@ -14,7 +14,7 @@ An AI-powered, Gmail-style mail app for mobile, with its own visual identity cal
 
 | Layer              | Tech                                      |
 | ------------------ | ----------------------------------------- |
-| Web + mobile       | SvelteKit 2, Svelte 5, TypeScript         |
+| Web + mobile       | SvelteKit 3, Svelte 5, TypeScript         |
 | Native shell       | Ionic (`@ionic/core`) + Capacitor         |
 | Backend (Phase 2)  | SvelteKit server endpoints                |
 | Database (Phase 2) | PostgreSQL + Drizzle ORM                  |
@@ -36,6 +36,28 @@ Requires Node 22+.
 npm install
 npm run dev
 ```
+
+## Running on a phone
+
+The native apps wrap the same static build with Capacitor (app ID `com.onahstephen.nemmail`). Run these from `apps/mobile`:
+
+```bash
+npm run cap:sync     # build the SPA and copy it into the native projects
+npm run cap:android  # open the Android project in Android Studio
+```
+
+**Android** works on Windows, macOS and Linux. Install [Android Studio](https://developer.android.com/studio), which includes the JDK and Android SDK. Then run the app from Android Studio or with `npx cap run android`.
+
+**iOS** needs a Mac with Xcode, so the `ios/` project is not in the repo yet. On a Mac, from `apps/mobile`:
+
+```bash
+npm install @capacitor/ios
+npx cap add ios
+npm run cap:sync
+npx cap open ios
+```
+
+A free Apple ID can sideload the app onto an iPhone for 7 days. Without a Mac, open the web demo in Safari, tap Share, then **Add to Home Screen**.
 
 ## License
 

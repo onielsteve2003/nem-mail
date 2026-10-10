@@ -6,5 +6,12 @@
     "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "tests", "vite.config.ts", "vitest-setup.ts", "playwright.config.ts"]
+  "include": [
+    "src",
+    "tests",
+    "vite.config.ts",
+    "vitest-setup.ts",
+    "playwright.config.ts",
+    "capacitor.config.ts"
+  ]
 }

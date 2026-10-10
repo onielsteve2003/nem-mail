@@ -15,9 +15,12 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "cap:sync": "npm run build && cap sync",
+    "cap:android": "cap open android"
   },
   "devDependencies": {
+    "@capacitor/cli": "8.5.3",
     "@playwright/test": "1.64.0",
     "@sveltejs/adapter-static": "^4.0.0",
     "@sveltejs/kit": "^3.0.0",
@@ -38,6 +41,8 @@
     "#features/*": "./src/lib/features/*"
   },
   "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/core": "8.5.3",
     "@ionic/core": "9.0.7",
     "@nem/shared": "*"
   }
