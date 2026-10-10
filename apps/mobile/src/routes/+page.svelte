@@ -1,10 +1,14 @@
+<script lang="ts">
+	import { APP_NAME, APP_TAGLINE } from '@nem/shared';
+</script>
+
 <svelte:head>
-	<title>Nem Mail</title>
+	<title>{APP_NAME}</title>
 </svelte:head>
 
 <main>
-	<h1>Nem Mail</h1>
-	<p>Mail, reimagined. Coming soon.</p>
+	<h1>{APP_NAME}</h1>
+	<p>{APP_TAGLINE} Coming soon.</p>
 </main>
 
 <style>
