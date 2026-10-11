@@ -1,11 +1,6 @@
-<script lang="ts" module>
-	/** UI palette for user labels. The Label schema (T3.1) stores one of these keys. */
-	export const LABEL_COLORS = ['neutral', 'violet', 'lime', 'cyan', 'coral', 'amber'] as const;
-	export type LabelColor = (typeof LABEL_COLORS)[number];
-</script>
-
 <script lang="ts">
 	import X from '@lucide/svelte/icons/x';
+	import type { LabelColor } from '@nem/shared';
 	import Icon from './Icon.svelte';
 
 	const REMOVE_LABEL = (name: string) => `Remove label ${name}`;

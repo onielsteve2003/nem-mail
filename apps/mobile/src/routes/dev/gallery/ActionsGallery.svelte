@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Plus from '@lucide/svelte/icons/plus';
+	import { LABEL_COLORS } from '@nem/shared';
 	import Star from '@lucide/svelte/icons/star';
 	import Tag from '@lucide/svelte/icons/tag';
 	import AIBadge from '#components/ui/AIBadge.svelte';
@@ -10,7 +11,7 @@
 	import Chip from '#components/ui/Chip.svelte';
 	import Icon from '#components/ui/Icon.svelte';
 	import IconButton from '#components/ui/IconButton.svelte';
-	import LabelPill, { LABEL_COLORS } from '#components/ui/LabelPill.svelte';
+	import LabelPill from '#components/ui/LabelPill.svelte';
 	import GallerySection from './GallerySection.svelte';
 
 	const VARIANTS: ButtonVariant[] = ['primary', 'ghost', 'glass', 'danger'];
