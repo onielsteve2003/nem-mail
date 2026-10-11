@@ -2,6 +2,8 @@
 
 An AI-powered, Gmail-style mail app for mobile, with its own visual identity called **Aurora Noir**.
 
+**Live demo:** [nem-mail.vercel.app](https://nem-mail.vercel.app). Open it in Safari on an iPhone, tap Share, then **Add to Home Screen** for a full-screen app.
+
 > 🚧 In active development. Phase 1 builds the frontend against a realistic mock backend. Phase 2 adds the real API.
 
 ## Highlights (planned)
@@ -57,7 +59,7 @@ npm run cap:sync
 npx cap open ios
 ```
 
-A free Apple ID can sideload the app onto an iPhone for 7 days. Without a Mac, open the web demo in Safari, tap Share, then **Add to Home Screen**.
+A free Apple ID can sideload the app onto an iPhone for 7 days. Without a Mac, open the [web demo](https://nem-mail.vercel.app) in Safari, tap Share, then **Add to Home Screen**.
 
 ## License
 
