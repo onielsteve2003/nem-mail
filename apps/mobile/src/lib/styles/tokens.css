@@ -96,6 +96,9 @@
 
 	/* Sizes */
 	--nm-size-touch: 2.75rem; /* 44px minimum touch target */
+	--nm-size-control-sm: 2.75rem; /* 44px: never below the touch target */
+	--nm-size-control-md: 3rem; /* 48px */
+	--nm-size-control-lg: 3.5rem; /* 56px */
 	--nm-size-icon-sm: 1rem; /* 16px */
 	--nm-size-icon-md: 1.25rem; /* 20px */
 	--nm-size-icon-lg: 1.5rem; /* 24px */
