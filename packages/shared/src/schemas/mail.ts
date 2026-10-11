@@ -51,7 +51,7 @@ export const ThreadSummarySchema = z.object({
 	messageCount: z.int().positive(),
 	lastMessageAt: IsoDateTimeSchema,
 	mailboxes: z.array(StoredMailboxSchema),
-	/** Inbox tab; null outside the inbox. */
+	/** Inbox tab the thread belongs to; kept when archived. Null for spam and mail the user only sent. */
 	category: CategorySchema.nullable(),
 	labelIds: z.array(IdSchema),
 	isUnread: z.boolean(),
