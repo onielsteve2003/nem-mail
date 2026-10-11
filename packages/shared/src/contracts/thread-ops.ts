@@ -1,15 +1,15 @@
-import {
-	STORED_MAILBOXES,
-	type StoredMailbox,
-	type SystemMailbox,
-	type Thread,
-	type ThreadListFilter,
-	type ThreadOp,
-	type ThreadSummary
-} from '@nem/shared';
+import type { Thread, ThreadSummary } from '../schemas/mail';
+import { STORED_MAILBOXES, type StoredMailbox, type SystemMailbox } from '../schemas/mailbox';
+import type { ThreadListFilter, ThreadOp } from './threads';
+
+/*
+ * The rules behind ThreadOp and list filters. The mock backend, the Phase 2 API
+ * and the optimistic updates in the stores all apply these, so they agree.
+ */
 
 /** The mailboxes a user moves threads between; a thread is in at most one of them. */
-const MOVABLE: readonly StoredMailbox[] = ['inbox', 'spam', 'trash'];
+const MOVABLE = ['inbox', 'spam', 'trash'] as const satisfies readonly StoredMailbox[];
+type Movable = (typeof MOVABLE)[number];
 
 /** Threads in spam or trash show only there, never in other views. */
 function isBinned(thread: ThreadSummary): boolean {
@@ -65,9 +65,12 @@ export function toSummary(thread: Thread): ThreadSummary {
 	return summary as ThreadSummary;
 }
 
-/** Returns the thread after one bulk op. Pure: the input is not changed. */
-export function applyThreadOp(thread: Thread, op: ThreadOp): Thread {
-	const next: Thread = { ...thread };
+/**
+ * Returns the thread after one bulk op. Pure: the input is not changed.
+ * Works on a full thread or a list summary (a summary has no messages to mark).
+ */
+export function applyThreadOp<T extends ThreadSummary>(thread: T, op: ThreadOp): T {
+	const next: T = { ...thread };
 	switch (op.op) {
 		case 'markRead':
 			return withRead(next, true);
@@ -108,25 +111,75 @@ export function applyThreadOp(thread: Thread, op: ThreadOp): Thread {
 	}
 }
 
-function withRead(thread: Thread, isRead: boolean): Thread {
-	const lastIndex = thread.messages.length - 1;
+function withRead<T extends ThreadSummary>(thread: T, isRead: boolean): T {
+	const next = { ...thread, isUnread: !isRead };
+	const messages = (thread as Partial<Thread>).messages;
+	if (!messages) return next;
+	const lastIndex = messages.length - 1;
 	return {
-		...thread,
-		isUnread: !isRead,
+		...next,
 		// Marking unread flags only the latest message, as mail clients do.
-		messages: thread.messages.map((m, i) => (isRead || i === lastIndex ? { ...m, isRead } : m))
+		messages: messages.map((m, i) => (isRead || i === lastIndex ? { ...m, isRead } : m))
 	};
 }
 
-function moveTo(thread: Thread, to: StoredMailbox): Thread {
-	return addMailbox(
-		{ ...thread, mailboxes: thread.mailboxes.filter((m) => !MOVABLE.includes(m)) },
-		to
-	);
+function moveTo<T extends ThreadSummary>(thread: T, to: StoredMailbox): T {
+	return addMailbox({ ...thread, mailboxes: thread.mailboxes.filter((m) => !isMovable(m)) }, to);
 }
 
 /** Adds a mailbox, keeping the canonical STORED_MAILBOXES order. */
-function addMailbox(thread: Thread, mailbox: StoredMailbox): Thread {
+function addMailbox<T extends ThreadSummary>(thread: T, mailbox: StoredMailbox): T {
 	const set = new Set([...thread.mailboxes, mailbox]);
 	return { ...thread, mailboxes: STORED_MAILBOXES.filter((m) => set.has(m)) };
+}
+
+/** Where a thread is filed among inbox, spam and trash; null when archived. */
+function isMovable(mailbox: StoredMailbox): mailbox is Movable {
+	return (MOVABLE as readonly StoredMailbox[]).includes(mailbox);
+}
+
+function location(thread: ThreadSummary): Movable | null {
+	return MOVABLE.find((m) => thread.mailboxes.includes(m)) ?? null;
+}
+
+/**
+ * The ops that take a thread from `after` back to `before`, for Undo. Exact
+ * where the ops allow it; empty when nothing changed.
+ */
+export function restoreOps(before: ThreadSummary, after: ThreadSummary): ThreadOp[] {
+	const ops: ThreadOp[] = [];
+	if (before.snoozedUntil !== after.snoozedUntil) {
+		ops.push(
+			before.snoozedUntil === null
+				? { op: 'unsnooze' }
+				: { op: 'snooze', until: before.snoozedUntil }
+		);
+	}
+	// Mute archives, so it goes before restoring the location.
+	if (before.isMuted !== after.isMuted) ops.push({ op: before.isMuted ? 'mute' : 'unmute' });
+	const from = location(before);
+	if (from !== location(applyAll(after, ops))) {
+		// There is no "move to archive" op: archived means filed nowhere, so file it in the inbox first.
+		if (from) ops.push({ op: 'move', to: from });
+		else ops.push({ op: 'move', to: 'inbox' }, { op: 'archive' });
+	}
+	if (before.isUnread !== after.isUnread) {
+		ops.push({ op: before.isUnread ? 'markUnread' : 'markRead' });
+	}
+	if (before.isStarred !== after.isStarred) ops.push({ op: before.isStarred ? 'star' : 'unstar' });
+	if (before.isImportant !== after.isImportant) {
+		ops.push({ op: before.isImportant ? 'markImportant' : 'markNotImportant' });
+	}
+	if (before.category !== null && before.category !== after.category) {
+		ops.push({ op: 'setCategory', category: before.category });
+	}
+	const added = after.labelIds.filter((id) => !before.labelIds.includes(id));
+	const removed = before.labelIds.filter((id) => !after.labelIds.includes(id));
+	if (added.length > 0) ops.push({ op: 'removeLabels', labelIds: added });
+	if (removed.length > 0) ops.push({ op: 'addLabels', labelIds: removed });
+	return ops;
+}
+
+function applyAll<T extends ThreadSummary>(thread: T, ops: ThreadOp[]): T {
+	return ops.reduce((next, op) => applyThreadOp(next, op), thread);
 }

@@ -1,6 +1,7 @@
-import { generateSeed, type Thread } from '@nem/shared';
+import type { Thread } from '../schemas/mail';
+import { generateSeed } from '../seed';
 import { describe, expect, it } from 'vitest';
-import { applyThreadOp, inMailbox, matchesFilter } from './thread-ops.js';
+import { applyThreadOp, inMailbox, matchesFilter } from './thread-ops';
 
 const NOW = Date.parse('2026-10-11T09:00:00.000Z');
 const threads = generateSeed({ now: new Date(NOW) }).accounts[0]?.threads ?? [];

@@ -1,6 +1,11 @@
 import {
 	AppError,
 	SYSTEM_MAILBOXES,
+	applyThreadOp,
+	inMailbox,
+	matchesFilter,
+	sortKey,
+	toSummary,
 	type BulkThreadResponse,
 	type CountsResponse,
 	type Page,
@@ -15,7 +20,6 @@ import type { MailRepository } from '../repositories.js';
 import type { MockContext } from './context.js';
 import { stripOwner, type MockDb, type Owned } from './db.js';
 import { paginate } from './paginate.js';
-import { applyThreadOp, inMailbox, matchesFilter, sortKey, toSummary } from './thread-ops.js';
 
 /** Mailboxes whose badge counts every item, not just unread ones. */
 const COUNT_ALL = new Set(['drafts', 'outbox', 'scheduled']);

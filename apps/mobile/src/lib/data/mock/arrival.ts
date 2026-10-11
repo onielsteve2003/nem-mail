@@ -1,9 +1,14 @@
-import type { Category, Message, Thread, ThreadSummary } from '@nem/shared';
+import {
+	toSummary,
+	type Category,
+	type Message,
+	type Thread,
+	type ThreadSummary
+} from '@nem/shared';
 import { newId, type MockContext } from './context.js';
 import { stripOwner, type MockDb, type Owned } from './db.js';
 import { deliverDue } from './drafts.js';
 import { countsFor } from './mail.js';
-import { toSummary } from './thread-ops.js';
 
 /** How often the simulator delivers due mail. */
 export const TICK_MS = 1000;
