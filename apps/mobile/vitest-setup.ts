@@ -17,3 +17,23 @@ if (!('animate' in Element.prototype)) {
 		}
 	});
 }
+
+// jsdom has no matchMedia, and svelte/motion reads it on import. Default to
+// "no match"; tests that need a media query stub it themselves.
+if (typeof window.matchMedia !== 'function') {
+	Object.defineProperty(window, 'matchMedia', {
+		configurable: true,
+		writable: true,
+		value: (query: string): MediaQueryList =>
+			({
+				matches: false,
+				media: query,
+				onchange: null,
+				addEventListener() {},
+				removeEventListener() {},
+				addListener() {},
+				removeListener() {},
+				dispatchEvent: () => false
+			}) as MediaQueryList
+	});
+}
