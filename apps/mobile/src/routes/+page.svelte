@@ -17,20 +17,14 @@
 
 <style>
 	main {
-		min-height: 100dvh;
+		min-height: var(--nm-viewport-height);
 		display: grid;
 		place-content: center;
 		text-align: center;
 		justify-items: center;
 		gap: var(--nm-space-3);
-		padding-inline: var(--nm-space-5);
-		background: var(--nm-color-bg);
-		color: var(--nm-color-text);
-		font-family: var(--nm-font-body);
-	}
-
-	h1,
-	p {
-		margin: 0;
+		padding-block: var(--nm-safe-top) var(--nm-safe-bottom);
+		padding-inline: max(var(--nm-space-5), var(--nm-safe-left))
+			max(var(--nm-space-5), var(--nm-safe-right));
 	}
 </style>
