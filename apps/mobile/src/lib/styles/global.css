@@ -164,6 +164,7 @@ a {
 		--nm-duration-base: 0ms;
 		--nm-duration-slow: 0ms;
 		--nm-duration-slower: 0ms;
+		--nm-duration-ambient: 0ms;
 	}
 
 	*,

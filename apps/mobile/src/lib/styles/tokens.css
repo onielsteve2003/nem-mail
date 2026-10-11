@@ -130,6 +130,7 @@
 	--nm-duration-base: 240ms;
 	--nm-duration-slow: 360ms;
 	--nm-duration-slower: 520ms;
+	--nm-duration-ambient: 24s; /* one loop of background drift (AuroraBackground) */
 
 	/* Motion easings */
 	--nm-ease-standard: cubic-bezier(0.2, 0, 0, 1);
