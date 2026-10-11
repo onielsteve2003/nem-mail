@@ -1,5 +1,6 @@
 <script lang="ts">
 	import '@ionic/core/css/core.css';
+	import '#lib/styles/tokens.css';
 	import '#lib/styles/ionic.css';
 	import favicon from '#lib/assets/favicon.svg';
 	import { setupIonic } from '#lib/ionic.js';

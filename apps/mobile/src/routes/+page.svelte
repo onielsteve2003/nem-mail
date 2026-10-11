@@ -22,22 +22,23 @@
 		place-content: center;
 		text-align: center;
 		justify-items: center;
-		gap: 0.5rem;
-		background: #0b0b14;
-		color: #f4f2ff;
+		gap: var(--nm-space-3);
+		padding-inline: var(--nm-space-5);
+		background: var(--nm-color-bg);
+		color: var(--nm-color-text);
 		font-family: system-ui, sans-serif;
 	}
 
 	h1 {
 		margin: 0;
 		font-size: 2.5rem;
-		background: linear-gradient(120deg, #7c5cff, #2de2e6, #c6ff3d);
+		background: var(--nm-gradient-aurora);
 		background-clip: text;
 		color: transparent;
 	}
 
 	p {
 		margin: 0;
-		opacity: 0.7;
+		color: var(--nm-color-text-muted);
 	}
 </style>

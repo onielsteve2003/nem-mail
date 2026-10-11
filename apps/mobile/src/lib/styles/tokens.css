@@ -1,0 +1,177 @@
+/*
+ * Aurora Noir design tokens. The single source for color, spacing, shape,
+ * elevation, layering and motion. Components use these through var(--nm-…)
+ * and never hard-code raw values.
+ *
+ * Dark ("Aurora Noir") is the default. Light ("Paper Aurora") applies under
+ * [data-theme='light']; the theme engine (T2.2) sets that attribute.
+ *
+ * Contrast: every *-text token passes WCAG AA (4.5:1) on bg, surface-1 and
+ * surface-2 in its theme; text and text-muted also pass on surface-3.
+ * tokens.test.ts enforces this.
+ */
+
+:root {
+	color-scheme: dark;
+
+	/* Brand accents (PRD 1.2). Decorative use: glows, gradients, avatars. */
+	--nm-color-violet: #7c5cff;
+	--nm-color-lime: #c6ff3d;
+	--nm-color-coral: #ff5c7a;
+	--nm-color-cyan: #2de2e6;
+	--nm-color-amber: #ffb547;
+
+	/* Surfaces, from the page background up to the most raised layer. */
+	--nm-color-bg: #0b0b14;
+	--nm-color-surface-1: #13131f;
+	--nm-color-surface-2: #1b1b2a;
+	--nm-color-surface-3: #242436;
+	--nm-color-glass: rgba(27, 27, 42, 0.62);
+	--nm-color-scrim: rgba(5, 5, 10, 0.6);
+
+	/* Lines */
+	--nm-color-border: rgba(244, 242, 255, 0.08);
+	--nm-color-border-strong: rgba(244, 242, 255, 0.18);
+
+	/* Text */
+	--nm-color-text: #f4f2ff;
+	--nm-color-text-muted: #b4b1cc;
+	--nm-color-text-subtle: #8c89a8;
+
+	/* Accent used as a fill with text on top (buttons, selected states). */
+	--nm-color-accent: #7050f5;
+	--nm-color-accent-hover: #7c5cff;
+	--nm-color-accent-pressed: #6243e0;
+	--nm-color-on-accent: #ffffff;
+	--nm-color-accent-soft: rgba(124, 92, 255, 0.16);
+
+	/* Accent colors safe for text and icons on surfaces. */
+	--nm-color-accent-text: #a893ff;
+	--nm-color-cyan-text: #2de2e6;
+	--nm-color-lime-text: #c6ff3d;
+	--nm-color-coral-text: #ff7a93;
+	--nm-color-amber-text: #ffc266;
+
+	/* Semantic roles */
+	--nm-color-success: var(--nm-color-lime-text);
+	--nm-color-danger: var(--nm-color-coral-text);
+	--nm-color-warning: var(--nm-color-amber-text);
+	--nm-color-info: var(--nm-color-cyan-text);
+	--nm-color-danger-fill: #ff5c7a;
+	--nm-color-on-danger: #0b0b14;
+	--nm-color-focus: #2de2e6;
+	--nm-color-selection: rgba(124, 92, 255, 0.4);
+
+	/* Gradients */
+	--nm-gradient-aurora: linear-gradient(
+		120deg,
+		var(--nm-color-violet),
+		var(--nm-color-cyan),
+		var(--nm-color-lime)
+	);
+	--nm-gradient-ember: linear-gradient(120deg, var(--nm-color-coral), var(--nm-color-violet));
+
+	/* Elevation and glow */
+	--nm-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.3);
+	--nm-shadow-2: 0 4px 12px rgba(0, 0, 0, 0.45), 0 2px 4px rgba(0, 0, 0, 0.3);
+	--nm-shadow-3: 0 12px 32px rgba(0, 0, 0, 0.55), 0 4px 8px rgba(0, 0, 0, 0.3);
+	--nm-shadow-4: 0 24px 64px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.35);
+	--nm-glow-violet: 0 0 24px rgba(124, 92, 255, 0.55);
+	--nm-glow-cyan: 0 0 24px rgba(45, 226, 230, 0.45);
+	--nm-glow-lime: 0 0 24px rgba(198, 255, 61, 0.4);
+
+	/* Spacing: a 4px grid in rem, so it scales with the user's text size. */
+	--nm-space-0: 0;
+	--nm-space-1: 0.125rem; /* 2px */
+	--nm-space-2: 0.25rem; /* 4px */
+	--nm-space-3: 0.5rem; /* 8px */
+	--nm-space-4: 0.75rem; /* 12px */
+	--nm-space-5: 1rem; /* 16px */
+	--nm-space-6: 1.25rem; /* 20px */
+	--nm-space-7: 1.5rem; /* 24px */
+	--nm-space-8: 2rem; /* 32px */
+	--nm-space-9: 2.5rem; /* 40px */
+	--nm-space-10: 3rem; /* 48px */
+	--nm-space-11: 4rem; /* 64px */
+
+	/* Sizes */
+	--nm-size-touch: 2.75rem; /* 44px minimum touch target */
+
+	/* Radii */
+	--nm-radius-xs: 0.25rem;
+	--nm-radius-sm: 0.5rem;
+	--nm-radius-md: 0.75rem;
+	--nm-radius-lg: 1rem;
+	--nm-radius-xl: 1.5rem;
+	--nm-radius-2xl: 2rem;
+	--nm-radius-pill: 999px;
+	--nm-radius-round: 50%;
+
+	/* Layering, lowest to highest */
+	--nm-z-base: 0;
+	--nm-z-raised: 10;
+	--nm-z-sticky: 100;
+	--nm-z-fab: 200;
+	--nm-z-drawer: 300;
+	--nm-z-overlay: 400;
+	--nm-z-sheet: 500;
+	--nm-z-modal: 600;
+	--nm-z-popover: 700;
+	--nm-z-toast: 800;
+	--nm-z-tooltip: 900;
+
+	/* Motion durations */
+	--nm-duration-instant: 80ms;
+	--nm-duration-fast: 150ms;
+	--nm-duration-base: 240ms;
+	--nm-duration-slow: 360ms;
+	--nm-duration-slower: 520ms;
+
+	/* Motion easings */
+	--nm-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+	--nm-ease-decelerate: cubic-bezier(0, 0, 0, 1);
+	--nm-ease-accelerate: cubic-bezier(0.3, 0, 1, 1);
+	--nm-ease-emphasized: cubic-bezier(0.05, 0.7, 0.1, 1);
+	--nm-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+:root[data-theme='light'] {
+	color-scheme: light;
+
+	/* Surfaces: warm paper tones */
+	--nm-color-bg: #faf7f2;
+	--nm-color-surface-1: #ffffff;
+	--nm-color-surface-2: #f2eee6;
+	--nm-color-surface-3: #e8e2d8;
+	--nm-color-glass: rgba(255, 255, 255, 0.7);
+	--nm-color-scrim: rgba(23, 21, 31, 0.4);
+
+	--nm-color-border: rgba(23, 21, 31, 0.1);
+	--nm-color-border-strong: rgba(23, 21, 31, 0.22);
+
+	--nm-color-text: #17151f;
+	--nm-color-text-muted: #4f4b62;
+	--nm-color-text-subtle: #66627a;
+
+	--nm-color-accent-soft: rgba(124, 92, 255, 0.12);
+
+	/* Deeper accent shades so text stays readable on paper. */
+	--nm-color-accent-text: #5a3be6;
+	--nm-color-cyan-text: #00727a;
+	--nm-color-lime-text: #3f6b00;
+	--nm-color-coral-text: #c8203f;
+	--nm-color-amber-text: #8f5a00;
+
+	--nm-color-danger-fill: #c8203f;
+	--nm-color-on-danger: #ffffff;
+	--nm-color-focus: #5a3be6;
+	--nm-color-selection: rgba(124, 92, 255, 0.25);
+
+	--nm-shadow-1: 0 1px 2px rgba(23, 21, 31, 0.08), 0 1px 3px rgba(23, 21, 31, 0.06);
+	--nm-shadow-2: 0 4px 12px rgba(23, 21, 31, 0.1), 0 2px 4px rgba(23, 21, 31, 0.06);
+	--nm-shadow-3: 0 12px 32px rgba(23, 21, 31, 0.14), 0 4px 8px rgba(23, 21, 31, 0.06);
+	--nm-shadow-4: 0 24px 64px rgba(23, 21, 31, 0.18), 0 8px 16px rgba(23, 21, 31, 0.08);
+	--nm-glow-violet: 0 0 24px rgba(124, 92, 255, 0.35);
+	--nm-glow-cyan: 0 0 24px rgba(0, 114, 122, 0.25);
+	--nm-glow-lime: 0 0 24px rgba(63, 107, 0, 0.25);
+}
