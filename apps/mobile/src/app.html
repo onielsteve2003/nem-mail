@@ -3,8 +3,28 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-		<meta name="theme-color" content="#0B0B14" />
+		<meta name="theme-color" content="#0b0b14" />
 		<meta name="text-scale" content="scale" />
+		<script>
+			// No-flash theme init: paints the saved or system theme before the first frame.
+			// Mirrors THEME_STORAGE_KEY and resolveTheme in lib/utils/theme.ts; the colors are
+			// --nm-color-bg from tokens.css. theme.test.ts checks they stay in sync.
+			(function () {
+				var preference = null;
+				try {
+					preference = localStorage.getItem('nm-theme');
+				} catch (e) {}
+				var isLight =
+					preference === 'light' ||
+					(preference !== 'dark' &&
+						!!window.matchMedia &&
+						matchMedia('(prefers-color-scheme: light)').matches);
+				document.documentElement.dataset.theme = isLight ? 'light' : 'dark';
+				document
+					.querySelector('meta[name="theme-color"]')
+					.setAttribute('content', isLight ? '#faf7f2' : '#0b0b14');
+			})();
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

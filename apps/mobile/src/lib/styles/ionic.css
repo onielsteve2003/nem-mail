@@ -1,12 +1,114 @@
 /*
- * Ionic theme variables. Temporary Aurora Noir accent until the design
- * tokens (T2.1) and theme engine (T2.2) map every Ionic variable.
+ * Maps Aurora Noir tokens onto Ionic's theme variables, so Ionic primitives
+ * (menu, refresher, datetime…) follow the active theme.
+ *
+ * Ionic needs some colors as bare "r, g, b" triplets for its alpha effects.
+ * CSS cannot derive those from a hex variable, so the triplets below repeat
+ * the token values; keep them in sync with tokens.css.
  */
 :root {
-	--ion-color-primary: #7c5cff;
-	--ion-color-primary-rgb: 124, 92, 255;
-	--ion-color-primary-contrast: #ffffff;
+	--ion-background-color: var(--nm-color-bg);
+	--ion-background-color-rgb: 11, 11, 20;
+	--ion-text-color: var(--nm-color-text);
+	--ion-text-color-rgb: 244, 242, 255;
+	--ion-border-color: var(--nm-color-border);
+	--ion-item-background: var(--nm-color-surface-1);
+	--ion-toolbar-background: var(--nm-color-surface-1);
+	--ion-card-background: var(--nm-color-surface-1);
+	--ion-tab-bar-background: var(--nm-color-surface-1);
+	--ion-overlay-background-color: var(--nm-color-surface-2);
+	--ion-placeholder-color: var(--nm-color-text-subtle);
+	--ion-backdrop-color: var(--nm-color-scrim);
+
+	--ion-color-primary: var(--nm-color-accent);
+	--ion-color-primary-rgb: 112, 80, 245;
+	--ion-color-primary-contrast: var(--nm-color-on-accent);
 	--ion-color-primary-contrast-rgb: 255, 255, 255;
-	--ion-color-primary-shade: #6d51e0;
-	--ion-color-primary-tint: #896cff;
+	--ion-color-primary-shade: var(--nm-color-accent-pressed);
+	--ion-color-primary-tint: var(--nm-color-accent-hover);
+
+	--ion-color-danger: var(--nm-color-danger-fill);
+	--ion-color-danger-rgb: 255, 92, 122;
+	--ion-color-danger-contrast: var(--nm-color-on-danger);
+	--ion-color-danger-contrast-rgb: 11, 11, 20;
+	--ion-color-danger-shade: #e05169;
+	--ion-color-danger-tint: #ff6c87;
+
+	--ion-color-success: #c6ff3d;
+	--ion-color-success-rgb: 198, 255, 61;
+	--ion-color-success-contrast: #0b0b14;
+	--ion-color-success-contrast-rgb: 11, 11, 20;
+	--ion-color-success-shade: #aee036;
+	--ion-color-success-tint: #ccff50;
+
+	--ion-color-warning: #ffb547;
+	--ion-color-warning-rgb: 255, 181, 71;
+	--ion-color-warning-contrast: #0b0b14;
+	--ion-color-warning-contrast-rgb: 11, 11, 20;
+	--ion-color-warning-shade: #e09f3e;
+	--ion-color-warning-tint: #ffbc59;
+
+	/* Ionic's stepped grays (e.g. ion-datetime), blended from our text and background. */
+	--ion-background-color-step-50: color-mix(in srgb, var(--nm-color-text) 5%, var(--nm-color-bg));
+	--ion-background-color-step-100: color-mix(in srgb, var(--nm-color-text) 10%, var(--nm-color-bg));
+	--ion-background-color-step-150: color-mix(in srgb, var(--nm-color-text) 15%, var(--nm-color-bg));
+	--ion-background-color-step-200: color-mix(in srgb, var(--nm-color-text) 20%, var(--nm-color-bg));
+	--ion-background-color-step-250: color-mix(in srgb, var(--nm-color-text) 25%, var(--nm-color-bg));
+	--ion-background-color-step-300: color-mix(in srgb, var(--nm-color-text) 30%, var(--nm-color-bg));
+	--ion-background-color-step-350: color-mix(in srgb, var(--nm-color-text) 35%, var(--nm-color-bg));
+	--ion-background-color-step-400: color-mix(in srgb, var(--nm-color-text) 40%, var(--nm-color-bg));
+	--ion-background-color-step-450: color-mix(in srgb, var(--nm-color-text) 45%, var(--nm-color-bg));
+	--ion-background-color-step-500: color-mix(in srgb, var(--nm-color-text) 50%, var(--nm-color-bg));
+	--ion-background-color-step-550: color-mix(in srgb, var(--nm-color-text) 55%, var(--nm-color-bg));
+	--ion-background-color-step-600: color-mix(in srgb, var(--nm-color-text) 60%, var(--nm-color-bg));
+	--ion-background-color-step-650: color-mix(in srgb, var(--nm-color-text) 65%, var(--nm-color-bg));
+	--ion-background-color-step-700: color-mix(in srgb, var(--nm-color-text) 70%, var(--nm-color-bg));
+	--ion-background-color-step-750: color-mix(in srgb, var(--nm-color-text) 75%, var(--nm-color-bg));
+	--ion-background-color-step-800: color-mix(in srgb, var(--nm-color-text) 80%, var(--nm-color-bg));
+	--ion-background-color-step-850: color-mix(in srgb, var(--nm-color-text) 85%, var(--nm-color-bg));
+	--ion-background-color-step-900: color-mix(in srgb, var(--nm-color-text) 90%, var(--nm-color-bg));
+	--ion-background-color-step-950: color-mix(in srgb, var(--nm-color-text) 95%, var(--nm-color-bg));
+	--ion-text-color-step-50: color-mix(in srgb, var(--nm-color-bg) 5%, var(--nm-color-text));
+	--ion-text-color-step-100: color-mix(in srgb, var(--nm-color-bg) 10%, var(--nm-color-text));
+	--ion-text-color-step-150: color-mix(in srgb, var(--nm-color-bg) 15%, var(--nm-color-text));
+	--ion-text-color-step-200: color-mix(in srgb, var(--nm-color-bg) 20%, var(--nm-color-text));
+	--ion-text-color-step-250: color-mix(in srgb, var(--nm-color-bg) 25%, var(--nm-color-text));
+	--ion-text-color-step-300: color-mix(in srgb, var(--nm-color-bg) 30%, var(--nm-color-text));
+	--ion-text-color-step-350: color-mix(in srgb, var(--nm-color-bg) 35%, var(--nm-color-text));
+	--ion-text-color-step-400: color-mix(in srgb, var(--nm-color-bg) 40%, var(--nm-color-text));
+	--ion-text-color-step-450: color-mix(in srgb, var(--nm-color-bg) 45%, var(--nm-color-text));
+	--ion-text-color-step-500: color-mix(in srgb, var(--nm-color-bg) 50%, var(--nm-color-text));
+	--ion-text-color-step-550: color-mix(in srgb, var(--nm-color-bg) 55%, var(--nm-color-text));
+	--ion-text-color-step-600: color-mix(in srgb, var(--nm-color-bg) 60%, var(--nm-color-text));
+	--ion-text-color-step-650: color-mix(in srgb, var(--nm-color-bg) 65%, var(--nm-color-text));
+	--ion-text-color-step-700: color-mix(in srgb, var(--nm-color-bg) 70%, var(--nm-color-text));
+	--ion-text-color-step-750: color-mix(in srgb, var(--nm-color-bg) 75%, var(--nm-color-text));
+	--ion-text-color-step-800: color-mix(in srgb, var(--nm-color-bg) 80%, var(--nm-color-text));
+	--ion-text-color-step-850: color-mix(in srgb, var(--nm-color-bg) 85%, var(--nm-color-text));
+	--ion-text-color-step-900: color-mix(in srgb, var(--nm-color-bg) 90%, var(--nm-color-text));
+	--ion-text-color-step-950: color-mix(in srgb, var(--nm-color-bg) 95%, var(--nm-color-text));
+}
+
+:root[data-theme='light'] {
+	--ion-background-color-rgb: 250, 247, 242;
+	--ion-text-color-rgb: 23, 21, 31;
+
+	--ion-color-danger-rgb: 200, 32, 63;
+	--ion-color-danger-contrast-rgb: 255, 255, 255;
+	--ion-color-danger-shade: #b01c37;
+	--ion-color-danger-tint: #ce3652;
+
+	--ion-color-success: #3f6b00;
+	--ion-color-success-rgb: 63, 107, 0;
+	--ion-color-success-contrast: #ffffff;
+	--ion-color-success-contrast-rgb: 255, 255, 255;
+	--ion-color-success-shade: #375e00;
+	--ion-color-success-tint: #527a1a;
+
+	--ion-color-warning: #8f5a00;
+	--ion-color-warning-rgb: 143, 90, 0;
+	--ion-color-warning-contrast: #ffffff;
+	--ion-color-warning-contrast-rgb: 255, 255, 255;
+	--ion-color-warning-shade: #7e4f00;
+	--ion-color-warning-tint: #9a6a1a;
 }
