@@ -1,7 +1,8 @@
 import type { Thread } from '../schemas/mail';
 import { generateSeed } from '../seed';
 import { describe, expect, it } from 'vitest';
-import { applyThreadOp, inMailbox, matchesFilter } from './thread-ops';
+import { applyThreadOp, inMailbox, matchesFilter, restoreOps, toSummary } from './thread-ops';
+import type { ThreadOp } from './threads';
 
 const NOW = Date.parse('2026-10-11T09:00:00.000Z');
 const threads = generateSeed({ now: new Date(NOW) }).accounts[0]?.threads ?? [];
@@ -86,5 +87,52 @@ describe('inMailbox and matchesFilter', () => {
 		expect(matchesFilter(inboxThread, { mailbox: 'inbox', category }, NOW)).toBe(true);
 		const other = category === 'social' ? 'forums' : 'social';
 		expect(matchesFilter(inboxThread, { mailbox: 'inbox', category: other }, NOW)).toBe(false);
+	});
+});
+
+describe('restoreOps', () => {
+	const until = new Date(NOW + 3_600_000).toISOString();
+	const archivedThread: Thread = { ...inboxThread, mailboxes: [] };
+	const ops: ThreadOp[] = [
+		{ op: 'markRead' },
+		{ op: 'markUnread' },
+		{ op: 'star' },
+		{ op: 'markImportant' },
+		{ op: 'archive' },
+		{ op: 'trash' },
+		{ op: 'spam' },
+		{ op: 'mute' },
+		{ op: 'setCategory', category: 'promotions' },
+		{ op: 'addLabels', labelIds: ['l-new'] },
+		{ op: 'snooze', until }
+	];
+
+	it.each(ops)('undoes $op from the inbox and from the archive', (op) => {
+		for (const before of [inboxThread, archivedThread]) {
+			const after = applyThreadOp(before, op);
+			const restored = restoreOps(before, after).reduce(applyThreadOp, after);
+			// Messages are compared through isUnread; marking read touches every message.
+			expect(toSummary(restored)).toEqual(toSummary(before));
+		}
+	});
+
+	it('restores removed labels, an earlier snooze and an unmute', () => {
+		const before: Thread = {
+			...inboxThread,
+			labelIds: ['a', 'b'],
+			snoozedUntil: until,
+			isMuted: true,
+			mailboxes: []
+		};
+		const after: Thread = { ...before, labelIds: ['a'], snoozedUntil: null, isMuted: false };
+		expect(restoreOps(before, after)).toEqual([
+			{ op: 'snooze', until },
+			{ op: 'mute' },
+			{ op: 'addLabels', labelIds: ['b'] }
+		]);
+	});
+
+	it('returns nothing when nothing changed', () => {
+		expect(restoreOps(inboxThread, inboxThread)).toEqual([]);
 	});
 });
