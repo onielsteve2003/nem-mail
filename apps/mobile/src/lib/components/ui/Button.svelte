@@ -16,7 +16,7 @@
 		/** Shows a spinner, keeps the width and blocks presses. */
 		loading?: boolean;
 		disabled?: boolean;
-		/** Renders a link styled as a button. */
+		/** Renders a link styled as a button. Pass a resolve()d route or an external URL. */
 		href?: string;
 		/** Square button for a single icon. Used by IconButton. */
 		iconOnly?: boolean;
@@ -71,6 +71,7 @@
 
 {#if href !== undefined}
 	<!-- A disabled link has no href, so it cannot be followed or focused by Tab. -->
+	<!-- eslint-disable svelte/no-navigation-without-resolve -- Button only forwards the href; callers pass a resolve()d route or an external URL. -->
 	<a
 		{...rest}
 		class={classes}
@@ -82,6 +83,7 @@
 	>
 		{@render content()}
 	</a>
+	<!-- eslint-enable svelte/no-navigation-without-resolve -->
 {:else}
 	<button
 		{...rest}
