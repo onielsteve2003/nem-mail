@@ -61,14 +61,14 @@ export class MockMailRepository implements MailRepository {
 			}
 			await tx.done;
 			if (updatedIds.length > 0) {
-				this.#ctx.emit({ type: 'counts', counts: await this.#counts(db, userId) });
+				this.#ctx.emit({ type: 'counts', counts: await countsFor(db, userId, this.#ctx.now()) });
 			}
 			return { updatedIds };
 		});
 	}
 
 	counts(): Promise<CountsResponse> {
-		return this.#ctx.authed((db, userId) => this.#counts(db, userId));
+		return this.#ctx.authed((db, userId) => countsFor(db, userId, this.#ctx.now()));
 	}
 
 	/** The attachment's bytes; seed attachments get a small placeholder file. */
@@ -93,30 +93,30 @@ export class MockMailRepository implements MailRepository {
 	subscribe(listener: (event: ServerEvent) => void): () => void {
 		return this.#ctx.subscribe(listener);
 	}
+}
 
-	async #counts(db: MockDb, userId: string): Promise<CountsResponse> {
-		const now = this.#ctx.now();
-		const threads = (await ownThreads(db, userId)).map(toSummary);
-		const counts: CountsResponse = { mailboxes: {}, categories: {}, labels: {} };
-		for (const mailbox of SYSTEM_MAILBOXES) {
-			const all = COUNT_ALL.has(mailbox);
-			counts.mailboxes[mailbox] = threads.filter(
-				(t) => (all || t.isUnread) && inMailbox(t, mailbox, now)
-			).length;
-		}
-		counts.mailboxes.drafts = await db.countFromIndex('drafts', 'byOwner', userId);
-		for (const thread of threads) {
-			if (!thread.isUnread) continue;
-			if (thread.category && inMailbox(thread, 'inbox', now)) {
-				counts.categories[thread.category] = (counts.categories[thread.category] ?? 0) + 1;
-			}
-			if (!inMailbox(thread, 'all', now)) continue;
-			for (const labelId of thread.labelIds) {
-				counts.labels[labelId] = (counts.labels[labelId] ?? 0) + 1;
-			}
-		}
-		return counts;
+/** Badge counts for one account at `now`. */
+export async function countsFor(db: MockDb, userId: string, now: number): Promise<CountsResponse> {
+	const threads = (await ownThreads(db, userId)).map(toSummary);
+	const counts: CountsResponse = { mailboxes: {}, categories: {}, labels: {} };
+	for (const mailbox of SYSTEM_MAILBOXES) {
+		const all = COUNT_ALL.has(mailbox);
+		counts.mailboxes[mailbox] = threads.filter(
+			(t) => (all || t.isUnread) && inMailbox(t, mailbox, now)
+		).length;
 	}
+	counts.mailboxes.drafts = await db.countFromIndex('drafts', 'byOwner', userId);
+	for (const thread of threads) {
+		if (!thread.isUnread) continue;
+		if (thread.category && inMailbox(thread, 'inbox', now)) {
+			counts.categories[thread.category] = (counts.categories[thread.category] ?? 0) + 1;
+		}
+		if (!inMailbox(thread, 'all', now)) continue;
+		for (const labelId of thread.labelIds) {
+			counts.labels[labelId] = (counts.labels[labelId] ?? 0) + 1;
+		}
+	}
+	return counts;
 }
 
 function ownThreads(db: MockDb, userId: string): Promise<Owned<Thread>[]> {

@@ -76,6 +76,27 @@ export function readFailRate(search: string): number {
 	return Number.isFinite(value) && value > 0 ? Math.min(value, 1) : 0;
 }
 
+/** A fresh id for records the mock creates, e.g. `u1-x3f9c2a1b`. */
+export function newId(prefix: string): string {
+	return `${prefix}${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`;
+}
+
+/** The slice of a Zod schema `validate` needs (mobile does not depend on zod directly). */
+interface Parseable<T> {
+	safeParse(
+		value: unknown
+	): { success: true; data: T } | { success: false; error: { issues: unknown } };
+}
+
+/** Parses like the API would. @throws AppError VALIDATION_FAILED with the Zod issues. */
+export function validate<T>(schema: Parseable<T>, value: unknown): T {
+	const result = schema.safeParse(value);
+	if (!result.success) {
+		throw new AppError('VALIDATION_FAILED', 'Invalid request', result.error.issues);
+	}
+	return result.data;
+}
+
 function delay(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }

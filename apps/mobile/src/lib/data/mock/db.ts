@@ -24,8 +24,15 @@ export interface SeedMeta {
 	seededAt: string;
 }
 
+/** Demo sign-in state: the active account and every account signed in on this device. */
+export interface SessionMeta {
+	userId: string | null;
+	accounts: { id: string; signedInAt: string }[];
+}
+
 export interface MetaValues {
 	seed: SeedMeta;
+	session: SessionMeta;
 }
 
 export interface NemDB extends DBSchema {
@@ -68,6 +75,15 @@ export async function getMeta<K extends keyof MetaValues>(
 	key: K
 ): Promise<MetaValues[K] | undefined> {
 	return (await db.get('meta', key)) as MetaValues[K] | undefined;
+}
+
+/** Writes a typed value to the meta store. */
+export async function setMeta<K extends keyof MetaValues>(
+	db: MockDb,
+	key: K,
+	value: MetaValues[K]
+): Promise<void> {
+	await db.put('meta', value, key);
 }
 
 /** Writes the seed on first run. Returns true when it seeded, false when data was already there. */
