@@ -19,6 +19,7 @@
 	--ion-overlay-background-color: var(--nm-color-surface-2);
 	--ion-placeholder-color: var(--nm-color-text-subtle);
 	--ion-backdrop-color: var(--nm-color-scrim);
+	--ion-font-family: var(--nm-font-body);
 
 	--ion-color-primary: var(--nm-color-accent);
 	--ion-color-primary-rgb: 112, 80, 245;

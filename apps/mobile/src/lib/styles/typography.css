@@ -1,0 +1,149 @@
+/*
+ * Aurora Noir typography: self-hosted variable fonts, a type scale and text
+ * utility classes. Fonts are OFL-1.1 (@fontsource-variable), bundled by Vite,
+ * and load with font-display: swap, so text renders at once in the fallback.
+ *
+ * Sizes are in rem, so the whole scale follows the user's text size setting.
+ */
+
+@import '@fontsource-variable/space-grotesk/wght.css';
+@import '@fontsource-variable/inter/wght.css';
+
+:root {
+	/* Families */
+	--nm-font-display: 'Space Grotesk Variable', system-ui, sans-serif;
+	--nm-font-body: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+	--nm-font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Consolas, monospace;
+
+	/* Type scale (mobile first) */
+	--nm-text-display: 2.5rem; /* 40px */
+	--nm-text-title-1: 1.75rem; /* 28px */
+	--nm-text-title-2: 1.375rem; /* 22px */
+	--nm-text-title-3: 1.125rem; /* 18px */
+	--nm-text-body-lg: 1.0625rem; /* 17px */
+	--nm-text-body: 0.9375rem; /* 15px */
+	--nm-text-label: 0.875rem; /* 14px */
+	--nm-text-caption: 0.75rem; /* 12px */
+	--nm-text-micro: 0.6875rem; /* 11px */
+
+	/* Weights */
+	--nm-weight-regular: 400;
+	--nm-weight-medium: 500;
+	--nm-weight-semibold: 600;
+	--nm-weight-bold: 700;
+
+	/* Line heights */
+	--nm-leading-tight: 1.15;
+	--nm-leading-snug: 1.3;
+	--nm-leading-normal: 1.5;
+
+	/* Letter spacing */
+	--nm-tracking-tight: -0.02em;
+	--nm-tracking-normal: 0;
+	--nm-tracking-wide: 0.04em;
+
+	/* Gradient for display text. Decorative accents are too light on paper,
+	   so light swaps in the deeper *-text shades. */
+	--nm-gradient-aurora-text: var(--nm-gradient-aurora);
+}
+
+:root[data-theme='light'] {
+	--nm-gradient-aurora-text: linear-gradient(
+		120deg,
+		var(--nm-color-accent-text),
+		var(--nm-color-cyan-text),
+		var(--nm-color-lime-text)
+	);
+}
+
+.nm-text-display,
+.nm-text-title-1,
+.nm-text-title-2,
+.nm-text-title-3 {
+	font-family: var(--nm-font-display);
+	font-weight: var(--nm-weight-bold);
+	line-height: var(--nm-leading-tight);
+	letter-spacing: var(--nm-tracking-tight);
+}
+
+.nm-text-display {
+	font-size: var(--nm-text-display);
+}
+
+.nm-text-title-1 {
+	font-size: var(--nm-text-title-1);
+}
+
+.nm-text-title-2 {
+	font-size: var(--nm-text-title-2);
+	font-weight: var(--nm-weight-semibold);
+	line-height: var(--nm-leading-snug);
+}
+
+.nm-text-title-3 {
+	font-size: var(--nm-text-title-3);
+	font-weight: var(--nm-weight-semibold);
+	line-height: var(--nm-leading-snug);
+	letter-spacing: var(--nm-tracking-normal);
+}
+
+.nm-text-body-lg,
+.nm-text-body,
+.nm-text-label,
+.nm-text-caption,
+.nm-text-micro {
+	font-family: var(--nm-font-body);
+	font-weight: var(--nm-weight-regular);
+	line-height: var(--nm-leading-normal);
+}
+
+.nm-text-body-lg {
+	font-size: var(--nm-text-body-lg);
+}
+
+.nm-text-body {
+	font-size: var(--nm-text-body);
+}
+
+.nm-text-label {
+	font-size: var(--nm-text-label);
+	font-weight: var(--nm-weight-medium);
+	line-height: var(--nm-leading-snug);
+}
+
+.nm-text-caption {
+	font-size: var(--nm-text-caption);
+	line-height: var(--nm-leading-snug);
+}
+
+.nm-text-micro {
+	font-size: var(--nm-text-micro);
+	font-weight: var(--nm-weight-semibold);
+	line-height: var(--nm-leading-snug);
+	letter-spacing: var(--nm-tracking-wide);
+	text-transform: uppercase;
+}
+
+.nm-text-muted {
+	color: var(--nm-color-text-muted);
+}
+
+.nm-text-subtle {
+	color: var(--nm-color-text-subtle);
+}
+
+.nm-text-gradient {
+	background: var(--nm-gradient-aurora-text);
+	background-clip: text;
+	color: transparent;
+}
+
+.nm-text-truncate {
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.nm-text-numeric {
+	font-variant-numeric: tabular-nums;
+}
