@@ -24,3 +24,17 @@ export function errorMessage(error: unknown, fallback = 'Something went wrong.')
 	}
 	return MESSAGES[appError.code] ?? fallback;
 }
+
+/** Title and message for the global error page (+error.svelte) by HTTP status. */
+export function errorPageCopy(status: number): { title: string; message: string } {
+	if (status === 404) {
+		return {
+			title: 'Page not found',
+			message: "This page doesn't exist or has moved. Head back to your inbox."
+		};
+	}
+	return {
+		title: 'Something went wrong',
+		message: 'This screen hit an error. Try again, or head back to your inbox.'
+	};
+}

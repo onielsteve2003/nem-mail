@@ -10,6 +10,7 @@
 	import { page } from '$app/state';
 	import Drawer from '#components/layout/Drawer.svelte';
 	import Splash from '#components/layout/Splash.svelte';
+	import OfflineBanner from '#components/ui/OfflineBanner.svelte';
 	import Toaster from '#components/ui/Toaster.svelte';
 	import { config } from '#lib/config.js';
 	import { createRepositories, setRepositories } from '#lib/data/provider.js';
@@ -124,10 +125,21 @@
 			onretry={() => void session.restore()}
 		/>
 	{/if}
+	<OfflineBanner class="nm-offline" />
 	<Toaster />
 </ion-app>
 
 <style>
+	/* Over every screen, under sheets and toasts; clears the status bar. */
+	:global(.nm-offline) {
+		position: fixed;
+		inset-block-start: 0;
+		inset-inline: 0;
+		z-index: var(--nm-z-overlay);
+	}
+	:global(.nm-offline) > :global(*) {
+		padding-block-start: calc(var(--nm-safe-top) + var(--nm-space-2));
+	}
 	.main,
 	.page {
 		block-size: 100%;
