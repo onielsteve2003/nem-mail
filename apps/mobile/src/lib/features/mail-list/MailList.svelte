@@ -203,6 +203,12 @@
 								selecting={selection.isActive}
 								onselect={() => selection.toggle(thread.id)}
 								onlongpress={() => selection.select([thread.id])}
+								onstar={() =>
+									void mailbox.apply([thread.id], { op: thread.isStarred ? 'unstar' : 'star' })}
+								onimportant={() =>
+									void mailbox.apply([thread.id], {
+										op: thread.isImportant ? 'markNotImportant' : 'markImportant'
+									})}
 							/>
 						</SwipeRow>
 					{/snippet}

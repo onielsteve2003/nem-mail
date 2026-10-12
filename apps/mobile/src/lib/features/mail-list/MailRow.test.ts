@@ -95,4 +95,29 @@ describe('MailRow', () => {
 		expect(onselect).toHaveBeenCalledOnce();
 		expect(isPrevented).toBe(true);
 	});
+
+	it('toggles star and important without opening the thread', async () => {
+		const onstar = vi.fn();
+		const onimportant = vi.fn();
+		const { container } = render(MailRow, {
+			thread: makeThread({ isStarred: false }),
+			href: '/t1',
+			now: NOW,
+			onstar,
+			onimportant
+		});
+		const star = screen.getByRole('button', { name: 'Starred' });
+		expect(star).toHaveAttribute('aria-pressed', 'false');
+		expect(screen.getByRole('button', { name: 'Important' })).toHaveAttribute(
+			'aria-pressed',
+			'true'
+		);
+		await fireEvent.click(star);
+		expect(onstar).toHaveBeenCalledOnce();
+		expect(container.querySelectorAll('.mark__spark')).toHaveLength(6);
+		await fireEvent.click(screen.getByRole('button', { name: 'Important' }));
+		expect(onimportant).toHaveBeenCalledOnce();
+		// The marks are buttons now, so the link no longer repeats them.
+		expect(screen.getByRole('link')).not.toHaveTextContent('Starred');
+	});
 });

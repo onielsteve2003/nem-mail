@@ -17,6 +17,7 @@
 	import LabelPill from '#components/ui/LabelPill.svelte';
 	import { MAX_ATTACHMENT_CHIPS, listTime, senderLine } from './format.js';
 	import { longPress } from './long-press.js';
+	import MarkToggle from './MarkToggle.svelte';
 
 	const UNREAD = 'Unread';
 	const STARRED = 'Starred';
@@ -47,6 +48,10 @@
 		selecting?: boolean;
 		/** A long press on the row, which starts multi-select. */
 		onlongpress?: () => void;
+		/** Makes the star a toggle button (with a burst when it turns on). */
+		onstar?: () => void;
+		/** Makes the important marker a toggle button. */
+		onimportant?: () => void;
 		/** AI badge slot, e.g. a category or priority explanation (M10). */
 		ai?: Snippet;
 	}
@@ -63,6 +68,8 @@
 		onselect,
 		selecting = false,
 		onlongpress,
+		onstar,
+		onimportant,
 		ai
 	}: Props = $props();
 
@@ -116,7 +123,7 @@
 					{thread.messageCount}
 				</span>
 			{/if}
-			{#if thread.isImportant}
+			{#if thread.isImportant && !onimportant}
 				<Icon icon={Bookmark} size="sm" label={IMPORTANT} class="row__important" />
 			{/if}
 			<time class="row__time nm-text-numeric" datetime={thread.lastMessageAt}>{time}</time>
@@ -128,7 +135,7 @@
 				{#if thread.attachments.length > 0 && !showFiles}
 					<Icon icon={Paperclip} size="sm" label={HAS_ATTACHMENTS} />
 				{/if}
-				{#if thread.isStarred}
+				{#if thread.isStarred && !onstar}
 					<Icon icon={Star} size="sm" label={STARRED} class="row__star" />
 				{/if}
 			</span>
@@ -153,6 +160,29 @@
 			</span>
 		{/if}
 	</a>
+	{#if onstar || onimportant}
+		<span class="row__toggles">
+			{#if onstar}
+				<MarkToggle
+					icon={Star}
+					label={STARRED}
+					pressed={thread.isStarred}
+					burst
+					disabled={selecting}
+					ontoggle={onstar}
+				/>
+			{/if}
+			{#if onimportant}
+				<MarkToggle
+					icon={Bookmark}
+					label={IMPORTANT}
+					pressed={thread.isImportant}
+					disabled={selecting}
+					ontoggle={onimportant}
+				/>
+			{/if}
+		</span>
+	{/if}
 </div>
 
 <style>
@@ -236,6 +266,17 @@
 		flex: none;
 		color: var(--nm-color-amber);
 		fill: currentColor;
+	}
+	/* 44px targets that overlap the row padding instead of growing the row. */
+	.row__toggles {
+		display: flex;
+		flex: none;
+		flex-direction: column;
+		margin-block: calc(-1 * var(--nm-space-3));
+		margin-inline: calc(-1 * var(--nm-space-3)) calc(-1 * var(--nm-space-4));
+	}
+	.row--compact .row__toggles {
+		flex-direction: row;
 	}
 	.row__snippet {
 		display: -webkit-box;
