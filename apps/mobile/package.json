@@ -50,6 +50,7 @@
     "@ionic/core": "9.0.7",
     "@lucide/svelte": "1.45.0",
     "@nem/shared": "*",
+    "dompurify": "3.4.16",
     "idb": "8.0.3"
   }
 }

@@ -3,6 +3,7 @@
 	import type { Address, Message } from '@nem/shared';
 	import Avatar from '#components/ui/Avatar.svelte';
 	import Icon from '#components/ui/Icon.svelte';
+	import EmailBody from './EmailBody.svelte';
 	import { addressName, fullTime, messageTime, recipientLine } from './messages.js';
 
 	const UNREAD = 'Unread';
@@ -78,7 +79,9 @@
 				<dd>{fullTime(message.sentAt)}</dd>
 			</dl>
 		{/if}
-		<div class="card__body nm-text-body">{message.bodyText}</div>
+		<div class="card__body nm-text-body">
+			<EmailBody html={message.bodyHtml} text={message.bodyText} />
+		</div>
 	{/if}
 </article>
 
@@ -168,8 +171,5 @@
 	}
 	.card__body {
 		padding: var(--nm-space-2) var(--nm-space-4) var(--nm-space-5);
-		color: var(--nm-color-text);
-		white-space: pre-wrap;
-		overflow-wrap: anywhere;
 	}
 </style>
