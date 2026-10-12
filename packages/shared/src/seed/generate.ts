@@ -66,6 +66,8 @@ interface AccountPlan {
 /** The seeded demo accounts (FR-1.1, FR-1.3); "Try the demo" signs in as the first. */
 export const DEMO_EMAIL = 'alex@nemmail.example';
 export const DEMO_WORK_EMAIL = 'alex.work@nemmail.example';
+/** The mock ignores the password, but the sign-in schema still asks for one. */
+export const DEMO_PASSWORD = 'demo-account';
 
 const PLANS: readonly AccountPlan[] = [
 	{

@@ -1,12 +1,9 @@
 <script lang="ts">
-	import { DEMO_EMAIL } from '@nem/shared';
+	import { DEMO_EMAIL, DEMO_PASSWORD } from '@nem/shared';
 	import AuroraBackground from '#components/ui/AuroraBackground.svelte';
 	import OnboardingCarousel from '#features/onboarding/OnboardingCarousel.svelte';
 	import { getSessionStore } from '#lib/stores/session.svelte.js';
 	import { errorMessage } from '#lib/utils/errors.js';
-
-	// The mock ignores the password, but the sign-in schema still asks for one.
-	const DEMO_PASSWORD = 'demo-account';
 
 	const session = getSessionStore();
 	let starting = $state(false);
