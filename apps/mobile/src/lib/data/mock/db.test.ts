@@ -41,7 +41,7 @@ describe('mock IndexedDB', () => {
 		const db = await freshDb();
 		expect(await seedIfEmpty(db, { now: NOW })).toBe(true);
 		expect(await getMeta(db, 'seed')).toEqual({
-			seed: 'nem-mail-demo',
+			seed: 'nem-mail-demo-2',
 			seededAt: NOW.toISOString()
 		});
 		expect(await db.count('users')).toBe(2);
@@ -53,6 +53,10 @@ describe('mock IndexedDB', () => {
 		await db.delete('threads', 'u2-t1');
 		expect(await seedIfEmpty(db, { now: NOW })).toBe(false);
 		expect(await db.get('threads', 'u2-t1')).toBeUndefined();
+
+		// A changed demo seed replaces the old data once.
+		expect(await seedIfEmpty(db, { now: NOW, seed: 'next' })).toBe(true);
+		expect(await getMeta(db, 'seed')).toMatchObject({ seed: 'next' });
 	});
 
 	it('resetToSeed restores the seed and drops user data', async () => {

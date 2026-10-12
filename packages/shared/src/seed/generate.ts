@@ -20,7 +20,7 @@ import {
 } from './corpus';
 import { createRng, type Rng } from './prng';
 
-export const DEFAULT_SEED = 'nem-mail-demo';
+export const DEFAULT_SEED = 'nem-mail-demo-2';
 
 export interface SeedOptions {
 	seed?: string;
@@ -186,6 +186,10 @@ function conversationThread(ctx: AccountCtx, id: string, lastAt: number): Thread
 	const { rng, me, now } = ctx;
 	const def: ConversationDef = rng.pick(CONVERSATIONS);
 	const other = rng.pick(ctx.people);
+	// Some threads copy in one or two more people, so the demo has mail where Reply all applies.
+	const cc = rng.chance(0.3)
+		? [...new Set([rng.pick(ctx.people), rng.pick(ctx.people)])].filter((p) => p !== other)
+		: [];
 	const fill = filler(rng, { from: firstName(other) });
 	const count = rng.pick([1, 1, 2, 2, 2, 3, 3, 4]);
 	const meFirst = rng.chance(0.3);
@@ -213,6 +217,7 @@ function conversationThread(ctx: AccountCtx, id: string, lastAt: number): Thread
 				threadId: id,
 				from,
 				to: [to],
+				cc,
 				subject: j === 0 ? subject : `Re: ${subject}`,
 				paragraphs: [...paragraphs, firstName(from)],
 				html: rng.chance(0.3),
@@ -314,6 +319,7 @@ interface MessageInput {
 	threadId: string;
 	from: Address;
 	to: Address[];
+	cc?: Address[];
 	subject: string;
 	paragraphs: string[];
 	html: boolean;
@@ -332,7 +338,7 @@ function makeMessage(input: MessageInput): Message {
 		threadId: input.threadId,
 		from: input.from,
 		to: input.to,
-		cc: [],
+		cc: input.cc ?? [],
 		bcc: [],
 		subject: input.subject,
 		bodyHtml,

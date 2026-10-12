@@ -1,4 +1,5 @@
 import {
+	DEFAULT_SEED,
 	generateSeed,
 	type Contact,
 	type Draft,
@@ -86,9 +87,12 @@ export async function setMeta<K extends keyof MetaValues>(
 	await db.put('meta', value, key);
 }
 
-/** Writes the seed on first run. Returns true when it seeded, false when data was already there. */
+/**
+ * Writes the seed on first run, or again when the demo seed itself changed
+ * (a new DEFAULT_SEED). Returns true when it seeded, false when data was already there.
+ */
 export async function seedIfEmpty(db: MockDb, options: SeedOptions = {}): Promise<boolean> {
-	if (await getMeta(db, 'seed')) return false;
+	if ((await getMeta(db, 'seed'))?.seed === (options.seed ?? DEFAULT_SEED)) return false;
 	await writeSeed(db, generateSeed(options));
 	return true;
 }
