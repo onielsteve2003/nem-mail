@@ -1,10 +1,14 @@
 <script lang="ts">
-	import { afterNavigate, beforeNavigate } from '$app/navigation';
+	import { MediaQuery } from 'svelte/reactivity';
+	import { afterNavigate, beforeNavigate, goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 	import AccountSheet from '#components/layout/AccountSheet.svelte';
+	import ReadingPane from '#components/layout/ReadingPane.svelte';
 	import SearchBar from '#components/layout/SearchBar.svelte';
 	import { getSessionStore } from '#lib/stores/session.svelte.js';
 	import { getUiStore } from '#lib/stores/ui.svelte.js';
+	import { TWO_PANE_QUERY, readingThreadId, withReadingThread } from '#lib/utils/reading-pane.js';
 	import { SCROLL_HIDE_INITIAL, nextScrollHide } from '#lib/utils/scroll-hide.js';
 	import type { LayoutProps } from './$types';
 
@@ -17,6 +21,20 @@
 	const ui = getUiStore();
 	let scrollHide = $state(SCROLL_HIDE_INITIAL);
 	let shell = $state<HTMLDivElement>();
+
+	// Two panes at >= 900px: the list plus a reading pane driven by ?thread=.
+	const twoPane = new MediaQuery(TWO_PANE_QUERY, false);
+	const threadId = $derived(readingThreadId(page.url));
+	// Narrowing the window with a thread open shows that thread full screen.
+	$effect(() => {
+		if (twoPane.current || !threadId) return;
+		void goto(resolve('/mail/thread/[threadId]', { threadId }), { replaceState: true });
+	});
+
+	function closeThread(): void {
+		// eslint-disable-next-line svelte/no-navigation-without-resolve -- the current resolved path with ?thread= removed
+		void goto(withReadingThread(page.url, null));
+	}
 
 	// Each mailbox and label keeps its own scroll position (the window never scrolls here).
 	beforeNavigate(({ from }) => {
@@ -33,20 +51,31 @@
 	}
 </script>
 
-<!-- List screens scroll inside this shell, under the floating search bar. -->
-<div class="shell" bind:this={shell} {onscroll}>
-	<SearchBar
-		searchHref={resolve('/search')}
-		accountName={session.user?.name ?? ''}
-		onmenu={() => ui.openDrawer()}
-		onaccount={() => ui.openSheet(ACCOUNT_SHEET)}
-		hidden={!scrollHide.isVisible}
-	/>
-	{@render children()}
+<div class="panes">
+	<!-- List screens scroll inside this shell, under the floating search bar. -->
+	<div class="shell" bind:this={shell} {onscroll}>
+		<SearchBar
+			searchHref={resolve('/search')}
+			accountName={session.user?.name ?? ''}
+			onmenu={() => ui.openDrawer()}
+			onaccount={() => ui.openSheet(ACCOUNT_SHEET)}
+			hidden={!scrollHide.isVisible}
+		/>
+		{@render children()}
+	</div>
+	{#if twoPane.current}
+		<ReadingPane {threadId} onclose={closeThread} />
+	{/if}
 </div>
 <AccountSheet open={ui.isSheetOpen(ACCOUNT_SHEET)} onclose={() => ui.closeSheet(ACCOUNT_SHEET)} />
 
 <style>
+	@media (min-width: 900px) {
+		.panes {
+			display: grid;
+			grid-template-columns: minmax(22rem, 26rem) 1fr;
+		}
+	}
 	.shell {
 		block-size: var(--nm-viewport-height);
 		overflow-y: auto;
