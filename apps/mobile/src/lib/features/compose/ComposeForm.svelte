@@ -57,6 +57,14 @@
 		notSaved: 'Not saved',
 		restoreFailed: "Couldn't open the draft. Starting a new message."
 	};
+	const EMPTY_FIELDS: DraftFields = {
+		to: [],
+		cc: [],
+		bcc: [],
+		subject: '',
+		bodyHtml: '',
+		attachments: []
+	};
 
 	interface Props {
 		request: ComposeRequest | null;
@@ -111,13 +119,15 @@
 	});
 	const currentKey = $derived(draftKey(fields()));
 
-	// Everything starts here once, when compose opens.
+	let ready: Promise<void> = Promise.resolve();
+
+	// Everything starts here once, when compose opens. The baseline is what compose
+	// filled in itself, so anything typed while settings or the draft loaded still counts.
 	$effect(() => {
 		if (!request) return;
-		untrack(async () => {
-			if (request.draftId) await restore(request.draftId);
-			else await start(request);
-			savedKey = draftKey(fields());
+		ready = untrack(async () => {
+			const baseline = request.draftId ? await restore(request.draftId) : await start(request);
+			savedKey = draftKey(baseline);
 			isReady = true;
 		});
 	});
@@ -130,10 +140,12 @@
 	});
 
 	// Closing (X, Escape, Back or navigation) saves at once instead of waiting.
+	// Compose can close before it finished loading; the save then waits for it.
 	onDestroy(() => {
 		clearTimeout(saveTimer);
-		if (isClosed || !isReady || draftKey(fields()) === savedKey) return;
-		void save().then((ok) => {
+		void ready.then(async () => {
+			if (isClosed || draftKey(fields()) === savedKey) return;
+			const ok = await save();
 			if (ok) toastStore.show({ message: COPY.saved });
 			else toastStore.show({ message: COPY.notSaved, tone: 'error' });
 		});
@@ -231,8 +243,11 @@
 		toastStore.show({ message: COPY.discarded });
 	}
 
-	/** Opens a saved draft (FR-5.5); if it cannot load, compose starts fresh under a new id. */
-	async function restore(id: string) {
+	/**
+	 * Opens a saved draft (FR-5.5); if it cannot load, compose starts fresh under a new id.
+	 * Returns the fields as loaded.
+	 */
+	async function restore(id: string): Promise<DraftFields> {
 		try {
 			const draft = await repos.drafts.get(id);
 			draftId = draft.id;
@@ -244,39 +259,49 @@
 			subject = draft.subject;
 			bodyHtml = draft.bodyHtml;
 			attachments = draft.attachments.map(readyAttachment);
+			return fields();
 		} catch {
 			toastStore.show({ message: COPY.restoreFailed, tone: 'error' });
-			await start({ mode: 'new', threadId: null, messageId: null });
+			return start({ mode: 'new', threadId: null, messageId: null });
 		}
 	}
 
 	/**
 	 * Fills in the signature (FR-5.8) and, for a reply or forward, the recipients,
 	 * subject and quote (FR-5.1). Only empty fields are filled, so nothing the
-	 * user typed while settings loaded is lost.
+	 * user typed while settings loaded is lost. Returns what it filled in.
 	 */
-	async function start({ mode, threadId, messageId }: ComposeRequest) {
+	async function start({ mode, threadId, messageId }: ComposeRequest): Promise<DraftFields> {
 		// No signature is better than a broken compose; the user can still write.
 		const signature = await repos.settings
 			.get()
 			.then((settings) => settings.signature)
 			.catch(() => '');
+		const blank = { ...EMPTY_FIELDS, bodyHtml: initialBody(signature) };
 		if (mode === 'new' || !threadId || !messageId) {
-			if (!bodyHtml) bodyHtml = initialBody(signature);
-			return;
+			if (!bodyHtml) bodyHtml = blank.bodyHtml;
+			return blank;
 		}
 		await threads.load(threadId);
 		const message = threads.get(threadId)?.thread?.messages.find((m) => m.id === messageId);
 		if (!message) {
-			if (!bodyHtml) bodyHtml = initialBody(signature);
-			return;
+			if (!bodyHtml) bodyHtml = blank.bodyHtml;
+			return blank;
 		}
 		const fill = prefill(mode, message, session.user?.email, signature);
-		if (!to.length) to = fromAddresses(fill.to);
-		if (!cc.length) cc = fromAddresses(fill.cc);
+		const filled = {
+			...EMPTY_FIELDS,
+			to: fromAddresses(fill.to),
+			cc: fromAddresses(fill.cc),
+			subject: fill.subject,
+			bodyHtml: fill.bodyHtml
+		};
+		if (!to.length) to = filled.to;
+		if (!cc.length) cc = filled.cc;
 		if (cc.length) showCcBcc = true;
-		if (!subject) subject = fill.subject;
-		if (!bodyHtml) bodyHtml = fill.bodyHtml;
+		if (!subject) subject = filled.subject;
+		if (!bodyHtml) bodyHtml = filled.bodyHtml;
+		return filled;
 	}
 
 	function addFiles(list: FileList | null) {

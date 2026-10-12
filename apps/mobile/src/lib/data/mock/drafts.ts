@@ -71,7 +71,8 @@ export class MockDraftRepository implements DraftRepository {
 				mime: file.type || 'application/octet-stream',
 				size: file.size
 			};
-			await db.put('blobs', file, attachment.id);
+			const bytes = await file.arrayBuffer();
+			await db.put('blobs', { bytes, type: attachment.mime }, attachment.id);
 			return attachment;
 		});
 	}

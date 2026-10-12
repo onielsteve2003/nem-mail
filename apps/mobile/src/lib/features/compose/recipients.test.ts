@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { addRecipients, parseRecipient, parseRecipients, toAddresses } from './recipients.js';
+import {
+	addRecipients,
+	fromAddresses,
+	isSeparatorKey,
+	parseRecipient,
+	parseRecipients,
+	toAddresses
+} from './recipients.js';
 
 describe('parseRecipient', () => {
 	it('reads bare and named addresses, lowercasing the email', () => {
@@ -41,5 +48,25 @@ describe('addRecipients and toAddresses', () => {
 		);
 		expect(list.map((r) => r.email)).toEqual(['a@x.com', 'bad', 'b@x.com']);
 		expect(toAddresses(list)).toEqual([{ email: 'a@x.com' }, { email: 'b@x.com' }]);
+	});
+});
+
+describe('recipient edge cases', () => {
+	it('keeps the name on an invalid named address so the chip can show it', () => {
+		expect(parseRecipient('Ada <nope>')).toMatchObject({ email: 'nope', isValid: false });
+		expect(parseRecipient('ada@example')?.isValid).toBe(false);
+	});
+
+	it('treats comma, semicolon and Enter as chip separators', () => {
+		expect([',', ';', 'Enter'].every(isSeparatorKey)).toBe(true);
+		expect(isSeparatorKey('a')).toBe(false);
+		expect(isSeparatorKey(' ')).toBe(false);
+	});
+
+	it('round-trips saved draft addresses back into chips', () => {
+		const addresses = [{ email: 'ada@example.com', name: 'Ada' }, { email: 'b@x.com' }];
+		const chips = fromAddresses(addresses);
+		expect(chips.every((r) => r.isValid)).toBe(true);
+		expect(toAddresses(chips)).toEqual(addresses);
 	});
 });

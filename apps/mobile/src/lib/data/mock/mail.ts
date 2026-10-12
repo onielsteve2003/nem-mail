@@ -79,8 +79,9 @@ export class MockMailRepository implements MailRepository {
 	/** The attachment's bytes; seed attachments get a small placeholder file or picture. */
 	getAttachment(attachmentId: string): Promise<Blob> {
 		return this.#ctx.authed(async (db, userId) => {
-			const blob = await db.get('blobs', attachmentId);
-			if (blob) return blob;
+			const stored = await db.get('blobs', attachmentId);
+			if (stored instanceof Blob) return stored;
+			if (stored) return new Blob([stored.bytes], { type: stored.type });
 			for (const thread of await ownThreads(db, userId)) {
 				for (const message of thread.messages) {
 					const found = message.attachments.find((a) => a.id === attachmentId);

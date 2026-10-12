@@ -193,6 +193,9 @@ describe('MockDraftRepository', () => {
 		const attachment = await drafts.uploadAttachment(file);
 		expect(attachment).toMatchObject({ filename: 'note.txt', mime: 'text/plain', size: 5 });
 		expect(await db.get('blobs', attachment.id)).toBeDefined();
+		const read = await new MockMailRepository(ctx).getAttachment(attachment.id);
+		expect(read.type).toBe('text/plain');
+		expect(await read.text()).toBe('hello');
 
 		const big = new File(['x'], 'big.bin');
 		Object.defineProperty(big, 'size', { value: 11 * 1024 * 1024 });

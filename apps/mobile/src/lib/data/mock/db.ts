@@ -44,11 +44,21 @@ export interface NemDB extends DBSchema {
 	contacts: { key: string; value: Owned<Contact>; indexes: { byOwner: string } };
 	drafts: { key: string; value: Owned<Draft>; indexes: { byOwner: string } };
 	settings: { key: string; value: Owned<Settings> };
-	/** Attachment bytes by attachment id (uploads); seed attachments have none. */
-	blobs: { key: string; value: Blob };
+	/**
+	 * Attachment bytes by attachment id (uploads); seed attachments have none.
+	 * Stored as an ArrayBuffer because some WebKit builds cannot put a Blob in
+	 * IndexedDB; older entries may still be Blobs.
+	 */
+	blobs: { key: string; value: StoredBytes | Blob };
 }
 
 export type MockDb = IDBPDatabase<NemDB>;
+
+/** An uploaded file's bytes and MIME type. */
+export interface StoredBytes {
+	bytes: ArrayBuffer;
+	type: string;
+}
 
 const OWNED_STORES = ['threads', 'labels', 'contacts', 'drafts'] as const;
 const ALL_STORES = ['meta', 'users', ...OWNED_STORES, 'settings', 'blobs'] as const;

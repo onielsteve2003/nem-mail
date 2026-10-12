@@ -61,6 +61,23 @@ describe('replyRecipients', () => {
 	});
 });
 
+describe('reply all edge cases', () => {
+	it('drops the user from Cc too, whatever the case', () => {
+		const onlyCc = message({
+			to: [{ email: 'grace@example.com' }],
+			cc: [{ email: 'Me@Nem.Mail' }]
+		});
+		const { to, cc } = replyRecipients('replyAll', onlyCc, ME);
+		expect(emails(to)).toEqual(['ada@example.com', 'grace@example.com']);
+		expect(cc).toEqual([]);
+	});
+
+	it('is the same as reply when only the sender and the user are on it', () => {
+		const pair = message({ to: [{ email: ME }], cc: [] });
+		expect(replyRecipients('replyAll', pair, ME)).toEqual(replyRecipients('reply', pair, ME));
+	});
+});
+
 describe('prefill', () => {
 	it('quotes the sanitized original under the signature for a reply', () => {
 		const result = prefill('reply', message(), ME, 'Me');
