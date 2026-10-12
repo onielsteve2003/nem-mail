@@ -4,7 +4,7 @@ const DARK_BG = 'rgb(11, 11, 20)';
 const LIGHT_BG = 'rgb(250, 247, 242)';
 
 const backgroundOf = (page: import('@playwright/test').Page) =>
-	page.locator('main').evaluate((el) => getComputedStyle(el).backgroundColor);
+	page.locator('body').evaluate((el) => getComputedStyle(el).backgroundColor);
 
 test('follows the system light setting', async ({ page }) => {
 	await page.emulateMedia({ colorScheme: 'light' });

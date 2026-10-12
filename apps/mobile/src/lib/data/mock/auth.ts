@@ -13,9 +13,8 @@ import type { AuthRepository } from '../repositories.js';
 import { newId, validate, type MockContext } from './context.js';
 import { getMeta, setMeta, type MockDb, type SessionMeta } from './db.js';
 
-/** The seeded demo accounts (FR-1.1, FR-1.3). Demo sign-in ignores the password. */
-export const DEMO_EMAIL = 'alex@nemmail.example';
-export const DEMO_WORK_EMAIL = 'alex.work@nemmail.example';
+// The seeded demo accounts live in @nem/shared so the onboarding screen can name them.
+export { DEMO_EMAIL, DEMO_WORK_EMAIL } from '@nem/shared';
 
 const SESSION_DAYS = 30;
 const EMPTY_SESSION: SessionMeta = { userId: null, accounts: [] };

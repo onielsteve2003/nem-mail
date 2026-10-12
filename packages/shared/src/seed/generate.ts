@@ -63,11 +63,15 @@ interface AccountPlan {
 	extras: boolean;
 }
 
+/** The seeded demo accounts (FR-1.1, FR-1.3); "Try the demo" signs in as the first. */
+export const DEMO_EMAIL = 'alex@nemmail.example';
+export const DEMO_WORK_EMAIL = 'alex.work@nemmail.example';
+
 const PLANS: readonly AccountPlan[] = [
 	{
 		id: 'u1',
 		name: 'Alex Rivera',
-		email: 'alex@nemmail.example',
+		email: DEMO_EMAIL,
 		threadCount: 360,
 		mix: { primary: 34, promotions: 18, social: 13, updates: 18, forums: 7, spam: 10 },
 		labelKeys: LABEL_DEFS.map((def) => def.key),
@@ -76,7 +80,7 @@ const PLANS: readonly AccountPlan[] = [
 	{
 		id: 'u2',
 		name: 'Alex Rivera',
-		email: 'alex.work@nemmail.example',
+		email: DEMO_WORK_EMAIL,
 		threadCount: 40,
 		mix: { primary: 60, updates: 25, forums: 15 },
 		labelKeys: ['work', 'projects'],
