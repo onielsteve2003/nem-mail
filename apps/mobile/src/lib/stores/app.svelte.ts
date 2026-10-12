@@ -1,4 +1,5 @@
 import { untrack } from 'svelte';
+import { AIService, setAIService } from '#lib/ai/service.svelte.js';
 import type { Repositories } from '#lib/data/repositories.js';
 import { MailboxStore, setMailboxStore } from './mailbox.svelte.js';
 import { SelectionStore, setSelectionStore } from './selection.svelte.js';
@@ -13,6 +14,7 @@ export interface AppStores {
 	thread: ThreadStore;
 	selection: SelectionStore;
 	ui: UiStore;
+	ai: AIService;
 }
 
 /** Builds the stores over one set of repositories; `sync` checks for new mail (pull to refresh). */
@@ -23,7 +25,8 @@ export function createAppStores(repos: Repositories, sync?: () => Promise<void>)
 		mailbox: new MailboxStore({ mail: repos.mail, threads: thread, sync }),
 		thread,
 		selection: new SelectionStore(),
-		ui: new UiStore()
+		ui: new UiStore(),
+		ai: new AIService(repos.settings)
 	};
 }
 
@@ -34,6 +37,7 @@ export function setAppStores(stores: AppStores): void {
 	setThreadStore(stores.thread);
 	setSelectionStore(stores.selection);
 	setUiStore(stores.ui);
+	setAIService(stores.ai);
 }
 
 /**
@@ -45,6 +49,8 @@ export function resetOnUserChange(stores: AppStores): () => void {
 	return $effect.root(() => {
 		$effect(() => {
 			const userId = stores.session.user?.id ?? null;
+			// Each account has its own AI toggles.
+			if (userId) untrack(() => void stores.ai.loadToggles());
 			if (previous !== undefined && userId !== previous) {
 				untrack(() => {
 					stores.mailbox.reset();
