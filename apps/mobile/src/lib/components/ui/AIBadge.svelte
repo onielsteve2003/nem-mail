@@ -1,19 +1,25 @@
 <script lang="ts">
 	import Sparkles from '@lucide/svelte/icons/sparkles';
+	import type { AIInsight } from '@nem/shared';
 	import type { Snippet } from 'svelte';
 	import { fadeScale } from '#lib/motion/index.js';
 	import Icon from './Icon.svelte';
 
 	const BADGE_TEXT = 'AI';
 	const EXPLAIN_HINT = 'Why am I seeing this?';
+	const SOURCE_TEXT = { model: 'On-device model', heuristic: 'Rules, no model' } as const;
 
 	interface Props {
 		/** Tap-to-explain content, e.g. "Flagged as spam: 92% confidence". Makes the badge a button. */
 		explanation?: Snippet;
+		/** Explains an AI result (why, how sure, what made it) when no custom explanation is given. */
+		insight?: AIInsight<unknown>;
 		class?: string;
 	}
 
-	let { explanation, class: className }: Props = $props();
+	let { explanation: custom, insight, class: className }: Props = $props();
+
+	const explanation = $derived(custom ?? (insight ? insightText : undefined));
 
 	const panelId = $props.id();
 	let isOpen = $state(false);
@@ -38,6 +44,15 @@
 </script>
 
 <svelte:document onpointerdown={handleOutsidePointer} />
+
+{#snippet insightText()}
+	{#if insight}
+		<p class="ai-panel__why">{insight.explanation}</p>
+		<p class="ai-panel__meta">
+			{Math.round(insight.confidence * 100)}% confident · {SOURCE_TEXT[insight.source]}
+		</p>
+	{/if}
+{/snippet}
 
 {#snippet face()}
 	<Icon icon={Sparkles} size="sm" />
@@ -123,5 +138,14 @@
 		font-size: var(--nm-text-label);
 		line-height: var(--nm-leading-normal);
 		transform-origin: top left;
+	}
+	.ai-panel__why,
+	.ai-panel__meta {
+		margin: 0;
+	}
+	.ai-panel__meta {
+		margin-block-start: var(--nm-space-2);
+		color: var(--nm-color-text-muted);
+		font-size: var(--nm-text-caption);
 	}
 </style>

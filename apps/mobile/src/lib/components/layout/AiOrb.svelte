@@ -4,13 +4,22 @@
 
 	interface Props {
 		onclick: () => void;
+		/** Spins an aurora ring while the assistant works. */
+		isThinking?: boolean;
 	}
 
-	let { onclick }: Props = $props();
+	let { onclick, isThinking = false }: Props = $props();
 </script>
 
 <!-- Opens the AI assistant sheet (F8, M10). -->
-<button type="button" class="orb" aria-label="AI assistant" aria-haspopup="dialog" {onclick}>
+<button
+	type="button"
+	class={['orb', { 'orb--thinking': isThinking }]}
+	aria-label="AI assistant"
+	aria-haspopup="dialog"
+	aria-busy={isThinking}
+	{onclick}
+>
 	<Icon icon={Sparkles} size="md" />
 </button>
 
@@ -43,6 +52,30 @@
 		border-radius: inherit;
 		box-shadow: var(--nm-glow-violet), var(--nm-glow-cyan);
 		animation: breathe 3.2s var(--nm-ease-standard) infinite alternate;
+	}
+	/* Thinking: a conic aurora ring turning around the orb (transform only). */
+	.orb--thinking::after {
+		content: '';
+		position: absolute;
+		inset: calc(var(--nm-space-1) * -1);
+		z-index: -1;
+		border-radius: inherit;
+		background: conic-gradient(
+			var(--nm-color-violet),
+			var(--nm-color-cyan),
+			var(--nm-color-violet)
+		);
+		mask: radial-gradient(
+			farthest-side,
+			transparent calc(100% - 3px),
+			currentColor calc(100% - 2px)
+		);
+		animation: spin calc(var(--nm-duration-slower) * 2) linear infinite;
+	}
+	@keyframes spin {
+		to {
+			transform: rotate(1turn);
+		}
 	}
 	@keyframes breathe {
 		from {

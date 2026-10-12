@@ -4,6 +4,7 @@
 	import { getThemeStore } from '#lib/stores/theme.svelte.js';
 	import type { ThemePreference } from '#lib/utils/theme.js';
 	import ActionsGallery from './ActionsGallery.svelte';
+	import AIGallery from './AIGallery.svelte';
 	import InputsGallery from './InputsGallery.svelte';
 	import OverlaysGallery from './OverlaysGallery.svelte';
 	import StatesGallery from './StatesGallery.svelte';
@@ -38,6 +39,7 @@
 	<InputsGallery />
 	<OverlaysGallery />
 	<StatesGallery />
+	<AIGallery />
 </main>
 
 <style>
