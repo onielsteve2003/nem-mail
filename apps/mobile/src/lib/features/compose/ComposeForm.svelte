@@ -5,13 +5,17 @@
 	import Button from '#components/ui/Button.svelte';
 	import Icon from '#components/ui/Icon.svelte';
 	import IconButton from '#components/ui/IconButton.svelte';
+	import { untrack } from 'svelte';
 	import { getRepositories } from '#lib/data/provider.js';
+	import { getSessionStore } from '#lib/stores/session.svelte.js';
+	import { getThreadStore } from '#lib/stores/thread.svelte.js';
 	import type { ComposeRequest } from '#lib/stores/ui.svelte.js';
 	import { initialBody } from './body.js';
 	import BodyEditor from './BodyEditor.svelte';
 	import { composeTitle } from './compose.js';
+	import { prefill } from './prefill.js';
 	import RecipientField from './RecipientField.svelte';
-	import type { Recipient } from './recipients.js';
+	import { fromAddresses, type Recipient } from './recipients.js';
 
 	const COPY = {
 		close: 'Close compose',
@@ -33,6 +37,8 @@
 	let { request, titleId, onclose }: Props = $props();
 
 	const repos = getRepositories();
+	const session = getSessionStore();
+	const threads = getThreadStore();
 	const id = $props.id();
 	const title = $derived(composeTitle(request));
 
@@ -43,17 +49,39 @@
 	let subject = $state('');
 	let bodyHtml = $state('');
 
-	// The signature goes in once settings load, unless the user has already started typing (FR-5.8).
+	// Drafts are restored in T7.6; everything else starts here once, when compose opens.
 	$effect(() => {
-		if (request?.draftId) return;
-		repos.settings
-			.get()
-			.then((settings) => {
-				if (!bodyHtml) bodyHtml = initialBody(settings.signature);
-			})
-			// No signature is better than a broken compose; the user can still write.
-			.catch(() => {});
+		if (request && !request.draftId) untrack(() => start(request));
 	});
+
+	/**
+	 * Fills in the signature (FR-5.8) and, for a reply or forward, the recipients,
+	 * subject and quote (FR-5.1). Only empty fields are filled, so nothing the
+	 * user typed while settings loaded is lost.
+	 */
+	async function start({ mode, threadId, messageId }: ComposeRequest) {
+		// No signature is better than a broken compose; the user can still write.
+		const signature = await repos.settings
+			.get()
+			.then((settings) => settings.signature)
+			.catch(() => '');
+		if (mode === 'new' || !threadId || !messageId) {
+			if (!bodyHtml) bodyHtml = initialBody(signature);
+			return;
+		}
+		await threads.load(threadId);
+		const message = threads.get(threadId)?.thread?.messages.find((m) => m.id === messageId);
+		if (!message) {
+			if (!bodyHtml) bodyHtml = initialBody(signature);
+			return;
+		}
+		const fill = prefill(mode, message, session.user?.email, signature);
+		if (!to.length) to = fromAddresses(fill.to);
+		if (!cc.length) cc = fromAddresses(fill.cc);
+		if (cc.length) showCcBcc = true;
+		if (!subject) subject = fill.subject;
+		if (!bodyHtml) bodyHtml = fill.bodyHtml;
+	}
 
 	const search = (q: string) => repos.contacts.search({ q, limit: 8 });
 </script>
