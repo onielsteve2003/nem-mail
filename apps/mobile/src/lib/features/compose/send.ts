@@ -8,9 +8,11 @@ import type { Recipient } from './recipients.js';
 export const SEND_COPY = {
 	sending: 'Sending…',
 	sent: 'Sent',
+	scheduled: (when: string) => `Scheduled for ${when}`,
 	undo: 'Undo',
 	retry: 'Retry',
 	cancelled: 'Sending cancelled',
+	scheduleCancelled: 'Schedule cancelled',
 	tooLate: 'Too late to undo. The message was sent.',
 	undoFailed: "Couldn't undo. Check Outbox.",
 	failed: "Couldn't send.",
@@ -42,24 +44,34 @@ export interface SendDeps {
 	onsent: (response: SendResponse) => void;
 	/** Undo brought the message back as this draft; compose should reopen it. */
 	onundo: (draft: Draft) => void;
+	/** Formats a scheduled send time for the toast. */
+	formatTime?: (at: Date) => string;
 }
 
 /**
  * Sends a draft: "Sending…", then "Sent" with Undo for the outbox window.
+ * With `sendAt` it is scheduled instead (FR-5.7) and the toast names the time.
  * On failure the draft is saved so nothing is lost, and the toast offers
  * Retry when the error is retryable. Resolves true when it was queued.
  */
-export async function sendDraft(draft: Draft, deps: SendDeps): Promise<boolean> {
+export async function sendDraft(draft: Draft, deps: SendDeps, sendAt?: Date): Promise<boolean> {
 	const { drafts, toasts } = deps;
 	const sending = toasts.show({ message: SEND_COPY.sending, duration: 0 });
 	try {
-		const response = await drafts.send({ draft });
+		const response = await drafts.send({
+			draft,
+			...(sendAt && { sendAt: sendAt.toISOString() })
+		});
 		toasts.dismiss(sending);
 		deps.onsent(response);
+		const format = deps.formatTime ?? ((at: Date) => at.toLocaleString());
 		toasts.show({
-			message: SEND_COPY.sent,
+			message: sendAt ? SEND_COPY.scheduled(format(sendAt)) : SEND_COPY.sent,
 			tone: 'success',
-			action: { label: SEND_COPY.undo, onaction: () => void undoSend(response, deps) }
+			action: {
+				label: SEND_COPY.undo,
+				onaction: () => void undoSend(response, deps, !!sendAt)
+			}
 		});
 		return true;
 	} catch (error) {
@@ -73,17 +85,23 @@ export async function sendDraft(draft: Draft, deps: SendDeps): Promise<boolean> 
 			message: saved ? SEND_COPY.savedToDrafts : SEND_COPY.failed,
 			tone: 'error',
 			...(retryable && {
-				action: { label: SEND_COPY.retry, onaction: () => void sendDraft(draft, deps) }
+				action: { label: SEND_COPY.retry, onaction: () => void sendDraft(draft, deps, sendAt) }
 			})
 		});
 		return false;
 	}
 }
 
-async function undoSend(response: SendResponse, deps: SendDeps): Promise<void> {
+async function undoSend(
+	response: SendResponse,
+	deps: SendDeps,
+	isScheduled: boolean
+): Promise<void> {
 	try {
 		const draft = await deps.drafts.cancelSend(response.messageId);
-		deps.toasts.show({ message: SEND_COPY.cancelled });
+		deps.toasts.show({
+			message: isScheduled ? SEND_COPY.scheduleCancelled : SEND_COPY.cancelled
+		});
 		deps.onundo(draft);
 	} catch (error) {
 		const tooLate = toAppError(error).code === 'CONFLICT';

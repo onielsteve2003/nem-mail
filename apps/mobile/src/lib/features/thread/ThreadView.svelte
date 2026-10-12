@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Label, ThreadOp } from '@nem/shared';
+	import type { Label, Message, ThreadOp } from '@nem/shared';
 	import { untrack } from 'svelte';
 	import EmptyState from '#components/ui/EmptyState.svelte';
 	import ErrorState from '#components/ui/ErrorState.svelte';
@@ -9,8 +9,9 @@
 	import { getMailboxStore } from '#lib/stores/mailbox.svelte.js';
 	import { getSessionStore } from '#lib/stores/session.svelte.js';
 	import { getThreadStore } from '#lib/stores/thread.svelte.js';
+	import { toastStore } from '#lib/stores/toast.svelte.js';
 	import { getUiStore } from '#lib/stores/ui.svelte.js';
-	import { errorMessage } from '#lib/utils/errors.js';
+	import { errorMessage, toAppError } from '#lib/utils/errors.js';
 	import MessageList from './MessageList.svelte';
 	import ThreadHeader from './ThreadHeader.svelte';
 	import { leavesThread } from './actions.js';
@@ -27,6 +28,9 @@
 	const NOT_FOUND_TITLE = 'Conversation not found';
 	const NOT_FOUND_MESSAGE = 'It may have been deleted, or the link is wrong.';
 	const ERROR_TITLE = "Couldn't open this conversation";
+	const SCHEDULE_CANCELLED = 'Schedule cancelled. Moved to Drafts.';
+	const ALREADY_SENT = 'Too late to cancel. The message was sent.';
+	const CANCEL_FAILED = "Couldn't cancel the scheduled send";
 
 	interface Props {
 		threadId: string;
@@ -78,6 +82,32 @@
 		if (!thread) return;
 		void mailbox.apply([thread.id], op);
 		if (leavesThread(op)) onclose();
+	}
+
+	/**
+	 * Cancels a scheduled message (FR-5.7): it becomes a draft again and opens in
+	 * compose. A thread that held only that message is gone, so the view closes.
+	 */
+	async function cancelSend(message: Message): Promise<void> {
+		const isLast = thread?.messages.length === 1;
+		try {
+			const draft = await repos.drafts.cancelSend(message.id);
+			mailbox.invalidate();
+			ui.draftsChanged();
+			toastStore.show({ message: SCHEDULE_CANCELLED });
+			if (isLast) onclose();
+			else void threads.load(message.threadId, { refresh: true });
+			ui.openCompose({
+				mode: draft.mode,
+				threadId: draft.threadId,
+				messageId: draft.inReplyTo,
+				draftId: draft.id
+			});
+		} catch (error) {
+			const isSent = toAppError(error).code === 'CONFLICT';
+			toastStore.show({ message: isSent ? ALREADY_SENT : CANCEL_FAILED, tone: 'error' });
+			if (isSent) void threads.load(message.threadId, { refresh: true });
+		}
 	}
 
 	// Neighbors come from the list the thread was opened from (FR-4.6).
@@ -165,6 +195,7 @@
 				loadAttachment={(id) => repos.mail.getAttachment(id)}
 				oncompose={(mode, message) =>
 					ui.openCompose({ mode, threadId: message.threadId, messageId: message.id })}
+				oncancelsend={(message) => void cancelSend(message)}
 			/>
 		{/key}
 	{:else if view === 'loading'}

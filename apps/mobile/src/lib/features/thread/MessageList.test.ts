@@ -52,4 +52,18 @@ describe('MessageList', () => {
 			['forward', 'e']
 		]);
 	});
+
+	it('shows Cancel send instead of replies on a scheduled message', async () => {
+		const scheduled = {
+			...messages[4],
+			status: 'scheduled',
+			sendAt: '2026-10-20T08:00:00Z'
+		} as Message;
+		const oncancelsend = vi.fn();
+		render(MessageList, { messages: [scheduled], oncompose: vi.fn(), oncancelsend });
+		expect(screen.getByRole('note')).toHaveTextContent(/Sends/);
+		expect(screen.queryByRole('button', { name: 'Reply' })).toBeNull();
+		await fireEvent.click(screen.getByRole('button', { name: 'Cancel send' }));
+		expect(oncancelsend).toHaveBeenCalledWith(scheduled);
+	});
 });

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
+	import Clock from '@lucide/svelte/icons/clock';
 	import Paperclip from '@lucide/svelte/icons/paperclip';
 	import Send from '@lucide/svelte/icons/send';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
@@ -31,12 +32,15 @@
 	import { AUTOSAVE_MS, draftKey, newDraftId, toDraft, type DraftFields } from './draft.js';
 	import { prefill } from './prefill.js';
 	import RecipientField from './RecipientField.svelte';
+	import { scheduleTime } from './schedule.js';
+	import ScheduleSheet from './ScheduleSheet.svelte';
 	import { fromAddresses, type Recipient } from './recipients.js';
 	import { sendDraft, sendProblem } from './send.js';
 
 	const COPY = {
 		close: 'Close compose',
 		send: 'Send',
+		schedule: 'Schedule send',
 		attach: 'Attach files',
 		to: 'To',
 		cc: 'Cc',
@@ -95,6 +99,7 @@
 	// Saves and removes run one after another, so a late save never brings a discarded draft back.
 	let queue: Promise<unknown> = Promise.resolve();
 	let isDiscardOpen = $state(false);
+	let isScheduleOpen = $state(false);
 
 	const fields = (): DraftFields => ({
 		to,
@@ -164,13 +169,23 @@
 		return run;
 	}
 
-	/** Validates, closes compose and sends; the toasts take it from there (FR-5.6). */
-	async function send() {
-		const problem = sendProblem({ to, cc, bcc }, attachments);
-		if (problem) {
-			toastStore.show({ message: problem, tone: 'error' });
-			return;
-		}
+	function problem(): boolean {
+		const found = sendProblem({ to, cc, bcc }, attachments);
+		if (found) toastStore.show({ message: found, tone: 'error' });
+		return !!found;
+	}
+
+	/** Checks first, so the schedule sheet only opens for a message that could go out. */
+	function openSchedule() {
+		if (!problem()) isScheduleOpen = true;
+	}
+
+	/**
+	 * Validates, closes compose and sends, or schedules with `sendAt` (FR-5.6, FR-5.7);
+	 * the toasts take it from there.
+	 */
+	async function send(sendAt?: Date) {
+		if (problem()) return;
 		isClosed = true;
 		clearTimeout(saveTimer);
 		const draft = toDraft(fields(), meta());
@@ -178,25 +193,30 @@
 		onclose();
 		// A save still in flight must land first, so sending deletes it instead of it coming back.
 		await pending;
-		await sendDraft(draft, {
-			drafts: repos.drafts,
-			toasts: toastStore,
-			onsent: ({ threadId }) => {
-				mailbox.invalidate();
-				ui.draftsChanged();
-				void threads.load(threadId, { refresh: true });
+		await sendDraft(
+			draft,
+			{
+				drafts: repos.drafts,
+				toasts: toastStore,
+				formatTime: (at) => scheduleTime(at, new Date()),
+				onsent: ({ threadId }) => {
+					mailbox.invalidate();
+					ui.draftsChanged();
+					void threads.load(threadId, { refresh: true });
+				},
+				onundo: (restored) => {
+					mailbox.invalidate();
+					ui.draftsChanged();
+					ui.openCompose({
+						mode: restored.mode,
+						threadId: restored.threadId,
+						messageId: restored.inReplyTo,
+						draftId: restored.id
+					});
+				}
 			},
-			onundo: (restored) => {
-				mailbox.invalidate();
-				ui.draftsChanged();
-				ui.openCompose({
-					mode: restored.mode,
-					threadId: restored.threadId,
-					messageId: restored.inReplyTo,
-					draftId: restored.id
-				});
-			}
-		});
+			sendAt
+		);
 	}
 
 	async function discard() {
@@ -325,7 +345,8 @@
 		onchange={(event) => addFiles(event.currentTarget.files)}
 	/>
 	<IconButton icon={Trash2} label={COPY.discard} onclick={() => (isDiscardOpen = true)} />
-	<Button size="sm" disabled={!isReady} onclick={send}>
+	<IconButton icon={Clock} label={COPY.schedule} disabled={!isReady} onclick={openSchedule} />
+	<Button size="sm" disabled={!isReady} onclick={() => send()}>
 		{#snippet leading()}<Icon icon={Send} size="sm" />{/snippet}
 		{COPY.send}
 	</Button>
@@ -361,6 +382,7 @@
 	<ComposeAttachments items={attachments} onremove={removeAttachment} onretry={upload} {canRetry} />
 	<BodyEditor bind:value={bodyHtml} />
 </div>
+<ScheduleSheet bind:open={isScheduleOpen} onschedule={(at) => send(at)} />
 <ConfirmDialog
 	bind:open={isDiscardOpen}
 	title={COPY.discardTitle}

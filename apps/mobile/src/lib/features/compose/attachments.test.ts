@@ -22,7 +22,10 @@ describe('compose attachments', () => {
 		expect(checkFile({ size: MAX_ATTACHMENT_BYTES + 1 })).toBe('Over 10 MB (10 MB)');
 		expect(checkFile({ size: 12 * 1024 * 1024 })).toBe('Over 10 MB (12 MB)');
 		expect(pendingAttachment(file(5), 'k').status).toBe('uploading');
-		const tooBig = pendingAttachment({ name: 'big.zip', type: '', size: 11 * 1024 * 1024 } as File, 'k');
+		const tooBig = pendingAttachment(
+			{ name: 'big.zip', type: '', size: 11 * 1024 * 1024 } as File,
+			'k'
+		);
 		expect(tooBig).toMatchObject({ status: 'error', mime: 'application/octet-stream' });
 	});
 

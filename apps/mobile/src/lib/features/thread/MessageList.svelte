@@ -12,9 +12,10 @@
 		selfEmail?: string;
 		loadAttachment?: (id: string) => Promise<Blob>;
 		oncompose?: (mode: Exclude<ComposeMode, 'new'>, message: Message) => void;
+		oncancelsend?: (message: Message) => void;
 	}
 
-	let { messages, selfEmail, loadAttachment, oncompose }: Props = $props();
+	let { messages, selfEmail, loadAttachment, oncompose, oncancelsend }: Props = $props();
 
 	// Which messages start open is decided once per thread (the parent keys this list).
 	const expanded = new SvelteSet(untrack(() => initialExpanded(messages)));
@@ -43,6 +44,7 @@
 					{selfEmail}
 					{loadAttachment}
 					{oncompose}
+					{oncancelsend}
 				/>
 			{/if}
 		</li>

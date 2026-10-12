@@ -24,6 +24,7 @@
 		loadAttachment?: (id: string) => Promise<Blob>;
 		/** Reply, reply all and forward; the buttons show only when it is set. */
 		oncompose?: (mode: Exclude<ComposeMode, 'new'>, message: Message) => void;
+		oncancelsend?: (message: Message) => void;
 	}
 
 	let {
@@ -33,7 +34,8 @@
 		selfEmail,
 		now = Date.now(),
 		loadAttachment,
-		oncompose
+		oncompose,
+		oncancelsend
 	}: Props = $props();
 
 	let showDetails = $state(false);
@@ -100,7 +102,7 @@
 			<AttachmentList attachments={message.attachments} load={loadAttachment} />
 		{/if}
 		{#if oncompose}
-			<MessageActions {message} {selfEmail} {oncompose} />
+			<MessageActions {message} {selfEmail} {oncompose} {oncancelsend} />
 		{/if}
 	{/if}
 </article>

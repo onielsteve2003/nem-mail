@@ -81,6 +81,19 @@ describe('sendDraft', () => {
 		await vi.waitFor(() => expect(deps.onsent).toHaveBeenCalled());
 	});
 
+	it('schedules with sendAt and names the time; Undo cancels the schedule', async () => {
+		const at = new Date('2026-10-13T08:00:00.000Z');
+		const { deps, toasts } = setup({
+			send: vi.fn().mockResolvedValue({ ...RESPONSE, sendAt: at.toISOString() }),
+			cancelSend: vi.fn().mockResolvedValue(DRAFT)
+		});
+		await sendDraft(DRAFT, { ...deps, formatTime: () => 'Tue 8:00' }, at);
+		expect(deps.drafts.send).toHaveBeenCalledWith({ draft: DRAFT, sendAt: at.toISOString() });
+		expect(toasts.current?.message).toBe(SEND_COPY.scheduled('Tue 8:00'));
+		toasts.runAction(toasts.current!.id);
+		await vi.waitFor(() => expect(toasts.current?.message).toBe(SEND_COPY.scheduleCancelled));
+	});
+
 	it('offers no Retry for errors that would fail again', async () => {
 		const { deps, toasts } = setup({
 			send: vi.fn().mockRejectedValue(new AppError('VALIDATION_FAILED', 'bad'))

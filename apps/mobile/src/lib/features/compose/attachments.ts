@@ -77,7 +77,10 @@ export async function uploadWithProgress(
 	tickMs = 80
 ): Promise<Attachment> {
 	const started = Date.now();
-	const timer = setInterval(() => onprogress(mockProgress(Date.now() - started, file.size)), tickMs);
+	const timer = setInterval(
+		() => onprogress(mockProgress(Date.now() - started, file.size)),
+		tickMs
+	);
 	try {
 		const minimum = new Promise((resolve) => setTimeout(resolve, mockUploadMs(file.size)));
 		const [attachment] = await Promise.all([upload(file), minimum]);
