@@ -2,22 +2,32 @@
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import Paperclip from '@lucide/svelte/icons/paperclip';
 	import Send from '@lucide/svelte/icons/send';
+	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import X from '@lucide/svelte/icons/x';
 	import Button from '#components/ui/Button.svelte';
+	import ConfirmDialog from '#components/ui/ConfirmDialog.svelte';
 	import Icon from '#components/ui/Icon.svelte';
 	import IconButton from '#components/ui/IconButton.svelte';
 	import { MAX_ATTACHMENT_BYTES } from '@nem/shared';
-	import { untrack } from 'svelte';
+	import { onDestroy, untrack } from 'svelte';
 	import { getRepositories } from '#lib/data/provider.js';
 	import { getSessionStore } from '#lib/stores/session.svelte.js';
 	import { getThreadStore } from '#lib/stores/thread.svelte.js';
-	import type { ComposeRequest } from '#lib/stores/ui.svelte.js';
+	import { toastStore } from '#lib/stores/toast.svelte.js';
+	import { getUiStore, type ComposeRequest } from '#lib/stores/ui.svelte.js';
 	import { errorMessage } from '#lib/utils/errors.js';
-	import { pendingAttachment, uploadWithProgress, type ComposeAttachment } from './attachments.js';
+	import {
+		pendingAttachment,
+		readyAttachment,
+		uploaded,
+		uploadWithProgress,
+		type ComposeAttachment
+	} from './attachments.js';
 	import { initialBody } from './body.js';
 	import BodyEditor from './BodyEditor.svelte';
 	import ComposeAttachments from './ComposeAttachments.svelte';
 	import { composeTitle } from './compose.js';
+	import { AUTOSAVE_MS, draftKey, newDraftId, toDraft, type DraftFields } from './draft.js';
 	import { prefill } from './prefill.js';
 	import RecipientField from './RecipientField.svelte';
 	import { fromAddresses, type Recipient } from './recipients.js';
@@ -30,7 +40,16 @@
 		cc: 'Cc',
 		bcc: 'Bcc',
 		showCcBcc: 'Show Cc and Bcc',
-		subject: 'Subject'
+		subject: 'Subject',
+		discard: 'Discard draft',
+		discardTitle: 'Discard this draft?',
+		discardMessage: 'What you wrote and attached will be deleted.',
+		discardConfirm: 'Discard',
+		discarded: 'Draft discarded',
+		saved: 'Draft saved',
+		saving: 'Saving…',
+		notSaved: 'Not saved',
+		restoreFailed: "Couldn't open the draft. Starting a new message."
 	};
 
 	interface Props {
@@ -45,6 +64,7 @@
 	const repos = getRepositories();
 	const session = getSessionStore();
 	const threads = getThreadStore();
+	const ui = getUiStore();
 	const id = $props.id();
 	const title = $derived(composeTitle(request));
 
@@ -60,10 +80,115 @@
 	const files: Record<string, File> = {};
 	let nextKey = 0;
 
-	// Drafts are restored in T7.6; everything else starts here once, when compose opens.
-	$effect(() => {
-		if (request && !request.draftId) untrack(() => start(request));
+	// Autosave (FR-5.5). Nothing is saved until the fields differ from what
+	// compose opened with, so opening and closing an empty compose leaves no draft.
+	let draftId = $state(newDraftId());
+	let isReady = $state(false);
+	let savedKey = '';
+	let hasSaved = false;
+	let isClosed = false;
+	let saveStatus = $state<'idle' | 'saving' | 'saved' | 'error'>('idle');
+	let saveTimer: ReturnType<typeof setTimeout> | undefined;
+	// Saves and removes run one after another, so a late save never brings a discarded draft back.
+	let queue: Promise<unknown> = Promise.resolve();
+	let isDiscardOpen = $state(false);
+
+	const fields = (): DraftFields => ({
+		to,
+		cc,
+		bcc,
+		subject,
+		bodyHtml,
+		attachments: uploaded(attachments)
 	});
+	const currentKey = $derived(draftKey(fields()));
+
+	// Everything starts here once, when compose opens.
+	$effect(() => {
+		if (!request) return;
+		untrack(async () => {
+			if (request.draftId) await restore(request.draftId);
+			else await start(request);
+			savedKey = draftKey(fields());
+			isReady = true;
+		});
+	});
+
+	$effect(() => {
+		const key = currentKey;
+		if (!isReady || key === savedKey) return;
+		clearTimeout(saveTimer);
+		saveTimer = setTimeout(() => void save(), AUTOSAVE_MS);
+	});
+
+	// Closing (X, Escape, Back or navigation) saves at once instead of waiting.
+	onDestroy(() => {
+		clearTimeout(saveTimer);
+		if (isClosed || !isReady || draftKey(fields()) === savedKey) return;
+		void save().then((ok) => {
+			if (ok) toastStore.show({ message: COPY.saved });
+			else toastStore.show({ message: COPY.notSaved, tone: 'error' });
+		});
+	});
+
+	function save(): Promise<boolean> {
+		clearTimeout(saveTimer);
+		const key = draftKey(fields());
+		const draft = toDraft(fields(), {
+			id: draftId,
+			mode: request?.mode ?? 'new',
+			threadId: request?.threadId ?? null,
+			inReplyTo: request?.messageId ?? null
+		});
+		saveStatus = 'saving';
+		const run = queue.then(async () => {
+			if (isClosed) return false;
+			try {
+				await repos.drafts.save(draft);
+				savedKey = key;
+				hasSaved = true;
+				saveStatus = 'saved';
+				ui.draftsChanged();
+				return true;
+			} catch {
+				saveStatus = 'error';
+				return false;
+			}
+		});
+		queue = run;
+		return run;
+	}
+
+	async function discard() {
+		isClosed = true;
+		clearTimeout(saveTimer);
+		onclose();
+		if (hasSaved) {
+			queue = queue.then(() => repos.drafts.remove(draftId).catch(() => {}));
+			await queue;
+			ui.draftsChanged();
+		}
+		toastStore.show({ message: COPY.discarded });
+	}
+
+	/** Opens a saved draft (FR-5.5); if it cannot load, compose starts fresh under a new id. */
+	async function restore(id: string) {
+		try {
+			const draft = await repos.drafts.get(id);
+			draftId = draft.id;
+			hasSaved = true;
+			to = fromAddresses(draft.to);
+			cc = fromAddresses(draft.cc);
+			bcc = fromAddresses(draft.bcc);
+			showCcBcc = cc.length + bcc.length > 0;
+			subject = draft.subject;
+			bodyHtml = draft.bodyHtml;
+			attachments = draft.attachments.map(readyAttachment);
+		} catch {
+			toastStore.show({ message: COPY.restoreFailed, tone: 'error' });
+			await start({ mode: 'new', threadId: null, messageId: null });
+		}
+	}
 
 	/**
 	 * Fills in the signature (FR-5.8) and, for a reply or forward, the recipients,
@@ -143,7 +268,12 @@
 
 <header class="form__head">
 	<IconButton icon={X} label={COPY.close} onclick={onclose} />
-	<h2 id={titleId} class="form__title nm-text-title-3">{title}</h2>
+	<div class="form__heading">
+		<h2 id={titleId} class="form__title nm-text-title-3 nm-text-truncate">{title}</h2>
+		<p class="form__status nm-text-caption" aria-live="polite">
+			{#if saveStatus === 'saving'}{COPY.saving}{:else if saveStatus === 'saved'}{COPY.saved}{:else if saveStatus === 'error'}{COPY.notSaved}{/if}
+		</p>
+	</div>
 	<IconButton icon={Paperclip} label={COPY.attach} onclick={() => fileInput?.click()} />
 	<input
 		bind:this={fileInput}
@@ -154,6 +284,7 @@
 		aria-hidden="true"
 		onchange={(event) => addFiles(event.currentTarget.files)}
 	/>
+	<IconButton icon={Trash2} label={COPY.discard} onclick={() => (isDiscardOpen = true)} />
 	<!-- Enabled once sending exists (T7.7). -->
 	<Button size="sm" disabled>
 		{#snippet leading()}<Icon icon={Send} size="sm" />{/snippet}
@@ -191,6 +322,14 @@
 	<ComposeAttachments items={attachments} onremove={removeAttachment} onretry={upload} {canRetry} />
 	<BodyEditor bind:value={bodyHtml} />
 </div>
+<ConfirmDialog
+	bind:open={isDiscardOpen}
+	title={COPY.discardTitle}
+	message={COPY.discardMessage}
+	confirmLabel={COPY.discardConfirm}
+	destructive
+	onconfirm={discard}
+/>
 
 <style>
 	.form__head {
@@ -200,10 +339,17 @@
 		padding: var(--nm-space-2) var(--nm-space-3);
 		border-block-end: 1px solid var(--nm-color-border);
 	}
-	.form__title {
+	.form__heading {
 		flex: 1;
-		margin: 0;
 		min-inline-size: 0;
+	}
+	.form__title {
+		margin: 0;
+	}
+	.form__status {
+		margin: 0;
+		min-block-size: 1lh;
+		color: var(--nm-color-text-muted);
 	}
 	.form__body {
 		flex: 1;

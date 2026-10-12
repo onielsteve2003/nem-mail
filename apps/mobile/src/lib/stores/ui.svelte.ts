@@ -28,6 +28,8 @@ export class UiStore {
 	composeRequest = $state<ComposeRequest | null>(null);
 	/** Screen rect of the control compose morphs out of, when one opened it. */
 	composeOrigin = $state<ComposeOrigin | null>(null);
+	/** Bumped whenever compose saves or deletes a draft, so the Drafts list reloads. */
+	draftsVersion = $state(0);
 	/** The topmost sheet, or null. */
 	readonly activeSheet = $derived(this.sheets.at(-1) ?? null);
 	/** Scroll position of each list screen (not reactive). */
@@ -65,6 +67,10 @@ export class UiStore {
 	/** Closes compose; the request stays until the sheet has animated out. */
 	closeCompose(): void {
 		this.closeSheet(COMPOSE_SHEET);
+	}
+
+	draftsChanged(): void {
+		this.draftsVersion += 1;
 	}
 
 	isSheetOpen(name: string): boolean {

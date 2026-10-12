@@ -43,6 +43,14 @@
 		void load();
 	});
 
+	// Compose saved or discarded a draft: reload in place, without the skeleton.
+	let seenVersion = ui.draftsVersion;
+	$effect(() => {
+		if (ui.draftsVersion === seenVersion) return;
+		seenVersion = ui.draftsVersion;
+		void load();
+	});
+
 	const listRefresh = getListRefresh();
 	$effect(() => listRefresh.register(load));
 
