@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Label, Settings, ThreadListFilter, ThreadSummary } from '@nem/shared';
+	import type { Label, Settings, SwipeAction, ThreadListFilter, ThreadSummary } from '@nem/shared';
 	import { DEFAULT_SETTINGS } from '@nem/shared';
 	import { untrack, type Snippet } from 'svelte';
 	import { MediaQuery } from 'svelte/reactivity';
@@ -12,14 +12,20 @@
 	import { getRepositories } from '#lib/data/provider.js';
 	import { getMailboxStore, listKey } from '#lib/stores/mailbox.svelte.js';
 	import { getSessionStore } from '#lib/stores/session.svelte.js';
+	import { getUiStore } from '#lib/stores/ui.svelte.js';
 	import { TWO_PANE_QUERY, readingThreadId, withReadingThread } from '#lib/utils/reading-pane.js';
 	import { emptyCopy, errorCopy } from './list-states.js';
 	import MailRow from './MailRow.svelte';
 	import MailRows from './MailRows.svelte';
 	import { getListRefresh } from './refresh.js';
+	import { swipeOp } from './swipe.js';
+	import SwipeRow from './SwipeRow.svelte';
 
 	const SKELETON_ROWS = 8;
 	const LOADING = 'Loading conversations';
+	// Sheets a swipe opens for actions that need a choice (T8.4 snooze, M8 move).
+	const SNOOZE_SHEET = 'snooze';
+	const MOVE_SHEET = 'move';
 
 	interface Props {
 		filter: ThreadListFilter;
@@ -36,12 +42,14 @@
 	const repos = getRepositories();
 	const mailbox = getMailboxStore();
 	const session = getSessionStore();
+	const ui = getUiStore();
 
 	let labels = $state<Label[]>([]);
 	let density = $state<Settings['density']>(DEFAULT_SETTINGS.density);
+	let swipe = $state<Settings['swipe']>(DEFAULT_SETTINGS.swipe);
 	const labelsById = $derived(new Map(labels.map((label) => [label.id, label])));
 
-	// Labels and density per account; rows still render if either fails.
+	// Labels, density and swipe actions per account; rows still render if either fails.
 	$effect(() => {
 		if (!session.user) return;
 		repos.labels.list().then(
@@ -49,7 +57,10 @@
 			() => {}
 		);
 		repos.settings.get().then(
-			(settings) => (density = settings.density),
+			(settings) => {
+				density = settings.density;
+				swipe = settings.swipe;
+			},
 			() => {}
 		);
 	});
@@ -83,6 +94,13 @@
 		return twoPane.current
 			? withReadingThread(page.url, thread.id)
 			: resolve('/mail/thread/[threadId]', { threadId: thread.id });
+	}
+
+	function onswipe(thread: ThreadSummary, action: SwipeAction): void {
+		const op = swipeOp(action, thread);
+		if (op) void mailbox.apply([thread.id], op);
+		else if (action === 'snooze') ui.openSheet(SNOOZE_SHEET);
+		else if (action === 'move') ui.openSheet(MOVE_SHEET);
 	}
 
 	function rowLabels(thread: ThreadSummary): Label[] {
@@ -120,14 +138,20 @@
 				onloadmore={() => void mailbox.loadMore(filter)}
 			>
 				{#snippet row(thread)}
-					<MailRow
-						{thread}
-						href={href(thread)}
-						labels={rowLabels(thread)}
-						{density}
-						selfEmail={session.user?.email}
-						active={twoPane.current && openId === thread.id}
-					/>
+					<SwipeRow
+						actions={swipe}
+						isUnread={thread.isUnread}
+						onswipe={(action) => onswipe(thread, action)}
+					>
+						<MailRow
+							{thread}
+							href={href(thread)}
+							labels={rowLabels(thread)}
+							{density}
+							selfEmail={session.user?.email}
+							active={twoPane.current && openId === thread.id}
+						/>
+					</SwipeRow>
 				{/snippet}
 			</MailRows>
 		{/if}
