@@ -12,8 +12,10 @@
 	import Star from '@lucide/svelte/icons/star';
 	import Tag from '@lucide/svelte/icons/tag';
 	import Trash from '@lucide/svelte/icons/trash';
-	import type { Label, ThreadOp, ThreadSummary } from '@nem/shared';
+	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import { isBinned, type Label, type ThreadOp, type ThreadSummary } from '@nem/shared';
 	import ActionSheet, { type ActionSheetItem } from './ActionSheet.svelte';
+	import ConfirmDialog from './ConfirmDialog.svelte';
 	import IconButton from './IconButton.svelte';
 	import LabelPicker from './LabelPicker.svelte';
 	import MoveSheet from './MoveSheet.svelte';
@@ -23,6 +25,10 @@
 	const COPY = {
 		archive: 'Archive',
 		delete: 'Delete',
+		deleteForever: 'Delete forever',
+		confirmDelete: 'Delete forever?',
+		cantUndo: "This can't be undone.",
+		notSpam: 'Not spam',
 		markRead: 'Mark read',
 		markUnread: 'Mark unread',
 		more: 'More actions',
@@ -51,14 +57,29 @@
 		oncreatelabel?: (name: string) => Promise<Label>;
 		/** Puts read/unread in the bar instead of the More sheet, as the thread view does. */
 		readInBar?: boolean;
+		/** Deletes the selection forever, after a confirmation; offered only in Spam and Trash. */
+		ondeleteforever?: () => void;
 	}
 
-	let { threads, labels, onapply, oncreatelabel, readInBar = false }: Props = $props();
+	let {
+		threads,
+		labels,
+		onapply,
+		oncreatelabel,
+		readInBar = false,
+		ondeleteforever
+	}: Props = $props();
 
-	let sheet = $state<'more' | 'labels' | 'move' | 'snooze' | null>(null);
+	let sheet = $state<'more' | 'labels' | 'move' | 'snooze' | 'delete' | null>(null);
 
 	const toggles = $derived(bulkToggles(threads));
 	const isEmpty = $derived(threads.length === 0);
+	// In Spam and Trash, Delete means forever (FR-6.4) and Spam offers "Not spam" (FR-6.5).
+	const canDeleteForever = $derived(!!ondeleteforever && !isEmpty && threads.every(isBinned));
+	const isAllSpam = $derived(!isEmpty && threads.every((t) => t.mailboxes.includes('spam')));
+	const deleteMessage = $derived(
+		`${threads.length === 1 ? 'This conversation' : `${threads.length} conversations`} will be deleted forever. ${COPY.cantUndo}`
+	);
 
 	const readIcon = $derived(toggles.read.op === 'markRead' ? MailOpen : Mail);
 	// In the list bar read state sits in More, so the bar fits a 360px phone next to the count.
@@ -84,12 +105,14 @@
 		},
 		{ label: COPY.move, icon: FolderInput, onselect: () => (sheet = 'move') },
 		{ label: COPY.snooze, icon: Clock, onselect: () => (sheet = 'snooze') },
-		{
-			label: COPY.spam,
-			icon: OctagonAlert,
-			destructive: true,
-			onselect: () => onapply({ op: 'spam' })
-		},
+		isAllSpam
+			? { label: COPY.notSpam, icon: Mail, onselect: () => onapply({ op: 'notSpam' }) }
+			: {
+					label: COPY.spam,
+					icon: OctagonAlert,
+					destructive: true,
+					onselect: () => onapply({ op: 'spam' })
+				},
 		{
 			label: COPY[toggles.mute.op],
 			icon: toggles.mute.op === 'mute' ? BellOff : Bell,
@@ -105,12 +128,21 @@
 	disabled={isEmpty}
 	onclick={() => onapply({ op: 'archive' })}
 />
-<IconButton
-	icon={Trash}
-	label={COPY.delete}
-	disabled={isEmpty}
-	onclick={() => onapply({ op: 'trash' })}
-/>
+{#if canDeleteForever}
+	<IconButton
+		icon={Trash2}
+		label={COPY.deleteForever}
+		aria-haspopup="dialog"
+		onclick={() => (sheet = 'delete')}
+	/>
+{:else}
+	<IconButton
+		icon={Trash}
+		label={COPY.delete}
+		disabled={isEmpty}
+		onclick={() => onapply({ op: 'trash' })}
+	/>
+{/if}
 {#if readInBar}
 	<IconButton
 		icon={readIcon}
@@ -127,6 +159,18 @@
 	onclick={() => (sheet = 'more')}
 />
 
+<ConfirmDialog
+	open={sheet === 'delete'}
+	title={COPY.confirmDelete}
+	message={deleteMessage}
+	confirmLabel={COPY.deleteForever}
+	destructive
+	onconfirm={() => {
+		close();
+		ondeleteforever?.();
+	}}
+	oncancel={close}
+/>
 <ActionSheet open={sheet === 'more'} title={COPY.more} hideTitle actions={more} onclose={close} />
 <LabelPicker
 	open={sheet === 'labels'}

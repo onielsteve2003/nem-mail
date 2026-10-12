@@ -8,7 +8,11 @@ import { CategorySchema, SystemMailboxSchema } from '../schemas/mailbox';
 import { SettingsSchema } from '../schemas/settings';
 import { ContactSchema, UserSchema } from '../schemas/user';
 import { pageSchema, PageQuerySchema } from './pagination';
-import { BulkThreadRequestSchema, BulkThreadResponseSchema } from './threads';
+import {
+	BulkThreadRequestSchema,
+	BulkThreadResponseSchema,
+	DeleteThreadsRequestSchema
+} from './threads';
 
 export const API_BASE_PATH = '/api/v1';
 export const PASSWORD_MIN = 8;
@@ -172,6 +176,19 @@ export const ENDPOINTS = {
 		method: 'PATCH',
 		path: '/threads',
 		body: BulkThreadRequestSchema,
+		response: BulkThreadResponseSchema
+	},
+	/** Delete forever (FR-6.4); a POST because DELETE bodies are poorly supported. */
+	deleteThreads: {
+		method: 'POST',
+		path: '/threads/delete',
+		body: DeleteThreadsRequestSchema,
+		response: BulkThreadResponseSchema
+	},
+	/** Empties Spam or Trash; `:mailbox` is a BinMailbox. */
+	emptyMailbox: {
+		method: 'DELETE',
+		path: '/mailboxes/:mailbox',
 		response: BulkThreadResponseSchema
 	},
 	listLabels: { method: 'GET', path: '/labels', response: z.array(LabelSchema) },

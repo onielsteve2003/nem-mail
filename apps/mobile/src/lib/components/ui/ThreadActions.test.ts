@@ -8,6 +8,7 @@ const thread = {
 	isStarred: false,
 	isImportant: false,
 	isMuted: false,
+	mailboxes: ['inbox'],
 	labelIds: [] as string[]
 } as ThreadSummary;
 const labels = [{ id: 'l1', name: 'Work', color: 'violet' as const, parentId: null }];
@@ -51,5 +52,24 @@ describe('ThreadActions', () => {
 		const sheet = await screen.findByRole('dialog', { name: 'More actions' });
 		expect(within(sheet).getByRole('button', { name: 'Star' })).toBeInTheDocument();
 		expect(within(sheet).queryByRole('button', { name: /Mark (un)?read/ })).toBeNull();
+	});
+
+	it('deletes forever after a confirmation and offers Not spam in Spam', async () => {
+		const onapply = vi.fn();
+		const ondeleteforever = vi.fn();
+		const spam = { ...thread, mailboxes: ['spam'] } as ThreadSummary;
+		render(ThreadActions, { threads: [spam], labels, onapply, ondeleteforever });
+		expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull();
+		await fireEvent.click(screen.getByRole('button', { name: 'Delete forever' }));
+		const dialog = await screen.findByRole('alertdialog', { name: 'Delete forever?' });
+		expect(ondeleteforever).not.toHaveBeenCalled();
+		await fireEvent.click(within(dialog).getByRole('button', { name: 'Delete forever' }));
+		expect(ondeleteforever).toHaveBeenCalledOnce();
+
+		await fireEvent.click(screen.getByRole('button', { name: 'More actions' }));
+		const sheet = await screen.findByRole('dialog', { name: 'More actions' });
+		expect(within(sheet).queryByRole('button', { name: 'Report spam' })).toBeNull();
+		await fireEvent.click(within(sheet).getByRole('button', { name: 'Not spam' }));
+		expect(onapply).toHaveBeenLastCalledWith({ op: 'notSpam' });
 	});
 });

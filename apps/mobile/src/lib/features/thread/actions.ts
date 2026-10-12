@@ -5,6 +5,7 @@ const LEAVING_OPS: ReadonlySet<ThreadOp['op']> = new Set([
 	'archive',
 	'trash',
 	'spam',
+	'notSpam',
 	'move',
 	'snooze',
 	'mute',

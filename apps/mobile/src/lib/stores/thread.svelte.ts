@@ -54,6 +54,11 @@ export class ThreadStore {
 		}
 	}
 
+	/** Drops deleted threads from the cache. */
+	forget(threadIds: Iterable<string>): void {
+		for (const id of threadIds) delete this.entries[id];
+	}
+
 	/** Plain copies of the cached threads, for rollback and Undo. */
 	snapshot(): Record<string, ThreadEntry> {
 		return $state.snapshot(this.entries) as Record<string, ThreadEntry>;

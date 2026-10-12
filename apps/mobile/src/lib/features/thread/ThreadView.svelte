@@ -85,6 +85,12 @@
 		if (ops.some(leavesThread)) onclose();
 	}
 
+	function deleteForever(): void {
+		if (!thread) return;
+		void mailbox.deleteForever([thread.id]);
+		onclose();
+	}
+
 	async function createLabel(name: string): Promise<Label> {
 		const label = await repos.labels.create({ name, color: 'neutral', parentId: null });
 		labels = [...labels, label];
@@ -194,6 +200,7 @@
 					{labels}
 					onapply={act}
 					oncreatelabel={createLabel}
+					ondeleteforever={deleteForever}
 					readInBar
 				/>
 			{/if}

@@ -39,6 +39,16 @@ export type BulkThreadRequest = z.infer<typeof BulkThreadRequestSchema>;
 export const BulkThreadResponseSchema = z.object({ updatedIds: z.array(IdSchema) });
 export type BulkThreadResponse = z.infer<typeof BulkThreadResponseSchema>;
 
+/** The mailboxes whose threads can be deleted forever or emptied (FR-6.4). */
+export const BinMailboxSchema = StoredMailboxSchema.extract(['spam', 'trash']);
+export type BinMailbox = z.infer<typeof BinMailboxSchema>;
+
+/** Deletes threads forever; only threads in Spam or Trash are deleted, others are skipped. */
+export const DeleteThreadsRequestSchema = z.object({
+	ids: z.array(IdSchema).min(1).max(BULK_MAX)
+});
+export type DeleteThreadsRequest = z.infer<typeof DeleteThreadsRequestSchema>;
+
 /** Which list to show: a mailbox (optionally one inbox tab) or a label. */
 export const ThreadListFilterSchema = z.union([
 	z.object({ mailbox: SystemMailboxSchema, category: CategorySchema.optional() }),

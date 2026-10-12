@@ -1,10 +1,13 @@
 import {
 	applyThreadOp,
+	isBinned,
 	matchesFilter,
 	restoreOps,
 	sortKey,
 	toSummary,
 	type AppError,
+	type BinMailbox,
+	type BulkThreadResponse,
 	type CountsResponse,
 	type Cursor,
 	type ThreadListFilter,
@@ -43,6 +46,10 @@ const RETRY = 'Retry';
 const UNDO = 'Undo';
 const LOAD_FAILED = "Couldn't load your mail.";
 const UPDATE_FAILED = "Couldn't update.";
+const DELETE_FAILED = "Couldn't delete.";
+const DELETED_ONE = 'Deleted forever';
+const DELETED_MANY = 'conversations deleted forever';
+const EMPTIED: Record<BinMailbox, string> = { trash: 'Trash emptied', spam: 'Spam emptied' };
 const WOKE_ONE = 'Back from snooze';
 const WOKE_MANY = 'snoozed conversations are back in your Inbox';
 const NO_SUBJECT = '(no subject)';
@@ -253,6 +260,29 @@ export class MailboxStore {
 		return true;
 	}
 
+	/**
+	 * Deletes threads in Spam or Trash forever (FR-6.4); others are skipped.
+	 * They leave every list at once. There is no Undo, so callers confirm first.
+	 */
+	deleteForever(threadIds: string[]): Promise<boolean> {
+		return this.#remove(
+			(thread) => threadIds.includes(thread.id) && isBinned(thread),
+			() => this.#mail.deleteForever(threadIds),
+			(count) => (count === 1 ? DELETED_ONE : `${count} ${DELETED_MANY}`),
+			() => void this.deleteForever(threadIds)
+		);
+	}
+
+	/** Empties Spam or Trash forever (FR-6.4). Callers confirm first. */
+	empty(mailbox: BinMailbox): Promise<boolean> {
+		return this.#remove(
+			(thread) => thread.mailboxes.includes(mailbox),
+			() => this.#mail.empty(mailbox),
+			() => EMPTIED[mailbox],
+			() => void this.empty(mailbox)
+		);
+	}
+
 	/** Puts a new or updated thread into every cached list it belongs to, newest first. */
 	ingest(summary: ThreadSummary): void {
 		const now = this.#now();
@@ -300,6 +330,31 @@ export class MailboxStore {
 		this.#generation++;
 		this.lists = {};
 		this.counts = null;
+	}
+
+	/** Drops matching rows from every list at once, saves, and rolls back if that fails. */
+	async #remove(
+		test: (thread: ThreadSummary) => boolean,
+		save: () => Promise<BulkThreadResponse>,
+		copy: (count: number) => string,
+		retry: () => void
+	): Promise<boolean> {
+		const lists = $state.snapshot(this.lists) as Record<string, ThreadList>;
+		for (const list of Object.values(this.lists)) {
+			list.items = list.items.filter((thread) => !test(thread));
+		}
+		const generation = this.#generation;
+		try {
+			const { updatedIds } = await save();
+			this.#threads?.forget(updatedIds);
+			if (updatedIds.length > 0) this.#toasts.show({ message: copy(updatedIds.length) });
+			return true;
+		} catch (error) {
+			if (generation !== this.#generation) return false;
+			this.lists = lists;
+			this.#toastError(DELETE_FAILED, error, retry);
+			return false;
+		}
 	}
 
 	#applyLocal(ids: string[], op: ThreadOp, known: ThreadSummary[]): void {

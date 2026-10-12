@@ -107,6 +107,13 @@
 
 	const selected = $derived(list?.items.filter((thread) => selection.has(thread.id)) ?? []);
 
+	/** Deletes the selection forever (confirmed in ThreadActions) and leaves selection mode. */
+	function deleteSelection(): void {
+		const ids = [...selection.ids];
+		selection.clear();
+		void mailbox.deleteForever(ids);
+	}
+
 	/** Runs a bulk action and leaves selection mode; the store toasts and offers Undo. */
 	function applyToSelection(op: ThreadOp | ThreadOp[]): void {
 		const ids = [...selection.ids];
@@ -192,6 +199,7 @@
 					{labels}
 					onapply={applyToSelection}
 					oncreatelabel={createLabel}
+					ondeleteforever={deleteSelection}
 				/>
 			{/snippet}
 		</SelectionBar>

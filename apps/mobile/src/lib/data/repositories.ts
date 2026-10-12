@@ -3,6 +3,7 @@ import type {
 	AssistantRequest,
 	AssistantResponse,
 	Attachment,
+	BinMailbox,
 	BulkThreadResponse,
 	Contact,
 	ContactQuery,
@@ -53,6 +54,10 @@ export interface MailRepository {
 	get(threadId: string): Promise<Thread>;
 	/** Applies one op to many threads. Unknown ids are skipped, not an error. */
 	apply(threadIds: string[], op: ThreadOp): Promise<BulkThreadResponse>;
+	/** Deletes threads forever. Only threads in Spam or Trash go; others are skipped. */
+	deleteForever(threadIds: string[]): Promise<BulkThreadResponse>;
+	/** Deletes every thread in Spam or Trash forever. */
+	empty(mailbox: BinMailbox): Promise<BulkThreadResponse>;
 	counts(): Promise<CountsResponse>;
 	getAttachment(attachmentId: string): Promise<Blob>;
 	/** New mail and count changes. Returns an unsubscribe function. */

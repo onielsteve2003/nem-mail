@@ -189,3 +189,38 @@ describe('MailboxStore.refresh', () => {
 		expect(error).toHaveBeenCalled();
 	});
 });
+
+describe('MailboxStore delete forever', () => {
+	const TRASH = { mailbox: 'trash' } as const;
+
+	it('drops trashed rows at once and only offers no Undo', async () => {
+		const [id = ''] = inboxIds();
+		await mailbox.apply([id], { op: 'trash' }, { undoable: false });
+		await mailbox.load(TRASH);
+		await threads.load(id);
+		const saving = mailbox.deleteForever([id]);
+		expect(mailbox.list(TRASH)?.items.map((t) => t.id)).not.toContain(id);
+		expect(await saving).toBe(true);
+		expect(toasts.current).toMatchObject({ message: 'Deleted forever' });
+		expect(toasts.current?.action).toBeUndefined();
+		expect(threads.get(id)).toBeUndefined();
+	});
+
+	it('empties Trash and rolls back when the server refuses', async () => {
+		const [id = ''] = inboxIds();
+		await mailbox.apply([id], { op: 'trash' }, { undoable: false });
+		await mailbox.load(TRASH, { refresh: true });
+		const count = mailbox.list(TRASH)?.items.length ?? 0;
+		vi.spyOn(repos.mail, 'empty').mockRejectedValueOnce(new AppError('NETWORK', 'down'));
+
+		const saving = mailbox.empty('trash');
+		expect(mailbox.list(TRASH)?.items).toEqual([]);
+		expect(await saving).toBe(false);
+		expect(mailbox.list(TRASH)?.items).toHaveLength(count);
+		expect(toasts.current).toMatchObject({ tone: 'error', action: { label: 'Retry' } });
+
+		toasts.clear();
+		expect(await mailbox.empty('trash')).toBe(true);
+		expect(toasts.current).toMatchObject({ message: 'Trash emptied' });
+	});
+});

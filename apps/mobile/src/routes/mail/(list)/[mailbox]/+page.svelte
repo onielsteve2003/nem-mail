@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Category, ThreadListFilter } from '@nem/shared';
 	import { mailboxTitle } from '#components/layout/nav.js';
+	import ConfirmDialog from '#components/ui/ConfirmDialog.svelte';
 	import CategoryBundles from '#lib/features/mail-list/CategoryBundles.svelte';
 	import CategoryTabs from '#lib/features/mail-list/CategoryTabs.svelte';
 	import DraftList from '#lib/features/mail-list/DraftList.svelte';
@@ -8,15 +9,20 @@
 	import { CATEGORY_TITLES } from '#lib/features/mail-list/categories.js';
 	import MailList from '#lib/features/mail-list/MailList.svelte';
 	import { getMailboxStore, listKey } from '#lib/stores/mailbox.svelte.js';
-	import { getUiStore } from '#lib/stores/ui.svelte.js';
 	import type { PageProps } from './$types';
 
 	const LIST_ID = 'mail-list';
+	const EMPTY_COPY = {
+		trash: { title: 'Empty Trash?', message: 'Everything in Trash will be deleted forever.' },
+		spam: { title: 'Empty Spam?', message: 'Everything in Spam will be deleted forever.' }
+	} as const;
+	const CANT_UNDO = "This can't be undone.";
+	const EMPTY_NOW = 'Empty now';
 
 	let { data }: PageProps = $props();
 
 	const mailbox = getMailboxStore();
-	const ui = getUiStore();
+	let isConfirmingEmpty = $state(false);
 	// The inbox splits into tabs (FR-2.2); every other mailbox is one list.
 	const isInbox = $derived(data.mailbox === 'inbox');
 	let category = $state<Category>('primary');
@@ -27,7 +33,7 @@
 	);
 	const title = $derived(isInbox ? CATEGORY_TITLES[category] : mailboxTitle(data.mailbox));
 
-	// Trash and Spam warn about the 30-day purge; T8.5 renders the empty confirmation.
+	// Trash and Spam warn about the 30-day purge and can be emptied (FR-6.4).
 	const purgeMailbox = $derived(
 		data.mailbox === 'trash' || data.mailbox === 'spam' ? data.mailbox : null
 	);
@@ -62,10 +68,20 @@
 					<PurgeBanner
 						mailbox={purgeMailbox}
 						isEmpty={isListEmpty}
-						onempty={() => ui.openSheet(`empty-${purgeMailbox}`)}
+						onempty={() => (isConfirmingEmpty = true)}
 					/>
 				{/if}
 			{/snippet}
 		</MailList>
+	{/if}
+	{#if purgeMailbox}
+		<ConfirmDialog
+			bind:open={isConfirmingEmpty}
+			title={EMPTY_COPY[purgeMailbox].title}
+			message={`${EMPTY_COPY[purgeMailbox].message} ${CANT_UNDO}`}
+			confirmLabel={EMPTY_NOW}
+			destructive
+			onconfirm={() => void mailbox.empty(purgeMailbox)}
+		/>
 	{/if}
 </main>

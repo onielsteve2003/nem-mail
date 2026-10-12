@@ -12,7 +12,7 @@ const MOVABLE = ['inbox', 'spam', 'trash'] as const satisfies readonly StoredMai
 type Movable = (typeof MOVABLE)[number];
 
 /** Threads in spam or trash show only there, never in other views. */
-function isBinned(thread: ThreadSummary): boolean {
+export function isBinned(thread: ThreadSummary): boolean {
 	return thread.mailboxes.includes('spam') || thread.mailboxes.includes('trash');
 }
 

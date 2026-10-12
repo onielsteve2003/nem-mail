@@ -2,11 +2,13 @@ import {
 	AppError,
 	SYSTEM_MAILBOXES,
 	applyThreadOp,
+	isBinned,
 	inMailbox,
 	matchesFilter,
 	sortKey,
 	toSummary,
 	type Attachment,
+	type BinMailbox,
 	type BulkThreadResponse,
 	type CountsResponse,
 	type Page,
@@ -72,6 +74,14 @@ export class MockMailRepository implements MailRepository {
 		});
 	}
 
+	deleteForever(threadIds: string[]): Promise<BulkThreadResponse> {
+		return this.#remove((thread) => threadIds.includes(thread.id) && isBinned(thread));
+	}
+
+	empty(mailbox: BinMailbox): Promise<BulkThreadResponse> {
+		return this.#remove((thread) => thread.mailboxes.includes(mailbox));
+	}
+
 	counts(): Promise<CountsResponse> {
 		return this.#ctx.authed((db, userId) => countsFor(db, userId, this.#ctx.now()));
 	}
@@ -94,6 +104,24 @@ export class MockMailRepository implements MailRepository {
 
 	subscribe(listener: (event: ServerEvent) => void): () => void {
 		return this.#ctx.subscribe(listener);
+	}
+
+	/** Deletes the account's threads that pass `test`, then reports new counts. */
+	#remove(test: (thread: Thread) => boolean): Promise<BulkThreadResponse> {
+		return this.#ctx.authed(async (db, userId) => {
+			const tx = db.transaction('threads', 'readwrite');
+			const updatedIds: string[] = [];
+			for (const thread of await tx.store.index('byOwner').getAll(userId)) {
+				if (!test(thread)) continue;
+				await tx.store.delete(thread.id);
+				updatedIds.push(thread.id);
+			}
+			await tx.done;
+			if (updatedIds.length > 0) {
+				this.#ctx.emit({ type: 'counts', counts: await countsFor(db, userId, this.#ctx.now()) });
+			}
+			return { updatedIds };
+		});
 	}
 }
 

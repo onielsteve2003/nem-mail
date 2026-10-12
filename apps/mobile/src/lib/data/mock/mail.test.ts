@@ -154,6 +154,28 @@ describe('MockMailRepository.apply', () => {
 	});
 });
 
+describe('MockMailRepository delete forever', () => {
+	it('deletes only threads in Spam or Trash', async () => {
+		const [binned, kept] = (await mail.list({ mailbox: 'inbox' })).items;
+		await mail.apply([binned!.id], { op: 'trash' });
+		const result = await mail.deleteForever([binned!.id, kept!.id]);
+		expect(result.updatedIds).toEqual([binned!.id]);
+		await expect(mail.get(binned!.id)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+		await expect(mail.get(kept!.id)).resolves.toMatchObject({ id: kept!.id });
+	});
+
+	it('empties a mailbox and leaves the other one alone', async () => {
+		const [a, b] = (await mail.list({ mailbox: 'inbox' })).items;
+		await mail.apply([a!.id], { op: 'trash' });
+		await mail.apply([b!.id], { op: 'spam' });
+		const spamBefore = await listAll({ mailbox: 'spam' });
+		await mail.empty('trash');
+		expect(await listAll({ mailbox: 'trash' })).toEqual([]);
+		expect(await listAll({ mailbox: 'spam' })).toHaveLength(spamBefore.length);
+		expect((await mail.counts()).mailboxes.trash).toBe(0);
+	});
+});
+
 describe('MockMailRepository.counts', () => {
 	it('counts unread per mailbox, tab and label, and every draft', async () => {
 		const counts = await mail.counts();
