@@ -2,6 +2,7 @@
 	import RotateCw from '@lucide/svelte/icons/rotate-cw';
 	import Button from './Button.svelte';
 	import EmptyState from './EmptyState.svelte';
+	import type { StateIllustrationName } from './StateIllustration.svelte';
 	import Icon from './Icon.svelte';
 
 	interface Props {
@@ -12,6 +13,8 @@
 		/** Spinner on the Retry button while the retry runs. */
 		retrying?: boolean;
 		retryLabel?: string;
+		/** Defaults to the error drawing; offline lists use "offline". */
+		illustration?: StateIllustrationName;
 		class?: string;
 	}
 
@@ -21,6 +24,7 @@
 		onretry,
 		retrying = false,
 		retryLabel = 'Try again',
+		illustration = 'error',
 		class: className
 	}: Props = $props();
 </script>
@@ -33,5 +37,5 @@
 {/snippet}
 
 <div role="alert" class={className}>
-	<EmptyState {title} {message} illustration="error" action={onretry ? retry : undefined} />
+	<EmptyState {title} {message} {illustration} action={onretry ? retry : undefined} />
 </div>

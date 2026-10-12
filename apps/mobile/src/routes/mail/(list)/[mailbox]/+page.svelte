@@ -1,25 +1,17 @@
 <script lang="ts">
-	import EmptyState from '#components/ui/EmptyState.svelte';
+	import { mailboxTitle } from '#components/layout/nav.js';
+	import MailList from '#lib/features/mail-list/MailList.svelte';
 	import type { PageProps } from './$types';
 
-	// Placeholder until the mail list (M5).
-	const MESSAGE = 'Your conversations will show here.';
-
 	let { data }: PageProps = $props();
-	const title = $derived(data.mailbox.charAt(0).toUpperCase() + data.mailbox.slice(1));
+	const title = $derived(mailboxTitle(data.mailbox));
+	const filter = $derived({ mailbox: data.mailbox });
 </script>
 
 <svelte:head>
 	<title>{title} · Nem Mail</title>
 </svelte:head>
 
-<main class="screen">
-	<EmptyState {title} message={MESSAGE} />
+<main>
+	<MailList {filter} {title} />
 </main>
-
-<style>
-	.screen {
-		padding-block-end: var(--nm-safe-bottom);
-		padding-inline: var(--nm-safe-left) var(--nm-safe-right);
-	}
-</style>
