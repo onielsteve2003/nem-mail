@@ -8,6 +8,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import Drawer from '#components/layout/Drawer.svelte';
 	import Splash from '#components/layout/Splash.svelte';
 	import Toaster from '#components/ui/Toaster.svelte';
 	import { config } from '#lib/config.js';
@@ -18,6 +19,9 @@
 	import { errorMessage } from '#lib/utils/errors.js';
 	import { guardRedirect } from '#lib/utils/guard.js';
 	import type { LayoutProps } from './$types';
+
+	// The element the drawer slides over.
+	const MAIN_ID = 'main';
 
 	let { children }: LayoutProps = $props();
 
@@ -44,6 +48,8 @@
 		session.status === 'ready' ? guardRedirect(page.url.pathname, session.isSignedIn) : null
 	);
 	const isReady = $derived(session.status === 'ready' && redirect === null);
+	// The drawer swipes open only over the list screens (FR-2.3).
+	const isListRoute = $derived(page.route.id?.startsWith('/mail/(list)') ?? false);
 	$effect(() => {
 		if (!redirect) return;
 		const href =
@@ -60,7 +66,10 @@
 
 <ion-app>
 	{#if isReady}
-		{@render children()}
+		{#if session.isSignedIn}
+			<Drawer contentId={MAIN_ID} swipe={isListRoute} />
+		{/if}
+		<div id={MAIN_ID} class="main">{@render children()}</div>
 	{:else}
 		<Splash
 			error={session.status === 'error' ? errorMessage(session.error) : null}
@@ -69,3 +78,9 @@
 	{/if}
 	<Toaster />
 </ion-app>
+
+<style>
+	.main {
+		block-size: 100%;
+	}
+</style>
