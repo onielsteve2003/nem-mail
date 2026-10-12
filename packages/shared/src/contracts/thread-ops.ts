@@ -1,4 +1,4 @@
-import type { Thread, ThreadSummary } from '../schemas/mail';
+import type { Message, Thread, ThreadSummary } from '../schemas/mail';
 import { STORED_MAILBOXES, type StoredMailbox, type SystemMailbox } from '../schemas/mailbox';
 import type { ThreadListFilter, ThreadOp } from './threads';
 
@@ -118,6 +118,27 @@ export function applyThreadOp<T extends ThreadSummary>(thread: T, op: ThreadOp):
 		case 'unsnooze':
 			return { ...next, snoozedUntil: null };
 	}
+}
+
+/**
+ * A new message from someone else joins the thread: it is the newest and
+ * unread, and the thread returns to the inbox unless it is muted (FR-6.6) or
+ * in Spam or Trash. A muted thread stays where it was, so the reply skips the inbox.
+ */
+export function receiveMessage(thread: Thread, message: Message): Thread {
+	const isSeen = thread.participants.some(
+		(p) => p.email.toLowerCase() === message.from.email.toLowerCase()
+	);
+	const next: Thread = {
+		...thread,
+		messages: [...thread.messages, message],
+		messageCount: thread.messageCount + 1,
+		snippet: message.snippet,
+		lastMessageAt: message.sentAt ?? thread.lastMessageAt,
+		participants: isSeen ? thread.participants : [...thread.participants, message.from],
+		isUnread: true
+	};
+	return thread.isMuted || isBinned(thread) ? next : addMailbox(next, 'inbox');
 }
 
 function withRead<T extends ThreadSummary>(thread: T, isRead: boolean): T {

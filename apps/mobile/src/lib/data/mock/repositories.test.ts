@@ -289,6 +289,28 @@ describe('MockMailSimulator', () => {
 		expect((await mail.list({ mailbox: 'snoozed' })).items.map((t) => t.id)).not.toContain(id);
 	});
 
+	it('lets replies to a muted thread skip the inbox (FR-6.6)', async () => {
+		ctx.userId = 'u1';
+		const mail = new MockMailRepository(ctx);
+		const [muted, archived] = (await mail.list({ mailbox: 'inbox' }, { limit: 2 })).items;
+		await mail.apply([muted!.id], { op: 'mute' });
+		await mail.apply([archived!.id], { op: 'archive' });
+		const simulator = new MockMailSimulator(ctx, () => 0);
+
+		const quiet = await simulator.reply(muted!.id);
+		expect(quiet).toMatchObject({ isMuted: true, isUnread: true });
+		expect(quiet?.mailboxes).not.toContain('inbox');
+		expect(quiet?.messageCount).toBe(muted!.messageCount + 1);
+		const back = await simulator.reply(archived!.id);
+		expect(back?.mailboxes).toContain('inbox');
+		const inbox = (await mail.list({ mailbox: 'inbox' })).items.map((t) => t.id);
+		expect(inbox).toContain(archived!.id);
+		expect(inbox).not.toContain(muted!.id);
+
+		await mail.apply([muted!.id], { op: 'unmute' });
+		expect((await simulator.reply(muted!.id))?.mailboxes).toContain('inbox');
+	});
+
 	it('ticks on a timer, does nothing signed out, and stops', async () => {
 		vi.useFakeTimers();
 		const simulator = new MockMailSimulator(ctx, () => 0.5);

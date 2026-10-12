@@ -1,7 +1,14 @@
 import type { Thread } from '../schemas/mail';
 import { generateSeed } from '../seed';
 import { describe, expect, it } from 'vitest';
-import { applyThreadOp, inMailbox, matchesFilter, restoreOps, toSummary } from './thread-ops';
+import {
+	applyThreadOp,
+	inMailbox,
+	matchesFilter,
+	receiveMessage,
+	restoreOps,
+	toSummary
+} from './thread-ops';
 import type { ThreadOp } from './threads';
 
 const NOW = Date.parse('2026-10-11T09:00:00.000Z');
@@ -147,5 +154,36 @@ describe('toSummary', () => {
 		expect(summary.recipients?.map((a) => a.email.toLowerCase()).sort()).toEqual(
 			[...expected].sort()
 		);
+	});
+});
+
+describe('receiveMessage', () => {
+	const reply = {
+		...inboxThread.messages[0]!,
+		id: 'reply-1',
+		sentAt: '2026-10-11T10:00:00.000Z',
+		snippet: 'New reply',
+		isRead: false
+	};
+
+	it('brings an archived thread back to the inbox, unread and newest', () => {
+		const archived = applyThreadOp(applyThreadOp(inboxThread, { op: 'archive' }), {
+			op: 'markRead'
+		});
+		const next = receiveMessage(archived, reply);
+		expect(next.mailboxes).toContain('inbox');
+		expect(next).toMatchObject({
+			isUnread: true,
+			snippet: 'New reply',
+			lastMessageAt: reply.sentAt
+		});
+		expect(next.messageCount).toBe(archived.messageCount + 1);
+	});
+
+	it('keeps muted and binned threads out of the inbox', () => {
+		const muted = applyThreadOp(inboxThread, { op: 'mute' });
+		expect(receiveMessage(muted, reply).mailboxes).not.toContain('inbox');
+		const trashed = applyThreadOp(inboxThread, { op: 'trash' });
+		expect(receiveMessage(trashed, reply).mailboxes).toEqual(trashed.mailboxes);
 	});
 });

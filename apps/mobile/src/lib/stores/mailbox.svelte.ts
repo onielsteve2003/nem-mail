@@ -62,6 +62,7 @@ const OP_TOAST: Partial<Record<ThreadOpName, string>> = {
 	notSpam: 'Moved to Inbox',
 	move: 'Moved',
 	mute: 'Muted',
+	unmute: 'Unmuted',
 	snooze: 'Snoozed',
 	setCategory: 'Moved to tab',
 	addLabels: 'Labels added',
