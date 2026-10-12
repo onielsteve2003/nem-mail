@@ -13,6 +13,30 @@ describe('sanitizeEmail', () => {
 		expect(html).toContain('<p>Hi</p>');
 	});
 
+	// Common XSS vectors (OWASP cheat sheet); none may survive with a way to run code.
+	it.each([
+		['svg onload', '<svg onload="steal()"><circle r="1"/></svg>'],
+		['img onerror', '<img src="x" onerror="steal()">'],
+		['iframe', '<iframe src="https://evil.example"></iframe>'],
+		['iframe srcdoc', '<iframe srcdoc="<script>steal()</script>"></iframe>'],
+		['object and embed', '<object data="evil.swf"></object><embed src="evil.swf">'],
+		['mixed-case javascript: link', '<a href="JaVaScRiPt:steal()">x</a>'],
+		['entity-encoded javascript: link', '<a href="&#106;avascript:steal()">x</a>'],
+		['vbscript: link', '<a href="vbscript:msgbox(1)">x</a>'],
+		['data:text/html link', '<a href="data:text/html,<script>steal()</script>">x</a>'],
+		['meta refresh', '<meta http-equiv="refresh" content="0;url=javascript:steal()">'],
+		['base href hijack', '<base href="https://evil.example/">'],
+		['button formaction', '<button formaction="javascript:steal()">x</button>'],
+		['math/mglyph mutation', '<math><mtext><table><mglyph><style><img src=x onerror=steal()>'],
+		['noscript mutation', '<noscript><p title="</noscript><img src=x onerror=steal()>">'],
+		['template contents', '<template><script>steal()</script></template>']
+	])('neutralizes %s', (_name, input) => {
+		const { html } = sanitizeEmail(input);
+		expect(html).not.toMatch(
+			/<script|<iframe|<object|<embed|<meta|<base|<button|\son\w+=|javascript:|vbscript:|data:text\/html/i
+		);
+	});
+
 	it('opens links in a new tab without a referrer', () => {
 		const { html } = sanitizeEmail('<a href="https://example.com">site</a>');
 		expect(html).toContain('target="_blank"');
