@@ -1,6 +1,15 @@
 import type { ThreadSummary } from '@nem/shared';
 import { describe, expect, it } from 'vitest';
 import { RECENT_LIMIT, addRecent, loadRecent, recentKey, saveRecent } from './recent.js';
+import {
+	DATE_PRESETS,
+	activePreset,
+	daysAgo,
+	filterClauses,
+	presetClause,
+	setFilter,
+	toggleClause
+} from './filters.js';
 import { searchUrl } from './search-url.js';
 import { fromQuery, subjectQuery, subjectSuggestions } from './suggestions.js';
 
@@ -74,5 +83,43 @@ describe('searchUrl', () => {
 		const url = searchUrl({ href: 'https://x.example/search?q=old' }, 'from:ada "big plans"');
 		expect(url.searchParams.get('q')).toBe('from:ada "big plans"');
 		expect(searchUrl(url, '').search).toBe('');
+	});
+});
+
+describe('filter chips', () => {
+	const now = new Date(2026, 9, 12, 15, 0);
+
+	it('reads and replaces only the operators the chip owns', () => {
+		const q = 'budget from:ada@x.io -from:bob@x.io';
+		expect(filterClauses(q, 'from').map((c) => c.value)).toEqual(['ada@x.io']);
+		expect(setFilter(q, 'from', [{ kind: 'from', value: 'cy@x.io', negated: false }])).toBe(
+			'budget -from:bob@x.io from:cy@x.io'
+		);
+		expect(setFilter(q, 'from', [])).toBe('budget -from:bob@x.io');
+		expect(filterClauses('is:read', 'unread')).toEqual([]);
+	});
+
+	it('toggles has:attachment and is:unread', () => {
+		const on = setFilter('invoice', 'attachment', [toggleClause('attachment')]);
+		expect(on).toBe('invoice has:attachment');
+		expect(setFilter(on, 'unread', [toggleClause('unread')])).toBe(
+			'invoice has:attachment is:unread'
+		);
+		expect(setFilter(on, 'attachment', [])).toBe('invoice');
+	});
+
+	it('writes date presets relative to today and recognizes them back', () => {
+		expect(daysAgo(7, now)).toBe('2026-10-05');
+		const older = DATE_PRESETS.find((p) => p.id === 'older-year')!;
+		const q = setFilter('trip after:2020-01-01', 'date', [presetClause(older, now)]);
+		expect(q).toBe('trip before:2025-10-12');
+		expect(activePreset(q, now)?.id).toBe('older-year');
+		expect(activePreset('after:2020-01-01', now)).toBeUndefined();
+	});
+
+	it('quotes label names with spaces', () => {
+		expect(
+			setFilter('', 'label', [{ kind: 'label', value: 'work/q4 plans', negated: false }])
+		).toBe('label:"work/q4 plans"');
 	});
 });

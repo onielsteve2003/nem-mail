@@ -3,7 +3,7 @@
 	import History from '@lucide/svelte/icons/history';
 	import Search from '@lucide/svelte/icons/search';
 	import X from '@lucide/svelte/icons/x';
-	import type { Contact, ThreadSummary } from '@nem/shared';
+	import type { Contact, Label, ThreadSummary } from '@nem/shared';
 	import { onMount, type Snippet } from 'svelte';
 	import Avatar from '#components/ui/Avatar.svelte';
 	import Button from '#components/ui/Button.svelte';
@@ -11,6 +11,7 @@
 	import IconButton from '#components/ui/IconButton.svelte';
 	import SearchField from '#components/ui/SearchField.svelte';
 	import SectionHeader from '#components/ui/SectionHeader.svelte';
+	import FilterChips from './FilterChips.svelte';
 	import { addRecent, loadRecent, saveRecent } from './recent.js';
 	import { fromQuery, subjectQuery, subjectSuggestions } from './suggestions.js';
 
@@ -34,6 +35,8 @@
 		userId: string;
 		/** Threads already loaded in the app, for subject suggestions. */
 		threads: ThreadSummary[];
+		/** For the Label filter chip. */
+		labels?: readonly Label[];
 		searchContacts: (q: string) => Promise<Contact[]>;
 		onsubmit: (query: string) => void;
 		onback: () => void;
@@ -46,6 +49,7 @@
 		query,
 		userId,
 		threads,
+		labels = [],
 		searchContacts,
 		onsubmit,
 		onback,
@@ -130,6 +134,7 @@
 	</form>
 
 	{#if showResults}
+		<FilterChips {query} {labels} {searchContacts} onchange={submit} />
 		{@render results?.(query)}
 	{:else if typed}
 		<div class="panel">

@@ -2,6 +2,7 @@
 	import { afterNavigate, goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import type { Label } from '@nem/shared';
 	import EmptyState from '#components/ui/EmptyState.svelte';
 	import SearchScreen from '#features/search/SearchScreen.svelte';
 	import { searchUrl } from '#features/search/search-url.js';
@@ -14,11 +15,21 @@
 	const RESULTS_TITLE = 'Results will show here';
 
 	const repos = getRepositories();
+	let labels = $state<Label[]>([]);
 	const session = getSessionStore();
 	const mailbox = getMailboxStore();
 
 	const query = $derived(page.url.searchParams.get('q')?.trim() ?? '');
 	const threads = $derived(Object.values(mailbox.lists).flatMap((list) => list.items));
+
+	$effect(() => {
+		if (!session.user) return;
+		// The Label chip just hides until labels arrive; a failure leaves it hidden.
+		repos.labels.list().then(
+			(list) => (labels = list),
+			() => (labels = [])
+		);
+	});
 
 	// Opened from inside the app: back returns there. A deep link has nowhere to go back to.
 	let cameFromApp = false;
@@ -47,6 +58,7 @@
 			{query}
 			userId={session.user.id}
 			{threads}
+			{labels}
 			searchContacts={(q) => repos.contacts.search({ q })}
 			onsubmit={submit}
 			onback={back}
