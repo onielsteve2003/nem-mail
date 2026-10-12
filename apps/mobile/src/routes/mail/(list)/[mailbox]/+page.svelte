@@ -19,8 +19,7 @@
 
 <style>
 	.screen {
-		min-block-size: var(--nm-viewport-height);
-		padding-block: var(--nm-safe-top) var(--nm-safe-bottom);
+		padding-block-end: var(--nm-safe-bottom);
 		padding-inline: var(--nm-safe-left) var(--nm-safe-right);
 	}
 </style>

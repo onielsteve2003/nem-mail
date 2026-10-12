@@ -49,7 +49,7 @@
 		const href =
 			redirect === '/onboarding'
 				? resolve('/onboarding')
-				: resolve('/mail/[mailbox]', { mailbox: 'inbox' });
+				: resolve('/mail/(list)/[mailbox]', { mailbox: 'inbox' });
 		void goto(href, { replaceState: true });
 	});
 </script>
