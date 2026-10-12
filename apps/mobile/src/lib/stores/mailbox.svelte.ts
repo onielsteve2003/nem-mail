@@ -82,6 +82,8 @@ export interface MailboxStoreOptions {
 export class MailboxStore {
 	lists = $state<Record<string, ThreadList>>({});
 	counts = $state<CountsResponse | null>(null);
+	/** Key of the list last shown, whose order the thread view moves through (FR-4.6). */
+	activeKey = $state<string | null>(null);
 
 	readonly #mail: MailRepository;
 	readonly #threads: ThreadStore | undefined;

@@ -80,7 +80,16 @@
 </script>
 
 {#snippet openThread()}
-	{#if threadId}<ThreadView {threadId} variant="close" onclose={closeThread} />{/if}
+	{#if threadId}
+		<ThreadView
+			{threadId}
+			variant="close"
+			onclose={closeThread}
+			onnavigate={(id) =>
+				// eslint-disable-next-line svelte/no-navigation-without-resolve -- the current resolved path with ?thread= swapped
+				void goto(withReadingThread(page.url, id), { replaceState: true })}
+		/>
+	{/if}
 {/snippet}
 
 <div class="panes">

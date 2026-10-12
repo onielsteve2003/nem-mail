@@ -25,7 +25,12 @@
 </svelte:head>
 
 <main class="screen">
-	<ThreadView threadId={params.threadId} onclose={close} />
+	<ThreadView
+		threadId={params.threadId}
+		onclose={close}
+		onnavigate={(threadId) =>
+			void goto(resolve('/mail/thread/[threadId]', { threadId }), { replaceState: true })}
+	/>
 </main>
 
 <style>

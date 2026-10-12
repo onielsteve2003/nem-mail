@@ -82,6 +82,7 @@
 	$effect(() => {
 		void key;
 		untrack(() => void mailbox.load(filter));
+		mailbox.activeKey = key;
 	});
 
 	// Pull to refresh in the list layout reloads this list.

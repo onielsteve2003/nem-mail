@@ -14,6 +14,13 @@
 	import MessageList from './MessageList.svelte';
 	import ThreadHeader from './ThreadHeader.svelte';
 	import { leavesThread } from './actions.js';
+	import {
+		scrollsSideways,
+		swipeTarget,
+		threadNeighbors,
+		threadShortcut,
+		type ThreadShortcut
+	} from './thread-nav.js';
 	import { threadViewState } from './view-state.js';
 
 	const LOADING = 'Loading conversation';
@@ -26,9 +33,11 @@
 		/** Back arrow on the full-screen route, X in the reading pane. */
 		variant?: 'back' | 'close';
 		onclose: () => void;
+		/** Opens another thread in place (swipe, j/k), replacing this one in history. */
+		onnavigate?: (threadId: string) => void;
 	}
 
-	let { threadId, variant = 'back', onclose }: Props = $props();
+	let { threadId, variant = 'back', onclose, onnavigate }: Props = $props();
 
 	const repos = getRepositories();
 	const session = getSessionStore();
@@ -71,12 +80,68 @@
 		if (leavesThread(op)) onclose();
 	}
 
+	// Neighbors come from the list the thread was opened from (FR-4.6).
+	const neighbors = $derived.by(() => {
+		const list = mailbox.activeKey ? mailbox.lists[mailbox.activeKey] : undefined;
+		return threadNeighbors(list?.items.map((item) => item.id) ?? [], threadId);
+	});
+
+	function go(direction: 'older' | 'newer'): void {
+		const id = neighbors[direction];
+		if (id && onnavigate) onnavigate(id);
+	}
+
+	function run(shortcut: ThreadShortcut): void {
+		if (shortcut === 'older' || shortcut === 'newer') go(shortcut);
+		else if (shortcut === 'archive') act({ op: 'archive' });
+		else if (shortcut === 'trash') act({ op: 'trash' });
+		else {
+			const last = thread?.messages.at(-1);
+			if (last) ui.openCompose({ mode: 'reply', threadId: last.threadId, messageId: last.id });
+		}
+	}
+
+	function onkeydown(event: KeyboardEvent): void {
+		// Sheets and the drawer own the keyboard while open.
+		if (!thread || ui.activeSheet || ui.isDrawerOpen || event.defaultPrevented) return;
+		const shortcut = threadShortcut(event);
+		if (!shortcut) return;
+		event.preventDefault();
+		run(shortcut);
+	}
+
+	let swipeStart: { x: number; y: number } | null = null;
+	function ontouchstart(event: TouchEvent & { currentTarget: HTMLElement }): void {
+		const touch = event.touches[0];
+		const sideways = scrollsSideways(event.target as Element, event.currentTarget);
+		swipeStart =
+			event.touches.length === 1 && touch && !sideways
+				? { x: touch.clientX, y: touch.clientY }
+				: null;
+	}
+	function ontouchend(event: TouchEvent): void {
+		const touch = event.changedTouches[0];
+		if (!swipeStart || !touch) return;
+		const target = swipeTarget(touch.clientX - swipeStart.x, touch.clientY - swipeStart.y);
+		swipeStart = null;
+		if (target) go(target);
+	}
+
 	const threadLabels = $derived(
 		thread ? labels.filter((label) => thread.labelIds.includes(label.id)) : []
 	);
 </script>
 
-<article class="thread" aria-busy={view === 'loading'}>
+<svelte:window {onkeydown} />
+
+<article
+	class="thread"
+	aria-busy={view === 'loading'}
+	aria-keyshortcuts="j k e # r"
+	{ontouchstart}
+	{ontouchend}
+	ontouchcancel={() => (swipeStart = null)}
+>
 	<ThreadHeader
 		subject={thread?.subject ?? null}
 		labels={threadLabels}
