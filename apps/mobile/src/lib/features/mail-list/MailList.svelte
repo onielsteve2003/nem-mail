@@ -15,6 +15,7 @@
 	import { TWO_PANE_QUERY, readingThreadId, withReadingThread } from '#lib/utils/reading-pane.js';
 	import { emptyCopy, errorCopy } from './list-states.js';
 	import MailRow from './MailRow.svelte';
+	import MailRows from './MailRows.svelte';
 	import { getListRefresh } from './refresh.js';
 
 	const SKELETON_ROWS = 8;
@@ -112,20 +113,23 @@
 		{:else if list.items.length === 0}
 			<EmptyState title={empty.title} message={empty.message} illustration={empty.illustration} />
 		{:else}
-			<ul class="rows">
-				{#each list.items as thread (thread.id)}
-					<li>
-						<MailRow
-							{thread}
-							href={href(thread)}
-							labels={rowLabels(thread)}
-							{density}
-							selfEmail={session.user?.email}
-							active={twoPane.current && openId === thread.id}
-						/>
-					</li>
-				{/each}
-			</ul>
+			<MailRows
+				items={list.items}
+				hasMore={list.nextCursor !== null}
+				isLoadingMore={list.isLoadingMore}
+				onloadmore={() => void mailbox.loadMore(filter)}
+			>
+				{#snippet row(thread)}
+					<MailRow
+						{thread}
+						href={href(thread)}
+						labels={rowLabels(thread)}
+						{density}
+						selfEmail={session.user?.email}
+						active={twoPane.current && openId === thread.id}
+					/>
+				{/snippet}
+			</MailRows>
 		{/if}
 	</div>
 </section>
@@ -141,11 +145,6 @@
 		padding-block: var(--nm-space-2);
 		padding-inline: var(--nm-space-4);
 		color: var(--nm-color-text-subtle);
-	}
-	.rows {
-		margin: 0;
-		padding: 0;
-		list-style: none;
 	}
 	.skeleton__row {
 		display: flex;
