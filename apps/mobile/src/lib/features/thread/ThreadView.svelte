@@ -78,10 +78,18 @@
 		}
 	});
 
-	function act(op: ThreadOp): void {
+	function act(op: ThreadOp | ThreadOp[]): void {
 		if (!thread) return;
-		void mailbox.apply([thread.id], op);
-		if (leavesThread(op)) onclose();
+		const ops = Array.isArray(op) ? op : [op];
+		void mailbox.apply([thread.id], ops);
+		if (ops.some(leavesThread)) onclose();
+	}
+
+	async function createLabel(name: string): Promise<Label> {
+		const label = await repos.labels.create({ name, color: 'neutral', parentId: null });
+		labels = [...labels, label];
+		ui.labelsChanged();
+		return label;
 	}
 
 	/**
@@ -181,7 +189,13 @@
 	>
 		{#snippet actions()}
 			{#if thread}
-				<ThreadActions threads={[thread]} {labels} onapply={act} readInBar />
+				<ThreadActions
+					threads={[thread]}
+					{labels}
+					onapply={act}
+					oncreatelabel={createLabel}
+					readInBar
+				/>
 			{/if}
 		{/snippet}
 	</ThreadHeader>

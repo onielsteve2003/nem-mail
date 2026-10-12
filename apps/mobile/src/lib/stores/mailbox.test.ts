@@ -117,6 +117,25 @@ describe('MailboxStore optimistic updates', () => {
 		});
 	});
 
+	it('runs several ops as one change with one toast, and Undo reverts them all', async () => {
+		const [id = ''] = inboxIds();
+		const labelIds = (await repos.labels.list()).slice(0, 2).map((label) => label.id);
+		await mailbox.apply([id], [{ op: 'addLabels', labelIds }, { op: 'archive' }]);
+		expect(inboxIds()).not.toContain(id);
+		expect(toasts.current?.message).toBe('Moved');
+		const saved = await repos.mail.get(id);
+		expect(saved.labelIds).toEqual(expect.arrayContaining(labelIds));
+		expect(saved.mailboxes).not.toContain('inbox');
+
+		toasts.runAction(toasts.current?.id ?? 0);
+		expect(inboxIds()).toContain(id);
+		await vi.waitFor(async () => {
+			const restored = await repos.mail.get(id);
+			expect(restored.mailboxes).toContain('inbox');
+			expect(restored.labelIds.filter((l) => labelIds.includes(l))).toEqual([]);
+		});
+	});
+
 	it('shows no toast for quiet ops and ignores an empty selection', async () => {
 		const apply = vi.spyOn(repos.mail, 'apply');
 		expect(await mailbox.apply([], { op: 'archive' })).toBe(true);

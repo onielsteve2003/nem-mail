@@ -1,6 +1,12 @@
-import type { ThreadSummary } from '@nem/shared';
+import type { Label, ThreadSummary } from '@nem/shared';
 import { describe, expect, it } from 'vitest';
-import { bulkToggles, snoozePresets } from './thread-actions.js';
+import {
+	bulkToggles,
+	filterLabels,
+	labelChangeOps,
+	labelStates,
+	snoozePresets
+} from './thread-actions.js';
 
 const thread = (overrides: Partial<ThreadSummary>) =>
 	({
@@ -42,5 +48,34 @@ describe('snoozePresets', () => {
 	it('skips to the following Monday when today is Monday', () => {
 		const nextWeek = snoozePresets(new Date(2026, 9, 12, 9, 0))[2];
 		expect(nextWeek?.until).toEqual(new Date(2026, 9, 19, 8, 0));
+	});
+});
+
+describe('label picker helpers', () => {
+	const labeled = (...labelIds: string[]) => ({ labelIds }) as ThreadSummary;
+
+	it('gives each label all, some or none across the threads', () => {
+		expect(labelStates([labeled('a', 'b'), labeled('a')], ['a', 'b', 'c'])).toEqual({
+			a: 'all',
+			b: 'some',
+			c: 'none'
+		});
+	});
+
+	it('adds newly checked labels, removes unchecked ones and leaves mixed ones alone', () => {
+		const initial = { a: 'all', b: 'some', c: 'none', d: 'some' } as const;
+		expect(labelChangeOps(initial, { a: 'none', b: 'all', c: 'all', d: 'some' })).toEqual([
+			{ op: 'addLabels', labelIds: ['b', 'c'] },
+			{ op: 'removeLabels', labelIds: ['a'] }
+		]);
+		expect(labelChangeOps(initial, { ...initial })).toEqual([]);
+	});
+
+	it('filters by name and keeps children under their parent', () => {
+		const label = (id: string, name: string, parentId: string | null = null) =>
+			({ id, name, parentId, color: 'neutral' }) as Label;
+		const labels = [label('k', 'Kids', 'f'), label('w', 'Work'), label('f', 'Family')];
+		expect(filterLabels(labels, '').map((l) => l.id)).toEqual(['f', 'k', 'w']);
+		expect(filterLabels(labels, 'WO').map((l) => l.id)).toEqual(['w']);
 	});
 });

@@ -58,8 +58,17 @@ const OP_TOAST: Partial<Record<ThreadOpName, string>> = {
 	removeLabels: 'Labels removed'
 };
 
-function toastCopy(op: ThreadOpName, count: number): string | null {
-	const copy = OP_TOAST[op];
+const LABEL_OPS: readonly ThreadOpName[] = ['addLabels', 'removeLabels'];
+
+/** Copy for one op, or for a sequence (a label picker change, a move to a label). */
+function toastCopy(ops: readonly ThreadOp[], count: number): string | null {
+	const names = ops.map((op) => op.op);
+	const copy =
+		names.length === 1
+			? OP_TOAST[names[0]!]
+			: names.every((name) => LABEL_OPS.includes(name))
+				? 'Labels updated'
+				: 'Moved';
 	if (!copy) return null;
 	return count === 1 ? copy : `${copy}: ${count} conversations`;
 }
@@ -199,36 +208,43 @@ export class MailboxStore {
 	 * Applies an op at once to every cached list and open thread, then saves
 	 * it. On failure everything rolls back and an error toast offers Retry.
 	 * Ops with toast copy offer Undo. `known` holds rows no cached list has any
-	 * more (Undo passes them so they can come back). Resolves true when saved.
+	 * more (Undo passes them so they can come back). Several ops run as one
+	 * change: saved in order, with one toast and one Undo. Resolves true when saved.
 	 */
 	async apply(
 		threadIds: string[],
-		op: ThreadOp,
+		opOrOps: ThreadOp | readonly ThreadOp[],
 		{ undoable = true, known = [] }: { undoable?: boolean; known?: ThreadSummary[] } = {}
 	): Promise<boolean> {
+		const ops: readonly ThreadOp[] = Array.isArray(opOrOps) ? opOrOps : [opOrOps as ThreadOp];
 		const ids = threadIds.filter((id, index) => threadIds.indexOf(id) === index);
-		if (ids.length === 0) return true;
+		if (ids.length === 0 || ops.length === 0) return true;
 		const before = this.#summaries(ids);
 		const lists = $state.snapshot(this.lists) as Record<string, ThreadList>;
 		const threads = this.#threads?.snapshot();
-		this.#applyLocal(ids, op, known);
+		// Each op sees the rows as the previous one left them, even ones that left every list.
+		let rows = [...before, ...known.filter((k) => !before.some((b) => b.id === k.id))];
+		for (const op of ops) {
+			this.#applyLocal(ids, op, rows);
+			rows = rows.map((row) => applyThreadOp(row, op));
+		}
 		const generation = this.#generation;
 		try {
-			await this.#mail.apply(ids, op);
+			for (const op of ops) await this.#mail.apply(ids, op);
 		} catch (error) {
 			if (generation !== this.#generation) return false;
 			this.lists = lists;
 			if (threads) this.#threads?.restore(threads);
-			this.#toastError(UPDATE_FAILED, error, () => void this.apply(ids, op, { undoable, known }));
+			this.#toastError(UPDATE_FAILED, error, () => void this.apply(ids, ops, { undoable, known }));
 			return false;
 		}
 		// Rows may now belong in lists that were not touched (e.g. starred).
 		for (const list of Object.values(this.lists)) list.isStale = true;
-		const copy = toastCopy(op.op, ids.length);
+		const copy = toastCopy(ops, ids.length);
 		if (undoable && copy) {
 			this.#toasts.show({
 				message: copy,
-				action: { label: UNDO, onaction: () => void this.#undo(before, op) }
+				action: { label: UNDO, onaction: () => void this.#undo(before, ops) }
 			});
 		}
 		return true;
@@ -293,10 +309,11 @@ export class MailboxStore {
 	 * Undo: works out which ops take each thread back from `op`, groups threads
 	 * that need the same ops, and applies each group.
 	 */
-	async #undo(before: ThreadSummary[], op: ThreadOp): Promise<void> {
+	async #undo(before: ThreadSummary[], done: readonly ThreadOp[]): Promise<void> {
+		const after = (thread: ThreadSummary) => done.reduce(applyThreadOp, thread);
 		const groups: Record<string, { ops: ThreadOp[]; ids: string[] }> = {};
 		for (const thread of before) {
-			const ops = restoreOps(thread, applyThreadOp(thread, op));
+			const ops = restoreOps(thread, after(thread));
 			if (ops.length === 0) continue;
 			const key = JSON.stringify(ops);
 			const group = (groups[key] ??= { ops, ids: [] });
@@ -304,9 +321,7 @@ export class MailboxStore {
 		}
 		for (const { ops, ids } of Object.values(groups)) {
 			// Each thread as it is after `op`, then after each restore op.
-			let known = before
-				.filter((thread) => ids.includes(thread.id))
-				.map((thread) => applyThreadOp(thread, op));
+			let known = before.filter((thread) => ids.includes(thread.id)).map(after);
 			for (const restore of ops) {
 				if (!(await this.apply(ids, restore, { undoable: false, known }))) return;
 				known = known.map((thread) => applyThreadOp(thread, restore));

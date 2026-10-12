@@ -106,10 +106,18 @@
 	const selected = $derived(list?.items.filter((thread) => selection.has(thread.id)) ?? []);
 
 	/** Runs a bulk action and leaves selection mode; the store toasts and offers Undo. */
-	function applyToSelection(op: ThreadOp): void {
+	function applyToSelection(op: ThreadOp | ThreadOp[]): void {
 		const ids = [...selection.ids];
 		selection.clear();
 		void mailbox.apply(ids, op);
+	}
+
+	/** Inline create from the label picker; the drawer and other lists pick it up too. */
+	async function createLabel(name: string): Promise<Label> {
+		const label = await repos.labels.create({ name, color: 'neutral', parentId: null });
+		labels = [...labels, label];
+		ui.labelsChanged();
+		return label;
 	}
 
 	function selectAll(): void {
@@ -154,7 +162,12 @@
 			onexit={() => selection.clear()}
 		>
 			{#snippet actions()}
-				<ThreadActions threads={selected} {labels} onapply={applyToSelection} />
+				<ThreadActions
+					threads={selected}
+					{labels}
+					onapply={applyToSelection}
+					oncreatelabel={createLabel}
+				/>
 			{/snippet}
 		</SelectionBar>
 	{/if}

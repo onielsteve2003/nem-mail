@@ -15,6 +15,7 @@
 	import type { Label, ThreadOp, ThreadSummary } from '@nem/shared';
 	import ActionSheet, { type ActionSheetItem } from './ActionSheet.svelte';
 	import IconButton from './IconButton.svelte';
+	import LabelPicker from './LabelPicker.svelte';
 	import { MOVE_TARGETS, bulkToggles, snoozePresets } from '#lib/utils/thread-actions.js';
 
 	const COPY = {
@@ -27,13 +28,12 @@
 		unstar: 'Remove star',
 		markImportant: 'Mark important',
 		markNotImportant: 'Mark not important',
-		label: 'Add label…',
+		label: 'Labels…',
 		move: 'Move to…',
 		snooze: 'Snooze…',
 		spam: 'Report spam',
 		mute: 'Mute',
 		unmute: 'Unmute',
-		labelTitle: 'Add label',
 		moveTitle: 'Move to',
 		snoozeTitle: 'Snooze until'
 	};
@@ -41,17 +41,19 @@
 	interface Props {
 		/** The selected threads. */
 		threads: readonly ThreadSummary[];
-		/** The account's labels, for "Add label". */
+		/** The account's labels, for the label picker. */
 		labels: readonly Label[];
-		/** Runs an op on the whole selection. */
-		onapply: (op: ThreadOp) => void;
+		/** Runs an op, or several as one change, on the whole selection. */
+		onapply: (op: ThreadOp | ThreadOp[]) => void;
+		/** Creates a label from the picker. */
+		oncreatelabel?: (name: string) => Promise<Label>;
 		/** Puts read/unread in the bar instead of the More sheet, as the thread view does. */
 		readInBar?: boolean;
 	}
 
-	let { threads, labels, onapply, readInBar = false }: Props = $props();
+	let { threads, labels, onapply, oncreatelabel, readInBar = false }: Props = $props();
 
-	// The pickers are quick versions; M8 brings the full label, move and snooze sheets.
+	// Move and snooze are quick pickers until T8.3/T8.4.
 	let sheet = $state<'more' | 'labels' | 'move' | 'snooze' | null>(null);
 
 	const toggles = $derived(bulkToggles(threads));
@@ -76,7 +78,7 @@
 		{
 			label: COPY.label,
 			icon: Tag,
-			disabled: labels.length === 0,
+			disabled: labels.length === 0 && !oncreatelabel,
 			onselect: () => (sheet = 'labels')
 		},
 		{ label: COPY.move, icon: FolderInput, onselect: () => (sheet = 'move') },
@@ -93,13 +95,6 @@
 			onselect: () => onapply(toggles.mute)
 		}
 	]);
-	const labelItems = $derived<ActionSheetItem[]>(
-		labels.map((label) => ({
-			label: label.name,
-			icon: Tag,
-			onselect: () => onapply({ op: 'addLabels', labelIds: [label.id] })
-		}))
-	);
 	const moveItems: ActionSheetItem[] = MOVE_TARGETS.map(({ to, label }) => ({
 		label,
 		onselect: () => onapply({ op: 'move', to })
@@ -147,10 +142,12 @@
 />
 
 <ActionSheet open={sheet === 'more'} title={COPY.more} hideTitle actions={more} onclose={close} />
-<ActionSheet
+<LabelPicker
 	open={sheet === 'labels'}
-	title={COPY.labelTitle}
-	actions={labelItems}
+	{threads}
+	{labels}
+	oncreate={oncreatelabel}
+	onapply={(ops) => onapply(ops)}
 	onclose={close}
 />
 <ActionSheet open={sheet === 'move'} title={COPY.moveTitle} actions={moveItems} onclose={close} />

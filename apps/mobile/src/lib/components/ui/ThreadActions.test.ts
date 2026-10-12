@@ -7,7 +7,8 @@ const thread = {
 	isUnread: true,
 	isStarred: false,
 	isImportant: false,
-	isMuted: false
+	isMuted: false,
+	labelIds: [] as string[]
 } as ThreadSummary;
 const labels = [{ id: 'l1', name: 'Work', color: 'violet' as const, parentId: null }];
 
@@ -28,9 +29,11 @@ describe('ThreadActions', () => {
 		expect(onapply).toHaveBeenLastCalledWith({ op: 'markRead' });
 
 		await fireEvent.click(screen.getByRole('button', { name: 'More actions' }));
-		await fireEvent.click(await screen.findByRole('button', { name: 'Add label…' }));
-		await fireEvent.click(await screen.findByRole('button', { name: 'Work' }));
-		expect(onapply).toHaveBeenLastCalledWith({ op: 'addLabels', labelIds: ['l1'] });
+		await fireEvent.click(await screen.findByRole('button', { name: 'Labels…' }));
+		const picker = await screen.findByRole('dialog', { name: 'Labels' });
+		await fireEvent.click(within(picker).getByRole('checkbox', { name: 'Work' }));
+		await fireEvent.click(within(picker).getByRole('button', { name: 'Apply' }));
+		expect(onapply).toHaveBeenLastCalledWith([{ op: 'addLabels', labelIds: ['l1'] }]);
 	});
 
 	it('puts read state in the bar for the thread view', async () => {
