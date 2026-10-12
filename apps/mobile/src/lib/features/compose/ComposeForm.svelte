@@ -11,6 +11,7 @@
 	import { MAX_ATTACHMENT_BYTES } from '@nem/shared';
 	import { onDestroy, untrack } from 'svelte';
 	import { getRepositories } from '#lib/data/provider.js';
+	import { getMailboxStore } from '#lib/stores/mailbox.svelte.js';
 	import { getSessionStore } from '#lib/stores/session.svelte.js';
 	import { getThreadStore } from '#lib/stores/thread.svelte.js';
 	import { toastStore } from '#lib/stores/toast.svelte.js';
@@ -31,6 +32,7 @@
 	import { prefill } from './prefill.js';
 	import RecipientField from './RecipientField.svelte';
 	import { fromAddresses, type Recipient } from './recipients.js';
+	import { sendDraft, sendProblem } from './send.js';
 
 	const COPY = {
 		close: 'Close compose',
@@ -65,6 +67,7 @@
 	const session = getSessionStore();
 	const threads = getThreadStore();
 	const ui = getUiStore();
+	const mailbox = getMailboxStore();
 	const id = $props.id();
 	const title = $derived(composeTitle(request));
 
@@ -131,15 +134,17 @@
 		});
 	});
 
+	const meta = () => ({
+		id: draftId,
+		mode: request?.mode ?? 'new',
+		threadId: request?.threadId ?? null,
+		inReplyTo: request?.messageId ?? null
+	});
+
 	function save(): Promise<boolean> {
 		clearTimeout(saveTimer);
 		const key = draftKey(fields());
-		const draft = toDraft(fields(), {
-			id: draftId,
-			mode: request?.mode ?? 'new',
-			threadId: request?.threadId ?? null,
-			inReplyTo: request?.messageId ?? null
-		});
+		const draft = toDraft(fields(), meta());
 		saveStatus = 'saving';
 		const run = queue.then(async () => {
 			if (isClosed) return false;
@@ -157,6 +162,41 @@
 		});
 		queue = run;
 		return run;
+	}
+
+	/** Validates, closes compose and sends; the toasts take it from there (FR-5.6). */
+	async function send() {
+		const problem = sendProblem({ to, cc, bcc }, attachments);
+		if (problem) {
+			toastStore.show({ message: problem, tone: 'error' });
+			return;
+		}
+		isClosed = true;
+		clearTimeout(saveTimer);
+		const draft = toDraft(fields(), meta());
+		const pending = queue;
+		onclose();
+		// A save still in flight must land first, so sending deletes it instead of it coming back.
+		await pending;
+		await sendDraft(draft, {
+			drafts: repos.drafts,
+			toasts: toastStore,
+			onsent: ({ threadId }) => {
+				mailbox.invalidate();
+				ui.draftsChanged();
+				void threads.load(threadId, { refresh: true });
+			},
+			onundo: (restored) => {
+				mailbox.invalidate();
+				ui.draftsChanged();
+				ui.openCompose({
+					mode: restored.mode,
+					threadId: restored.threadId,
+					messageId: restored.inReplyTo,
+					draftId: restored.id
+				});
+			}
+		});
 	}
 
 	async function discard() {
@@ -285,8 +325,7 @@
 		onchange={(event) => addFiles(event.currentTarget.files)}
 	/>
 	<IconButton icon={Trash2} label={COPY.discard} onclick={() => (isDiscardOpen = true)} />
-	<!-- Enabled once sending exists (T7.7). -->
-	<Button size="sm" disabled>
+	<Button size="sm" disabled={!isReady} onclick={send}>
 		{#snippet leading()}<Icon icon={Send} size="sm" />{/snippet}
 		{COPY.send}
 	</Button>

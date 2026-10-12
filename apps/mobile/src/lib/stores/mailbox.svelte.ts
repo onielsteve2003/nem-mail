@@ -244,6 +244,12 @@ export class MailboxStore {
 		}
 	}
 
+	/** Something changed outside apply() (e.g. a sent message): lists refetch on their next load. */
+	invalidate(): void {
+		for (const list of Object.values(this.lists)) list.isStale = true;
+		void this.refreshCounts().catch(() => {});
+	}
+
 	async refreshCounts(): Promise<void> {
 		this.counts = await this.#mail.counts();
 	}
