@@ -25,9 +25,11 @@
 		title?: string;
 		/** Sits between the heading and the rows, e.g. the inbox tabs. */
 		header?: Snippet;
+		/** Id of the rows region, e.g. for tabs that control it. */
+		id?: string;
 	}
 
-	let { filter, title, header }: Props = $props();
+	let { filter, title, header, id }: Props = $props();
 
 	const repos = getRepositories();
 	const mailbox = getMailboxStore();
@@ -82,41 +84,42 @@
 <section class="list" aria-labelledby="list-heading">
 	<h1 id="list-heading" class="list__title nm-text-label">{heading}</h1>
 	{@render header?.()}
-
-	{#if !list || list.status === 'loading'}
-		<div class="skeleton" role="status" aria-label={LOADING}>
-			{#each { length: SKELETON_ROWS }, index (index)}
-				<div class="skeleton__row">
-					<Skeleton shape="circle" width="var(--nm-size-avatar-md)" />
-					<Skeleton lines={3} class="skeleton__text" />
-				</div>
-			{/each}
-		</div>
-	{:else if list.status === 'error'}
-		<ErrorState
-			title={failure.title}
-			message={failure.message}
-			illustration={failure.illustration}
-			onretry={() => void mailbox.load(filter, { refresh: true })}
-		/>
-	{:else if list.items.length === 0}
-		<EmptyState title={empty.title} message={empty.message} illustration={empty.illustration} />
-	{:else}
-		<ul class="rows">
-			{#each list.items as thread (thread.id)}
-				<li>
-					<MailRow
-						{thread}
-						href={href(thread)}
-						labels={rowLabels(thread)}
-						{density}
-						selfEmail={session.user?.email}
-						active={twoPane.current && openId === thread.id}
-					/>
-				</li>
-			{/each}
-		</ul>
-	{/if}
+	<div {id} role={id ? 'tabpanel' : undefined}>
+		{#if !list || list.status === 'loading'}
+			<div class="skeleton" role="status" aria-label={LOADING}>
+				{#each { length: SKELETON_ROWS }, index (index)}
+					<div class="skeleton__row">
+						<Skeleton shape="circle" width="var(--nm-size-avatar-md)" />
+						<Skeleton lines={3} class="skeleton__text" />
+					</div>
+				{/each}
+			</div>
+		{:else if list.status === 'error'}
+			<ErrorState
+				title={failure.title}
+				message={failure.message}
+				illustration={failure.illustration}
+				onretry={() => void mailbox.load(filter, { refresh: true })}
+			/>
+		{:else if list.items.length === 0}
+			<EmptyState title={empty.title} message={empty.message} illustration={empty.illustration} />
+		{:else}
+			<ul class="rows">
+				{#each list.items as thread (thread.id)}
+					<li>
+						<MailRow
+							{thread}
+							href={href(thread)}
+							labels={rowLabels(thread)}
+							{density}
+							selfEmail={session.user?.email}
+							active={twoPane.current && openId === thread.id}
+						/>
+					</li>
+				{/each}
+			</ul>
+		{/if}
+	</div>
 </section>
 
 <style>
