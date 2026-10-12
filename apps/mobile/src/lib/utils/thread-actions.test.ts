@@ -38,17 +38,25 @@ describe('bulkToggles', () => {
 });
 
 describe('snoozePresets', () => {
-	it('offers later today, tomorrow morning and next Monday morning', () => {
+	const at = (now: Date) => Object.fromEntries(snoozePresets(now).map((p) => [p.id, p.at]));
+
+	it('offers later today, tomorrow, this weekend and next week on a weekday', () => {
 		// Wednesday 14 Oct 2026, 10:20.
-		const [later, tomorrow, nextWeek] = snoozePresets(new Date(2026, 9, 14, 10, 20));
-		expect(later?.until).toEqual(new Date(2026, 9, 14, 13, 0));
-		expect(tomorrow?.until).toEqual(new Date(2026, 9, 15, 8, 0));
-		expect(nextWeek?.until).toEqual(new Date(2026, 9, 19, 8, 0));
+		expect(at(new Date(2026, 9, 14, 10, 20))).toEqual({
+			later: new Date(2026, 9, 14, 13, 0),
+			tomorrow: new Date(2026, 9, 15, 8, 0),
+			weekend: new Date(2026, 9, 17, 8, 0),
+			'next-week': new Date(2026, 9, 19, 8, 0)
+		});
+	});
+
+	it('drops later today late at night and this weekend on a weekend', () => {
+		// Saturday 17 Oct 2026, 22:10.
+		expect(Object.keys(at(new Date(2026, 9, 17, 22, 10)))).toEqual(['tomorrow', 'next-week']);
 	});
 
 	it('skips to the following Monday when today is Monday', () => {
-		const nextWeek = snoozePresets(new Date(2026, 9, 12, 9, 0))[2];
-		expect(nextWeek?.until).toEqual(new Date(2026, 9, 19, 8, 0));
+		expect(at(new Date(2026, 9, 12, 9, 0))['next-week']).toEqual(new Date(2026, 9, 19, 8, 0));
 	});
 });
 

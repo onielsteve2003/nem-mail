@@ -43,6 +43,9 @@ const RETRY = 'Retry';
 const UNDO = 'Undo';
 const LOAD_FAILED = "Couldn't load your mail.";
 const UPDATE_FAILED = "Couldn't update.";
+const WOKE_ONE = 'Back from snooze';
+const WOKE_MANY = 'snoozed conversations are back in your Inbox';
+const NO_SUBJECT = '(no subject)';
 
 /** Toast copy for ops worth confirming; quiet ops (read, star…) get none. */
 const OP_TOAST: Partial<Record<ThreadOpName, string>> = {
@@ -274,7 +277,21 @@ export class MailboxStore {
 	connect(): () => void {
 		return this.#mail.subscribe((event) => {
 			if (event.type === 'mail.new') this.ingest(event.summary);
+			else if (event.type === 'snooze.woke') this.#wake(event.summaries);
 			else this.counts = event.counts;
+		});
+	}
+
+	/** Snoozed threads came due: they leave Snoozed, return to the inbox, and a toast says so. */
+	#wake(summaries: ThreadSummary[]): void {
+		for (const summary of summaries) this.ingest(summary);
+		const [first] = summaries;
+		if (!first) return;
+		this.#toasts.show({
+			message:
+				summaries.length === 1
+					? `${WOKE_ONE}: ${first.subject || NO_SUBJECT}`
+					: `${summaries.length} ${WOKE_MANY}`
 		});
 	}
 

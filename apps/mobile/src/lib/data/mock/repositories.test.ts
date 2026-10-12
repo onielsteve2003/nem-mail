@@ -265,6 +265,30 @@ describe('MockMailSimulator', () => {
 		expect(top[0]?.id).toBe(summary?.id);
 	});
 
+	it('wakes due snoozes on the next tick, also after a reload', async () => {
+		ctx.userId = 'u1';
+		const mail = new MockMailRepository(ctx);
+		const [thread] = (await mail.list({ mailbox: 'inbox' }, { limit: 1 })).items;
+		const id = thread?.id ?? '';
+		await mail.apply([id], { op: 'markRead' });
+		await mail.apply([id], { op: 'snooze', until: new Date(START + 3_600_000).toISOString() });
+		const events: ServerEvent[] = [];
+		ctx.subscribe((event) => events.push(event));
+		const woke = () => events.flatMap((e) => (e.type === 'snooze.woke' ? e.summaries : []));
+
+		const simulator = new MockMailSimulator(ctx, () => 0.5);
+		await simulator.tick();
+		expect(woke().map((t) => t.id)).not.toContain(id);
+
+		// A new simulator, as after a reload, catches up once the time has passed.
+		now = START + 3_600_000;
+		await new MockMailSimulator(ctx, () => 0.5).tick();
+		expect(woke().find((t) => t.id === id)).toMatchObject({ snoozedUntil: null, isUnread: true });
+		expect(events.at(-1)?.type).toBe('counts');
+		expect(await mail.get(id)).toMatchObject({ mailboxes: ['inbox'], snoozedUntil: null });
+		expect((await mail.list({ mailbox: 'snoozed' })).items.map((t) => t.id)).not.toContain(id);
+	});
+
 	it('ticks on a timer, does nothing signed out, and stops', async () => {
 		vi.useFakeTimers();
 		const simulator = new MockMailSimulator(ctx, () => 0.5);

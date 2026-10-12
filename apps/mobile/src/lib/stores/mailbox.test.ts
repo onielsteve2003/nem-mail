@@ -136,6 +136,22 @@ describe('MailboxStore optimistic updates', () => {
 		});
 	});
 
+	it('brings woken snoozes back to the inbox with a toast', async () => {
+		const [id = ''] = inboxIds();
+		await mailbox.apply([id], { op: 'snooze', until: new Date(NOW + 60_000).toISOString() });
+		await mailbox.load({ mailbox: 'snoozed' });
+		expect(inboxIds()).not.toContain(id);
+		const listener = vi.spyOn(repos.mail, 'subscribe');
+		mailbox.connect();
+		const emit = listener.mock.calls[0]?.[0];
+		const woke = { ...(await repos.mail.get(id)), snoozedUntil: null, isUnread: true };
+		toasts.clear();
+		emit?.({ type: 'snooze.woke', summaries: [woke] });
+		expect(inboxIds()).toContain(id);
+		expect(mailbox.list({ mailbox: 'snoozed' })?.items.map((t) => t.id)).not.toContain(id);
+		expect(toasts.current?.message).toMatch(/^Back from snooze: /);
+	});
+
 	it('shows no toast for quiet ops and ignores an empty selection', async () => {
 		const apply = vi.spyOn(repos.mail, 'apply');
 		expect(await mailbox.apply([], { op: 'archive' })).toBe(true);

@@ -123,7 +123,9 @@ export type FeedbackRequest = z.infer<typeof FeedbackRequestSchema>;
 // Realtime (SSE on /events/stream)
 export const ServerEventSchema = z.discriminatedUnion('type', [
 	z.object({ type: z.literal('mail.new'), summary: ThreadSummarySchema }),
-	z.object({ type: z.literal('counts'), counts: CountsResponseSchema })
+	z.object({ type: z.literal('counts'), counts: CountsResponseSchema }),
+	/** Snoozed threads whose time came: back in the inbox, unread (FR-6.3). */
+	z.object({ type: z.literal('snooze.woke'), summaries: z.array(ThreadSummarySchema) })
 ]);
 export type ServerEvent = z.infer<typeof ServerEventSchema>;
 

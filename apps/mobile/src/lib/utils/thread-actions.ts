@@ -1,4 +1,5 @@
 import type { Category, Label, ThreadOp, ThreadSummary } from '@nem/shared';
+import type { TimePreset } from './time-picker.js';
 
 /** Where "Move to" can send threads (FR-6.7). */
 export type MoveTarget =
@@ -49,21 +50,38 @@ export function bulkToggles(threads: readonly ThreadSummary[]) {
 const LATER_TODAY_HOURS = 3;
 const MORNING_HOUR = 8;
 const MONDAY = 1;
+const SATURDAY = 6;
+const SUNDAY = 0;
 
-/** Quick snooze times from `now`: later today, tomorrow morning, next Monday morning. */
-export function snoozePresets(now: Date) {
+/** The next `weekday` (0 = Sunday) after today, at 08:00. */
+function nextWeekday(now: Date, weekday: number): Date {
+	const at = new Date(now);
+	at.setDate(at.getDate() + ((weekday - at.getDay() + 7) % 7 || 7));
+	at.setHours(MORNING_HOUR, 0, 0, 0);
+	return at;
+}
+
+/**
+ * Snooze presets from `now` (FR-6.3): later today (3 hours on, on the hour,
+ * while that is still today), tomorrow morning, this weekend (Saturday
+ * morning, on weekdays only) and next week (Monday morning).
+ */
+export function snoozePresets(now: Date): TimePreset[] {
 	const later = new Date(now);
 	later.setHours(later.getHours() + LATER_TODAY_HOURS, 0, 0, 0);
 	const tomorrow = new Date(now);
 	tomorrow.setDate(tomorrow.getDate() + 1);
 	tomorrow.setHours(MORNING_HOUR, 0, 0, 0);
-	const nextWeek = new Date(now);
-	nextWeek.setDate(nextWeek.getDate() + ((MONDAY - nextWeek.getDay() + 7) % 7 || 7));
-	nextWeek.setHours(MORNING_HOUR, 0, 0, 0);
+	const isWeekend = now.getDay() === SATURDAY || now.getDay() === SUNDAY;
 	return [
-		{ id: 'later', label: 'Later today', until: later },
-		{ id: 'tomorrow', label: 'Tomorrow', until: tomorrow },
-		{ id: 'next-week', label: 'Next week', until: nextWeek }
+		...(later.getDate() === now.getDate()
+			? [{ id: 'later', label: 'Later today', at: later }]
+			: []),
+		{ id: 'tomorrow', label: 'Tomorrow', at: tomorrow },
+		...(isWeekend
+			? []
+			: [{ id: 'weekend', label: 'This weekend', at: nextWeekday(now, SATURDAY) }]),
+		{ id: 'next-week', label: 'Next week', at: nextWeekday(now, MONDAY) }
 	];
 }
 

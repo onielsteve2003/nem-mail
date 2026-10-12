@@ -97,6 +97,27 @@ export class MockMailRepository implements MailRepository {
 	}
 }
 
+/**
+ * Wakes snoozed threads whose time has come (FR-6.3): the snooze is cleared and
+ * the thread is unread again. Runs on every simulator tick, so threads that came
+ * due while the app was closed wake on the first tick after a reload. Returns
+ * the threads that are back in the inbox (a thread trashed meanwhile wakes quietly).
+ */
+export async function wakeDue(db: MockDb, userId: string, now: number): Promise<ThreadSummary[]> {
+	const tx = db.transaction('threads', 'readwrite');
+	const woke: ThreadSummary[] = [];
+	for (const thread of await tx.store.index('byOwner').getAll(userId)) {
+		if (thread.snoozedUntil === null || Date.parse(thread.snoozedUntil) > now) continue;
+		const awake = applyThreadOp(thread, { op: 'unsnooze' });
+		const isBack = inMailbox(awake, 'inbox', now);
+		const next = isBack ? applyThreadOp(awake, { op: 'markUnread' }) : awake;
+		await tx.store.put(next);
+		if (isBack) woke.push(toSummary(stripOwner(next)));
+	}
+	await tx.done;
+	return woke;
+}
+
 /** Badge counts for one account at `now`. */
 export async function countsFor(db: MockDb, userId: string, now: number): Promise<CountsResponse> {
 	const threads = (await ownThreads(db, userId)).map(toSummary);

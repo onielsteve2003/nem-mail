@@ -8,7 +8,7 @@ import {
 import { newId, type MockContext } from './context.js';
 import { stripOwner, type MockDb, type Owned } from './db.js';
 import { deliverDue } from './drafts.js';
-import { countsFor } from './mail.js';
+import { countsFor, wakeDue } from './mail.js';
 
 /** How often the simulator delivers due mail. */
 export const TICK_MS = 1000;
@@ -47,7 +47,7 @@ const TEMPLATES: readonly Template[] = [
 
 /**
  * Plays the server's part in the demo: sends outbox and scheduled mail when it
- * is due, and now and then drops a new message in the inbox (`mail.new`).
+ * is due, wakes snoozed threads, and now and then drops a new message in the inbox (`mail.new`).
  */
 export class MockMailSimulator {
 	readonly #ctx: MockContext;
@@ -74,13 +74,18 @@ export class MockMailSimulator {
 		this.#timer = undefined;
 	}
 
-	/** One pass: deliver due mail, then maybe an arrival. */
+	/** One pass: deliver due mail, wake due snoozes, then maybe an arrival. */
 	async tick(): Promise<void> {
 		const userId = this.#ctx.userId;
 		if (!userId) return;
 		const db = await this.#ctx.db();
 		const now = this.#ctx.now();
 		let changed = (await deliverDue(db, userId, now)) > 0;
+		const woke = await wakeDue(db, userId, now);
+		if (woke.length > 0) {
+			this.#ctx.emit({ type: 'snooze.woke', summaries: woke });
+			changed = true;
+		}
 		if (now >= this.#nextArrival) {
 			this.#nextArrival = now + this.#gap();
 			await this.arrive();

@@ -21,9 +21,11 @@
 	import { getSelectionStore } from '#lib/stores/selection.svelte.js';
 	import { getSessionStore } from '#lib/stores/session.svelte.js';
 	import { getUiStore } from '#lib/stores/ui.svelte.js';
+	import { snoozePresets } from '#lib/utils/thread-actions.js';
 	import { TWO_PANE_QUERY, readingThreadId, withReadingThread } from '#lib/utils/reading-pane.js';
 	import MoveSheet from '#components/ui/MoveSheet.svelte';
 	import ThreadActions from '#components/ui/ThreadActions.svelte';
+	import TimeSheet from '#components/ui/TimeSheet.svelte';
 	import { rowText } from './format.js';
 	import { emptyCopy, errorCopy } from './list-states.js';
 	import MailRow from './MailRow.svelte';
@@ -35,8 +37,8 @@
 
 	const SKELETON_ROWS = 8;
 	const LOADING = 'Loading conversations';
-	// A swipe for snooze opens a sheet until T8.4.
-	const SNOOZE_SHEET = 'snooze';
+	const SNOOZE_TITLE = 'Snooze until';
+	const SNOOZE_CONFIRM = 'Snooze';
 
 	interface Props {
 		filter: ThreadListFilter;
@@ -144,12 +146,13 @@
 	function onswipe(thread: ThreadSummary, action: SwipeAction): void {
 		const op = swipeOp(action, thread);
 		if (op) void mailbox.apply([thread.id], op);
-		else if (action === 'snooze') ui.openSheet(SNOOZE_SHEET);
+		else if (action === 'snooze') snoozing = thread.id;
 		else if (action === 'move') moving = thread.id;
 	}
 
-	/** The swiped thread "Move to" is choosing a place for. */
+	/** The swiped thread "Move to" or snooze is choosing for. */
 	let moving = $state<string | null>(null);
+	let snoozing = $state<string | null>(null);
 
 	function rowLabels(thread: ThreadSummary): Label[] {
 		return thread.labelIds.flatMap((id) => labelsById.get(id) ?? []);
@@ -163,6 +166,16 @@
 		if (moving) void mailbox.apply([moving], ops);
 	}}
 	onclose={() => (moving = null)}
+/>
+<TimeSheet
+	open={snoozing !== null}
+	title={SNOOZE_TITLE}
+	presets={snoozePresets}
+	confirmLabel={SNOOZE_CONFIRM}
+	onpick={(until) => {
+		if (snoozing) void mailbox.apply([snoozing], { op: 'snooze', until: until.toISOString() });
+	}}
+	onclose={() => (snoozing = null)}
 />
 
 <section class="list" aria-labelledby="list-heading">

@@ -17,6 +17,7 @@
 	import IconButton from './IconButton.svelte';
 	import LabelPicker from './LabelPicker.svelte';
 	import MoveSheet from './MoveSheet.svelte';
+	import TimeSheet from './TimeSheet.svelte';
 	import { bulkToggles, snoozePresets } from '#lib/utils/thread-actions.js';
 
 	const COPY = {
@@ -35,7 +36,8 @@
 		spam: 'Report spam',
 		mute: 'Mute',
 		unmute: 'Unmute',
-		snoozeTitle: 'Snooze until'
+		snoozeTitle: 'Snooze until',
+		snoozeConfirm: 'Snooze'
 	};
 
 	interface Props {
@@ -53,7 +55,6 @@
 
 	let { threads, labels, onapply, oncreatelabel, readInBar = false }: Props = $props();
 
-	// Snooze is a quick picker until T8.4.
 	let sheet = $state<'more' | 'labels' | 'move' | 'snooze' | null>(null);
 
 	const toggles = $derived(bulkToggles(threads));
@@ -95,17 +96,6 @@
 			onselect: () => onapply(toggles.mute)
 		}
 	]);
-	// Computed when the sheet opens, so "later today" is from now.
-	const snoozeItems = $derived<ActionSheetItem[]>(
-		sheet === 'snooze'
-			? snoozePresets(new Date()).map(({ label, until }) => ({
-					label,
-					icon: Clock,
-					onselect: () => onapply({ op: 'snooze', until: until.toISOString() })
-				}))
-			: []
-	);
-
 	const close = () => (sheet = null);
 </script>
 
@@ -147,9 +137,11 @@
 	onclose={close}
 />
 <MoveSheet open={sheet === 'move'} {labels} onmove={(ops) => onapply(ops)} onclose={close} />
-<ActionSheet
+<TimeSheet
 	open={sheet === 'snooze'}
 	title={COPY.snoozeTitle}
-	actions={snoozeItems}
+	presets={snoozePresets}
+	confirmLabel={COPY.snoozeConfirm}
+	onpick={(until) => onapply({ op: 'snooze', until: until.toISOString() })}
 	onclose={close}
 />
