@@ -13,9 +13,9 @@
 	import Tag from '@lucide/svelte/icons/tag';
 	import Trash from '@lucide/svelte/icons/trash';
 	import type { Label, ThreadOp, ThreadSummary } from '@nem/shared';
-	import ActionSheet, { type ActionSheetItem } from '#components/ui/ActionSheet.svelte';
-	import IconButton from '#components/ui/IconButton.svelte';
-	import { MOVE_TARGETS, bulkToggles, snoozePresets } from './bulk.js';
+	import ActionSheet, { type ActionSheetItem } from './ActionSheet.svelte';
+	import IconButton from './IconButton.svelte';
+	import { MOVE_TARGETS, bulkToggles, snoozePresets } from '#lib/utils/thread-actions.js';
 
 	const COPY = {
 		archive: 'Archive',
@@ -45,9 +45,11 @@
 		labels: readonly Label[];
 		/** Runs an op on the whole selection. */
 		onapply: (op: ThreadOp) => void;
+		/** Puts read/unread in the bar instead of the More sheet, as the thread view does. */
+		readInBar?: boolean;
 	}
 
-	let { threads, labels, onapply }: Props = $props();
+	let { threads, labels, onapply, readInBar = false }: Props = $props();
 
 	// The pickers are quick versions; M8 brings the full label, move and snooze sheets.
 	let sheet = $state<'more' | 'labels' | 'move' | 'snooze' | null>(null);
@@ -55,13 +57,12 @@
 	const toggles = $derived(bulkToggles(threads));
 	const isEmpty = $derived(threads.length === 0);
 
-	// Read state sits here, not in the bar, so the bar fits a 360px phone.
+	const readIcon = $derived(toggles.read.op === 'markRead' ? MailOpen : Mail);
+	// In the list bar read state sits in More, so the bar fits a 360px phone next to the count.
 	const more = $derived<ActionSheetItem[]>([
-		{
-			label: COPY[toggles.read.op],
-			icon: toggles.read.op === 'markRead' ? MailOpen : Mail,
-			onselect: () => onapply(toggles.read)
-		},
+		...(readInBar
+			? []
+			: [{ label: COPY[toggles.read.op], icon: readIcon, onselect: () => onapply(toggles.read) }]),
 		{
 			label: COPY[toggles.star.op],
 			icon: Star,
@@ -129,6 +130,14 @@
 	disabled={isEmpty}
 	onclick={() => onapply({ op: 'trash' })}
 />
+{#if readInBar}
+	<IconButton
+		icon={readIcon}
+		label={COPY[toggles.read.op]}
+		disabled={isEmpty}
+		onclick={() => onapply(toggles.read)}
+	/>
+{/if}
 <IconButton
 	icon={EllipsisVertical}
 	label={COPY.more}

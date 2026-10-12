@@ -1,6 +1,6 @@
 import type { ThreadSummary } from '@nem/shared';
 import { describe, expect, it } from 'vitest';
-import { bulkToggles, snoozePresets } from './bulk.js';
+import { bulkToggles, snoozePresets } from './thread-actions.js';
 
 const thread = (overrides: Partial<ThreadSummary>) =>
 	({

@@ -1,15 +1,18 @@
 <script lang="ts">
-	import type { Label } from '@nem/shared';
+	import type { Label, ThreadOp } from '@nem/shared';
 	import { untrack } from 'svelte';
 	import EmptyState from '#components/ui/EmptyState.svelte';
 	import ErrorState from '#components/ui/ErrorState.svelte';
 	import Skeleton from '#components/ui/Skeleton.svelte';
+	import ThreadActions from '#components/ui/ThreadActions.svelte';
 	import { getRepositories } from '#lib/data/provider.js';
+	import { getMailboxStore } from '#lib/stores/mailbox.svelte.js';
 	import { getSessionStore } from '#lib/stores/session.svelte.js';
 	import { getThreadStore } from '#lib/stores/thread.svelte.js';
 	import { errorMessage } from '#lib/utils/errors.js';
 	import MessageList from './MessageList.svelte';
 	import ThreadHeader from './ThreadHeader.svelte';
+	import { leavesThread } from './actions.js';
 	import { threadViewState } from './view-state.js';
 
 	const LOADING = 'Loading conversation';
@@ -29,6 +32,7 @@
 	const repos = getRepositories();
 	const session = getSessionStore();
 	const threads = getThreadStore();
+	const mailbox = getMailboxStore();
 
 	let labels = $state<Label[]>([]);
 	// Labels name the pills; the thread still opens if they fail.
@@ -48,6 +52,23 @@
 	const entry = $derived(threads.get(threadId));
 	const view = $derived(threadViewState(entry));
 	const thread = $derived(entry?.thread ?? null);
+	// Opening a thread reads it (FR-4.5). Once per open, so "Mark unread" is not undone at once.
+	let markedId: string | null = null;
+	$effect(() => {
+		if (!thread || thread.id === markedId) return;
+		markedId = thread.id;
+		if (thread.isUnread) {
+			const id = thread.id;
+			untrack(() => void mailbox.apply([id], { op: 'markRead' }, { undoable: false }));
+		}
+	});
+
+	function act(op: ThreadOp): void {
+		if (!thread) return;
+		void mailbox.apply([thread.id], op);
+		if (leavesThread(op)) onclose();
+	}
+
 	const threadLabels = $derived(
 		thread ? labels.filter((label) => thread.labelIds.includes(label.id)) : []
 	);
@@ -60,7 +81,13 @@
 		isImportant={thread?.isImportant}
 		{variant}
 		{onclose}
-	/>
+	>
+		{#snippet actions()}
+			{#if thread}
+				<ThreadActions threads={[thread]} {labels} onapply={act} readInBar />
+			{/if}
+		{/snippet}
+	</ThreadHeader>
 
 	{#if thread}
 		<!-- Keyed so another thread starts with its own messages open. -->

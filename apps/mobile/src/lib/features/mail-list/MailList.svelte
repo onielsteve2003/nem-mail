@@ -22,7 +22,7 @@
 	import { getSessionStore } from '#lib/stores/session.svelte.js';
 	import { getUiStore } from '#lib/stores/ui.svelte.js';
 	import { TWO_PANE_QUERY, readingThreadId, withReadingThread } from '#lib/utils/reading-pane.js';
-	import BulkActions from './BulkActions.svelte';
+	import ThreadActions from '#components/ui/ThreadActions.svelte';
 	import { rowText } from './format.js';
 	import { emptyCopy, errorCopy } from './list-states.js';
 	import MailRow from './MailRow.svelte';
@@ -153,7 +153,7 @@
 			onexit={() => selection.clear()}
 		>
 			{#snippet actions()}
-				<BulkActions threads={selected} {labels} onapply={applyToSelection} />
+				<ThreadActions threads={selected} {labels} onapply={applyToSelection} />
 			{/snippet}
 		</SelectionBar>
 	{/if}
