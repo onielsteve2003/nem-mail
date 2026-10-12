@@ -8,6 +8,7 @@
 	import { getSessionStore } from '#lib/stores/session.svelte.js';
 	import { getThreadStore } from '#lib/stores/thread.svelte.js';
 	import { errorMessage } from '#lib/utils/errors.js';
+	import MessageList from './MessageList.svelte';
 	import ThreadHeader from './ThreadHeader.svelte';
 	import { threadViewState } from './view-state.js';
 
@@ -61,7 +62,12 @@
 		{onclose}
 	/>
 
-	{#if view === 'loading'}
+	{#if thread}
+		<!-- Keyed so another thread starts with its own messages open. -->
+		{#key thread.id}
+			<MessageList messages={thread.messages} selfEmail={session.user?.email} />
+		{/key}
+	{:else if view === 'loading'}
 		<div class="thread__skeleton" role="status" aria-label={LOADING}>
 			<Skeleton width="70%" height="var(--nm-space-6)" />
 			<div class="thread__skeleton-row">
