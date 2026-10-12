@@ -15,6 +15,7 @@
 	import Avatar from '#components/ui/Avatar.svelte';
 	import Icon from '#components/ui/Icon.svelte';
 	import LabelPill from '#components/ui/LabelPill.svelte';
+	import { highlightParts } from '#lib/utils/highlight.js';
 	import { MAX_ATTACHMENT_CHIPS, listTime, senderLine, type RowText } from './format.js';
 	import { longPress } from './long-press.js';
 	import MarkToggle from './MarkToggle.svelte';
@@ -54,6 +55,8 @@
 		onimportant?: () => void;
 		/** Mailbox-specific sender and time, e.g. "To: Ada" in Sent (see rowText). */
 		text?: RowText;
+		/** Search terms to mark in the sender, subject and snippet (FR-7.6). */
+		highlight?: readonly string[];
 		/** AI badge slot, e.g. a category or priority explanation (M10). */
 		ai?: Snippet;
 	}
@@ -73,6 +76,7 @@
 		onstar,
 		onimportant,
 		text = {},
+		highlight = [],
 		ai
 	}: Props = $props();
 
@@ -94,6 +98,12 @@
 		onselect();
 	}
 </script>
+
+{#snippet marked(value: string)}
+	{#each highlightParts(value, highlight) as part, index (index)}
+		{#if part.match}<mark class="row__match">{part.text}</mark>{:else}{part.text}{/if}
+	{/each}
+{/snippet}
 
 <div
 	class={[
@@ -122,7 +132,7 @@
 		<!-- eslint-enable svelte/no-navigation-without-resolve -->
 		<span class="row__line">
 			{#if thread.isUnread}<span class="nm-visually-hidden">{UNREAD},</span>{/if}
-			<span class="row__sender nm-text-truncate">{sender}</span>
+			<span class="row__sender nm-text-truncate">{@render marked(sender)}</span>
 			{#if thread.messageCount > 1}
 				<span class="row__count nm-text-numeric" aria-label={MESSAGES(thread.messageCount)}>
 					{thread.messageCount}
@@ -134,7 +144,7 @@
 			<time class="row__time nm-text-numeric" datetime={when.datetime}>{when.text}</time>
 		</span>
 		<span class="row__line">
-			<span class="row__subject nm-text-truncate">{subject}</span>
+			<span class="row__subject nm-text-truncate">{@render marked(subject)}</span>
 			{#if ai}<span class="row__ai">{@render ai()}</span>{/if}
 			<span class="row__marks">
 				{#if thread.attachments.length > 0 && !showFiles}
@@ -145,7 +155,7 @@
 				{/if}
 			</span>
 		</span>
-		<span class="row__snippet">{thread.snippet}</span>
+		<span class="row__snippet">{@render marked(thread.snippet)}</span>
 		{#if labels.length > 0}
 			<span class="row__chips">
 				{#each labels as label (label.id)}
@@ -282,6 +292,13 @@
 	}
 	.row--compact .row__toggles {
 		flex-direction: row;
+	}
+	/* Bold as well as tinted, so a match never relies on color alone. */
+	.row__match {
+		border-radius: var(--nm-radius-xs);
+		background: var(--nm-color-accent-soft);
+		color: inherit;
+		font-weight: 700;
 	}
 	.row__snippet {
 		display: -webkit-box;

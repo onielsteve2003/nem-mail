@@ -36,6 +36,18 @@ function makeThread(overrides: Partial<ThreadSummary> = {}): ThreadSummary {
 const labels = [{ id: 'l1', name: 'Work', color: 'violet' as const, parentId: null }];
 
 describe('MailRow', () => {
+	it('marks search matches in the sender, subject and snippet', () => {
+		const { container } = render(MailRow, {
+			thread: makeThread(),
+			href: '/t1',
+			now: NOW,
+			highlight: ['plan', 'grace']
+		});
+		const marks = [...container.querySelectorAll('mark')].map((m) => m.textContent);
+		expect(marks).toEqual(['Grace', 'plan']);
+		expect(screen.getByText('Here is the draft for Monday')).toBeInTheDocument();
+	});
+
 	it('shows every field with unread, star and important marks', () => {
 		const { container } = render(MailRow, {
 			thread: makeThread(),
