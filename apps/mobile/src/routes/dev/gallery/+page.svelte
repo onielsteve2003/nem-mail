@@ -1,7 +1,6 @@
 <script lang="ts">
 	import AuroraBackground from '#components/ui/AuroraBackground.svelte';
 	import SegmentedControl from '#components/ui/SegmentedControl.svelte';
-	import Toaster from '#components/ui/Toaster.svelte';
 	import { getThemeStore } from '#lib/stores/theme.svelte.js';
 	import type { ThemePreference } from '#lib/utils/theme.js';
 	import ActionsGallery from './ActionsGallery.svelte';
@@ -40,8 +39,6 @@
 	<OverlaysGallery />
 	<StatesGallery />
 </main>
-
-<Toaster />
 
 <style>
 	.gallery {
