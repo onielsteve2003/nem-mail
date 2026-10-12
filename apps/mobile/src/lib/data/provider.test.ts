@@ -31,9 +31,7 @@ describe('createRepositories', () => {
 		const page = await repos.mail.list({ mailbox: 'inbox' }, { limit: 5 });
 		expect(page.items).toHaveLength(5);
 		expect((await repos.labels.list()).length).toBeGreaterThan(0);
-		await expect(repos.search.search({ q: 'hi' })).rejects.toMatchObject({
-			code: 'NOT_IMPLEMENTED'
-		});
+		expect((await repos.search.search({ q: 'is:unread' })).items.length).toBeGreaterThan(0);
 		db.close();
 	});
 

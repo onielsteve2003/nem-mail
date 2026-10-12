@@ -8,6 +8,7 @@ import { MockContext, readFailRate } from './mock/context.js';
 import { MockDraftRepository } from './mock/drafts.js';
 import { MockLabelRepository } from './mock/labels.js';
 import { MockMailRepository } from './mock/mail.js';
+import { MockSearchRepository } from './mock/search.js';
 import { MockSettingsRepository } from './mock/settings.js';
 import type { Repositories } from './repositories.js';
 
@@ -49,8 +50,8 @@ export function createRepositories(
 			drafts: new MockDraftRepository(ctx),
 			contacts: new MockContactRepository(ctx),
 			settings: new MockSettingsRepository(ctx),
-			// Mock search arrives with T9.3; Phase 1 AI runs on-device (T10.1), not through a repository.
-			search: notImplemented('MockSearchRepository'),
+			search: new MockSearchRepository(ctx),
+			// Phase 1 AI runs on-device (T10.1), not through a repository.
 			ai: notImplemented('MockAIRepository')
 		},
 		start() {
