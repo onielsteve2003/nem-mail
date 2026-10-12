@@ -11,8 +11,9 @@
 	import Settings from '@lucide/svelte/icons/settings';
 	import Star from '@lucide/svelte/icons/star';
 	import Tag from '@lucide/svelte/icons/tag';
+	import Tags from '@lucide/svelte/icons/tags';
 	import Trash from '@lucide/svelte/icons/trash';
-	import type { Label, LabelColor, SystemMailbox } from '@nem/shared';
+	import type { Label, SystemMailbox } from '@nem/shared';
 	import { APP_NAME } from '@nem/shared';
 	import type { Component } from 'svelte';
 	import { resolve } from '$app/paths';
@@ -20,6 +21,7 @@
 	import Badge from '#components/ui/Badge.svelte';
 	import Divider from '#components/ui/Divider.svelte';
 	import Icon from '#components/ui/Icon.svelte';
+	import { LABEL_DOT } from '#components/ui/label-colors.js';
 	import ListItem from '#components/ui/ListItem.svelte';
 	import SectionHeader from '#components/ui/SectionHeader.svelte';
 	import { getRepositories } from '#lib/data/provider.js';
@@ -31,6 +33,7 @@
 	const NAV_LABEL = 'Mailboxes';
 	const LABELS_TITLE = 'Labels';
 	const SETTINGS_TITLE = 'Settings';
+	const MANAGE_LABELS = 'Manage labels';
 	const UNREAD_LABEL = (count: number) => `${count} unread`;
 	/** Drafts, outbox and scheduled count items, not unread threads. */
 	const ITEM_COUNT_LABEL = (count: number) => `${count} items`;
@@ -48,15 +51,6 @@
 		all: Mails,
 		spam: OctagonAlert,
 		trash: Trash
-	};
-
-	const LABEL_DOT: Record<LabelColor, string> = {
-		neutral: 'var(--nm-color-text-subtle)',
-		violet: 'var(--nm-color-violet)',
-		lime: 'var(--nm-color-lime)',
-		cyan: 'var(--nm-color-cyan)',
-		coral: 'var(--nm-color-coral)',
-		amber: 'var(--nm-color-amber)'
 	};
 
 	interface Props {
@@ -86,7 +80,9 @@
 		}
 	}
 
+	// Reloads when the labels screen changes them.
 	$effect(() => {
+		void ui.labelsVersion;
 		if (session.user) void loadLabels();
 	});
 
@@ -146,39 +142,47 @@
 					</li>
 				{/each}
 			</ul>
-			{#if tree.length}
-				<Divider />
-				<SectionHeader title={LABELS_TITLE} />
-				<ul>
-					{#each tree as { label, depth } (label.id)}
-						{@const count = mailbox.counts?.labels[label.id] ?? 0}
-						<li class:nested={depth === 1}>
-							<ListItem
-								title={label.name}
-								href={resolve('/mail/(list)/label/[labelId]', { labelId: label.id })}
-								current={page.params['labelId'] === label.id}
-								onclick={close}
-							>
-								{#snippet leading()}
-									<span class="dot" style:color={LABEL_DOT[label.color]}>
-										<Icon icon={Tag} />
-									</span>
-								{/snippet}
-								{#snippet trailing()}
-									<Badge {count} tone="neutral" label={UNREAD_LABEL(count)} />
-								{/snippet}
-							</ListItem>
-						</li>
-					{/each}
-				</ul>
-			{/if}
+			<Divider />
+			<SectionHeader title={LABELS_TITLE} />
+			<ul>
+				{#each tree as { label, depth } (label.id)}
+					{@const count = mailbox.counts?.labels[label.id] ?? 0}
+					<li class:nested={depth === 1}>
+						<ListItem
+							title={label.name}
+							href={resolve('/mail/(list)/label/[labelId]', { labelId: label.id })}
+							current={page.params['labelId'] === label.id}
+							onclick={close}
+						>
+							{#snippet leading()}
+								<span class="dot" style:color={LABEL_DOT[label.color]}>
+									<Icon icon={Tag} />
+								</span>
+							{/snippet}
+							{#snippet trailing()}
+								<Badge {count} tone="neutral" label={UNREAD_LABEL(count)} />
+							{/snippet}
+						</ListItem>
+					</li>
+				{/each}
+				<li>
+					<ListItem
+						title={MANAGE_LABELS}
+						href={resolve('/settings/labels')}
+						current={page.url.pathname === resolve('/settings/labels')}
+						onclick={close}
+					>
+						{#snippet leading()}<Icon icon={Tags} />{/snippet}
+					</ListItem>
+				</li>
+			</ul>
 			<Divider />
 			<ul>
 				<li>
 					<ListItem
 						title={SETTINGS_TITLE}
 						href={resolve('/settings')}
-						current={page.url.pathname.startsWith(resolve('/settings'))}
+						current={page.url.pathname === resolve('/settings')}
 						onclick={close}
 					>
 						{#snippet leading()}<Icon icon={Settings} />{/snippet}

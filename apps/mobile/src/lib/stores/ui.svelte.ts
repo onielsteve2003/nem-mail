@@ -30,6 +30,8 @@ export class UiStore {
 	composeOrigin = $state<ComposeOrigin | null>(null);
 	/** Bumped whenever compose saves or deletes a draft, so the Drafts list reloads. */
 	draftsVersion = $state(0);
+	/** Bumped whenever labels are created, changed or deleted, so the drawer reloads them. */
+	labelsVersion = $state(0);
 	/** The topmost sheet, or null. */
 	readonly activeSheet = $derived(this.sheets.at(-1) ?? null);
 	/** Scroll position of each list screen (not reactive). */
@@ -71,6 +73,10 @@ export class UiStore {
 
 	draftsChanged(): void {
 		this.draftsVersion += 1;
+	}
+
+	labelsChanged(): void {
+		this.labelsVersion += 1;
 	}
 
 	isSheetOpen(name: string): boolean {
