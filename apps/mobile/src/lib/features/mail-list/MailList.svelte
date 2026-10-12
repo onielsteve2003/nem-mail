@@ -131,29 +131,32 @@
 		{:else if list.items.length === 0}
 			<EmptyState title={empty.title} message={empty.message} illustration={empty.illustration} />
 		{:else}
-			<MailRows
-				items={list.items}
-				hasMore={list.nextCursor !== null}
-				isLoadingMore={list.isLoadingMore}
-				onloadmore={() => void mailbox.loadMore(filter)}
-			>
-				{#snippet row(thread)}
-					<SwipeRow
-						actions={swipe}
-						isUnread={thread.isUnread}
-						onswipe={(action) => onswipe(thread, action)}
-					>
-						<MailRow
-							{thread}
-							href={href(thread)}
-							labels={rowLabels(thread)}
-							{density}
-							selfEmail={session.user?.email}
-							active={twoPane.current && openId === thread.id}
-						/>
-					</SwipeRow>
-				{/snippet}
-			</MailRows>
+			<!-- A new list replaces the rows outright instead of collapsing the old ones. -->
+			{#key key}
+				<MailRows
+					items={list.items}
+					hasMore={list.nextCursor !== null}
+					isLoadingMore={list.isLoadingMore}
+					onloadmore={() => void mailbox.loadMore(filter)}
+				>
+					{#snippet row(thread)}
+						<SwipeRow
+							actions={swipe}
+							isUnread={thread.isUnread}
+							onswipe={(action) => onswipe(thread, action)}
+						>
+							<MailRow
+								{thread}
+								href={href(thread)}
+								labels={rowLabels(thread)}
+								{density}
+								selfEmail={session.user?.email}
+								active={twoPane.current && openId === thread.id}
+							/>
+						</SwipeRow>
+					{/snippet}
+				</MailRows>
+			{/key}
 		{/if}
 	</div>
 </section>

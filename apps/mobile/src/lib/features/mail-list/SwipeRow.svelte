@@ -9,7 +9,7 @@
 	import type { Snippet } from 'svelte';
 	import { Spring } from 'svelte/motion';
 	import Icon from '#components/ui/Icon.svelte';
-	import { springPreset } from '#lib/motion/index.js';
+	import { DURATIONS, springPreset } from '#lib/motion/index.js';
 	import { hapticTick } from '#lib/utils/haptics.js';
 	import {
 		SWIPE_THRESHOLD,
@@ -135,8 +135,9 @@
 		if (removesRow(chosen)) {
 			await x.set(Math.sign(dx) * width);
 			onswipe(chosen);
-			// The list drops the row in the same update, so this reset is never seen.
-			await x.set(0, { instant: true });
+			// The row collapses off-screen; the reset waits for that so it is never seen,
+			// and a row that comes back (rollback) is back in place.
+			setTimeout(() => void x.set(0, { instant: true }), DURATIONS.base);
 		} else {
 			onswipe(chosen);
 			x.target = 0;

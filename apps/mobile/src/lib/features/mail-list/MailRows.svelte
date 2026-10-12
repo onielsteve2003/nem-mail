@@ -1,6 +1,8 @@
 <script lang="ts" generics="T extends { id: string }">
 	import type { Snippet } from 'svelte';
+	import type { TransitionConfig } from 'svelte/transition';
 	import Spinner from '#components/ui/Spinner.svelte';
+	import { collapse } from '#lib/motion/index.js';
 	import { VIRTUALIZE_ABOVE, rowEstimate, virtualRange } from './virtual.js';
 
 	const LOADING_MORE = 'Loading more conversations';
@@ -33,6 +35,13 @@
 		return virtualRange(all, viewport.top, viewport.height);
 	});
 	const visible = $derived(items.slice(range.start, range.end));
+	const ids = $derived(new Set(items.map((item) => item.id)));
+
+	// A row that left the list (archive, delete, move) collapses so the rows below
+	// close the gap; one that only scrolled out of the virtual window goes at once.
+	function leave(node: Element, id: string): TransitionConfig {
+		return ids.has(id) ? { duration: 0 } : collapse(node);
+	}
 
 	function scrollHost(node: HTMLElement): HTMLElement {
 		return node.closest<HTMLElement>(SCROLL_HOST) ?? document.documentElement;
@@ -101,7 +110,7 @@
 	style:padding-block-end="{range.after}px"
 >
 	{#each visible as item (item.id)}
-		<li data-id={item.id} use:measure>{@render row(item)}</li>
+		<li data-id={item.id} use:measure out:leave={item.id}>{@render row(item)}</li>
 	{/each}
 </ul>
 {#if hasMore}
