@@ -22,6 +22,7 @@
 	import { getSessionStore } from '#lib/stores/session.svelte.js';
 	import { getUiStore } from '#lib/stores/ui.svelte.js';
 	import { TWO_PANE_QUERY, readingThreadId, withReadingThread } from '#lib/utils/reading-pane.js';
+	import MoveSheet from '#components/ui/MoveSheet.svelte';
 	import ThreadActions from '#components/ui/ThreadActions.svelte';
 	import { rowText } from './format.js';
 	import { emptyCopy, errorCopy } from './list-states.js';
@@ -34,9 +35,8 @@
 
 	const SKELETON_ROWS = 8;
 	const LOADING = 'Loading conversations';
-	// Sheets a swipe opens for actions that need a choice (T8.4 snooze, M8 move).
+	// A swipe for snooze opens a sheet until T8.4.
 	const SNOOZE_SHEET = 'snooze';
-	const MOVE_SHEET = 'move';
 
 	interface Props {
 		filter: ThreadListFilter;
@@ -145,13 +145,25 @@
 		const op = swipeOp(action, thread);
 		if (op) void mailbox.apply([thread.id], op);
 		else if (action === 'snooze') ui.openSheet(SNOOZE_SHEET);
-		else if (action === 'move') ui.openSheet(MOVE_SHEET);
+		else if (action === 'move') moving = thread.id;
 	}
+
+	/** The swiped thread "Move to" is choosing a place for. */
+	let moving = $state<string | null>(null);
 
 	function rowLabels(thread: ThreadSummary): Label[] {
 		return thread.labelIds.flatMap((id) => labelsById.get(id) ?? []);
 	}
 </script>
+
+<MoveSheet
+	open={moving !== null}
+	{labels}
+	onmove={(ops) => {
+		if (moving) void mailbox.apply([moving], ops);
+	}}
+	onclose={() => (moving = null)}
+/>
 
 <section class="list" aria-labelledby="list-heading">
 	{#if selection.isActive}

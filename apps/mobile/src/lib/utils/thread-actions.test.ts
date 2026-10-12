@@ -1,10 +1,11 @@
-import type { Label, ThreadSummary } from '@nem/shared';
+import { applyThreadOp, type Label, type ThreadSummary } from '@nem/shared';
 import { describe, expect, it } from 'vitest';
 import {
 	bulkToggles,
 	filterLabels,
 	labelChangeOps,
 	labelStates,
+	moveOps,
 	snoozePresets
 } from './thread-actions.js';
 
@@ -77,5 +78,31 @@ describe('label picker helpers', () => {
 		const labels = [label('k', 'Kids', 'f'), label('w', 'Work'), label('f', 'Family')];
 		expect(filterLabels(labels, '').map((l) => l.id)).toEqual(['f', 'k', 'w']);
 		expect(filterLabels(labels, 'WO').map((l) => l.id)).toEqual(['w']);
+	});
+});
+
+describe('moveOps', () => {
+	it('maps each place to the ops that file the thread there', () => {
+		expect(moveOps({ kind: 'mailbox', to: 'trash' })).toEqual([{ op: 'move', to: 'trash' }]);
+		expect(moveOps({ kind: 'mailbox', to: 'archive' })).toEqual([
+			{ op: 'move', to: 'inbox' },
+			{ op: 'archive' }
+		]);
+		expect(moveOps({ kind: 'label', labelId: 'l1' })).toEqual([
+			{ op: 'addLabels', labelIds: ['l1'] },
+			{ op: 'move', to: 'inbox' },
+			{ op: 'archive' }
+		]);
+		expect(moveOps({ kind: 'category', category: 'social' })).toEqual([
+			{ op: 'move', to: 'inbox' },
+			{ op: 'setCategory', category: 'social' }
+		]);
+	});
+
+	it('takes a trashed thread to its label, out of Trash', () => {
+		const trashed = { mailboxes: ['trash'], labelIds: [] as string[] } as unknown as ThreadSummary;
+		const moved = moveOps({ kind: 'label', labelId: 'l1' }).reduce(applyThreadOp, trashed);
+		expect(moved.mailboxes).toEqual([]);
+		expect(moved.labelIds).toEqual(['l1']);
 	});
 });

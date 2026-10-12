@@ -1,11 +1,36 @@
-import type { Label, ThreadOp, ThreadSummary } from '@nem/shared';
+import type { Category, Label, ThreadOp, ThreadSummary } from '@nem/shared';
 
-/** Where the bulk "Move to" sheet can send threads (the `move` op's targets). */
-export const MOVE_TARGETS = [
-	{ to: 'inbox', label: 'Inbox' },
-	{ to: 'spam', label: 'Spam' },
-	{ to: 'trash', label: 'Trash' }
-] as const;
+/** Where "Move to" can send threads (FR-6.7). */
+export type MoveTarget =
+	| { kind: 'mailbox'; to: 'inbox' | 'archive' | 'spam' | 'trash' }
+	| { kind: 'label'; labelId: string }
+	| { kind: 'category'; category: Category };
+
+/**
+ * The ops for a move. Archive means filed nowhere, so it files in the inbox
+ * first (that also takes mail out of Spam or Trash). A label works like a
+ * folder: the label is added and the thread leaves the inbox. A category is
+ * an inbox tab, so the thread goes to the inbox too.
+ */
+export function moveOps(target: MoveTarget): ThreadOp[] {
+	switch (target.kind) {
+		case 'mailbox':
+			return target.to === 'archive'
+				? [{ op: 'move', to: 'inbox' }, { op: 'archive' }]
+				: [{ op: 'move', to: target.to }];
+		case 'label':
+			return [
+				{ op: 'addLabels', labelIds: [target.labelId] },
+				{ op: 'move', to: 'inbox' },
+				{ op: 'archive' }
+			];
+		case 'category':
+			return [
+				{ op: 'move', to: 'inbox' },
+				{ op: 'setCategory', category: target.category }
+			];
+	}
+}
 
 /**
  * The toggle ops for a selection. Each flips the way most mail clients do:
