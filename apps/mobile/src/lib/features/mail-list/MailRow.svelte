@@ -15,7 +15,7 @@
 	import Avatar from '#components/ui/Avatar.svelte';
 	import Icon from '#components/ui/Icon.svelte';
 	import LabelPill from '#components/ui/LabelPill.svelte';
-	import { MAX_ATTACHMENT_CHIPS, listTime, senderLine } from './format.js';
+	import { MAX_ATTACHMENT_CHIPS, listTime, senderLine, type RowText } from './format.js';
 	import { longPress } from './long-press.js';
 	import MarkToggle from './MarkToggle.svelte';
 
@@ -52,6 +52,8 @@
 		onstar?: () => void;
 		/** Makes the important marker a toggle button. */
 		onimportant?: () => void;
+		/** Mailbox-specific sender and time, e.g. "To: Ada" in Sent (see rowText). */
+		text?: RowText;
 		/** AI badge slot, e.g. a category or priority explanation (M10). */
 		ai?: Snippet;
 	}
@@ -70,13 +72,16 @@
 		onlongpress,
 		onstar,
 		onimportant,
+		text = {},
 		ai
 	}: Props = $props();
 
-	const sender = $derived(senderLine(thread.participants, selfEmail));
+	const sender = $derived(text.sender ?? senderLine(thread.participants, selfEmail));
 	const last = $derived(thread.participants.at(-1));
 	const avatarName = $derived(last?.name || last?.email || sender);
-	const time = $derived(listTime(thread.lastMessageAt, now));
+	const when = $derived(
+		text.when ?? { text: listTime(thread.lastMessageAt, now), datetime: thread.lastMessageAt }
+	);
 	const subject = $derived(thread.subject.trim() || NO_SUBJECT);
 	// Compact rows fold attachments into a paperclip; the others preview them.
 	const showFiles = $derived(density !== 'compact' && thread.attachments.length > 0);
@@ -126,7 +131,7 @@
 			{#if thread.isImportant && !onimportant}
 				<Icon icon={Bookmark} size="sm" label={IMPORTANT} class="row__important" />
 			{/if}
-			<time class="row__time nm-text-numeric" datetime={thread.lastMessageAt}>{time}</time>
+			<time class="row__time nm-text-numeric" datetime={when.datetime}>{when.text}</time>
 		</span>
 		<span class="row__line">
 			<span class="row__subject nm-text-truncate">{subject}</span>

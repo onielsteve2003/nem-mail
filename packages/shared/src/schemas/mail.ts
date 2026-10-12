@@ -48,6 +48,8 @@ export const ThreadSummarySchema = z.object({
 	snippet: z.string(),
 	/** Senders in conversation order, for the "Ada, Grace (3)" line. */
 	participants: z.array(AddressSchema).min(1),
+	/** To and Cc of every message, for the Sent row's "To:" line. Filled by toSummary. */
+	recipients: z.array(AddressSchema).optional(),
 	messageCount: z.int().positive(),
 	lastMessageAt: IsoDateTimeSchema,
 	mailboxes: z.array(StoredMailboxSchema),

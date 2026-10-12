@@ -23,6 +23,7 @@
 	import { getUiStore } from '#lib/stores/ui.svelte.js';
 	import { TWO_PANE_QUERY, readingThreadId, withReadingThread } from '#lib/utils/reading-pane.js';
 	import BulkActions from './BulkActions.svelte';
+	import { rowText } from './format.js';
 	import { emptyCopy, errorCopy } from './list-states.js';
 	import MailRow from './MailRow.svelte';
 	import MailRows from './MailRows.svelte';
@@ -115,7 +116,8 @@
 		else selection.select(list?.items.map((thread) => thread.id) ?? []);
 	}
 	const isOffline = $derived(online.current === false);
-	const empty = $derived(emptyCopy('mailbox' in filter ? filter.mailbox : null));
+	const mailboxName = $derived('mailbox' in filter ? filter.mailbox : null);
+	const empty = $derived(emptyCopy(mailboxName));
 	const failure = $derived(errorCopy(isOffline));
 	const heading = $derived(
 		title ?? ('labelId' in filter ? (labelsById.get(filter.labelId)?.name ?? '') : '')
@@ -198,6 +200,7 @@
 								labels={rowLabels(thread)}
 								{density}
 								selfEmail={session.user?.email}
+								text={rowText(mailboxName, thread, Date.now(), session.user?.email)}
 								active={twoPane.current && openId === thread.id}
 								selected={selection.has(thread.id)}
 								selecting={selection.isActive}

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { listTime, senderLine } from './format.js';
+import type { ThreadSummary } from '@nem/shared';
+import { listTime, rowText, senderLine } from './format.js';
 
 const ada = { email: 'ada@nem.dev', name: 'Ada Lovelace' };
 const grace = { email: 'grace@nem.dev', name: 'Grace Hopper' };
@@ -28,5 +29,32 @@ describe('listTime', () => {
 		expect(listTime(new Date(2026, 9, 12, 9, 5).toISOString(), now, 'en-US')).toBe('9:05 AM');
 		expect(listTime(new Date(2026, 2, 3).toISOString(), now, 'en-US')).toBe('Mar 3');
 		expect(listTime(new Date(2024, 2, 3).toISOString(), now, 'en-US')).toBe('3/3/24');
+	});
+});
+
+describe('rowText', () => {
+	const now = new Date(2026, 9, 12, 9, 0).getTime();
+	const thread = {
+		participants: [me],
+		recipients: [ada, me],
+		lastMessageAt: new Date(2026, 9, 12, 17, 0).toISOString(),
+		snoozedUntil: new Date(2026, 9, 14, 8, 0).toISOString()
+	} as ThreadSummary;
+
+	it('names who sent mail went to, never "me"', () => {
+		expect(rowText('sent', thread, now, me.email)).toEqual({ sender: 'To: Ada Lovelace' });
+	});
+
+	it('shows when scheduled mail sends and when snoozed mail wakes', () => {
+		expect(rowText('scheduled', thread, now, me.email, 'en-US').when?.text).toBe('Sends 5:00 PM');
+		expect(rowText('snoozed', thread, now, me.email, 'en-US').when).toEqual({
+			text: 'Until Oct 14',
+			datetime: thread.snoozedUntil
+		});
+	});
+
+	it('leaves other mailboxes alone', () => {
+		expect(rowText('inbox', thread, now, me.email)).toEqual({});
+		expect(rowText(null, thread, now, me.email)).toEqual({});
 	});
 });

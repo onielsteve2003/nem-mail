@@ -58,10 +58,19 @@ export function sortKey(thread: ThreadSummary): string {
 	return `${thread.lastMessageAt}|${thread.id}`;
 }
 
-/** The list row for a thread: everything but the messages. */
+/** The list row for a thread: everything but the messages, plus who they went to. */
 export function toSummary(thread: Thread): ThreadSummary {
 	const summary: Partial<Thread> = { ...thread };
 	delete summary.messages;
+	const seen = new Set<string>();
+	summary.recipients = thread.messages
+		.flatMap((message) => [...message.to, ...message.cc])
+		.filter((address) => {
+			const key = address.email.toLowerCase();
+			if (seen.has(key)) return false;
+			seen.add(key);
+			return true;
+		});
 	return summary as ThreadSummary;
 }
 

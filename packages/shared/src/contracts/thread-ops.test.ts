@@ -136,3 +136,16 @@ describe('restoreOps', () => {
 		expect(restoreOps(inboxThread, inboxThread)).toEqual([]);
 	});
 });
+
+describe('toSummary', () => {
+	it('drops the messages and lists every To and Cc once', () => {
+		const summary = toSummary(inboxThread);
+		expect(summary).not.toHaveProperty('messages');
+		const expected = new Set(
+			inboxThread.messages.flatMap((m) => [...m.to, ...m.cc]).map((a) => a.email.toLowerCase())
+		);
+		expect(summary.recipients?.map((a) => a.email.toLowerCase()).sort()).toEqual(
+			[...expected].sort()
+		);
+	});
+});

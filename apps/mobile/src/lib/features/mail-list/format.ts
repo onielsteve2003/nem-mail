@@ -1,4 +1,4 @@
-import type { Address } from '@nem/shared';
+import type { Address, SystemMailbox, ThreadSummary } from '@nem/shared';
 
 /** The user's own address shows as this in sender lines. */
 export const SELF_NAME = 'me';
@@ -49,3 +49,37 @@ export function listTime(iso: string, now: number, locale?: string): string {
 
 /** Attachment chips a row shows before folding the rest into "+N". */
 export const MAX_ATTACHMENT_CHIPS = 2;
+
+/** Overrides for the sender and time a row shows in some mailboxes. */
+export interface RowText {
+	sender?: string;
+	when?: { text: string; datetime: string };
+}
+
+/**
+ * Mailbox-specific row text: Sent names who the mail went to, Scheduled shows
+ * when it sends, Snoozed shows when it comes back.
+ */
+export function rowText(
+	mailbox: SystemMailbox | null,
+	thread: ThreadSummary,
+	now: number,
+	selfEmail?: string,
+	locale?: string
+): RowText {
+	if (mailbox === 'sent' || mailbox === 'scheduled') {
+		const self = selfEmail?.toLowerCase();
+		const others = [...thread.participants, ...(thread.recipients ?? [])].filter(
+			(address) => address.email.toLowerCase() !== self
+		);
+		const sender = `To: ${others.length > 0 ? senderLine(others, selfEmail) : SELF_NAME}`;
+		if (mailbox === 'sent') return { sender };
+		const at = thread.lastMessageAt;
+		return { sender, when: { text: `Sends ${listTime(at, now, locale)}`, datetime: at } };
+	}
+	if (mailbox === 'snoozed' && thread.snoozedUntil) {
+		const at = thread.snoozedUntil;
+		return { when: { text: `Until ${listTime(at, now, locale)}`, datetime: at } };
+	}
+	return {};
+}
