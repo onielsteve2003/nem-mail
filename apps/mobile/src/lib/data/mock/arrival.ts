@@ -36,6 +36,8 @@ interface Template {
 	subject: string;
 	body: string;
 	category: Category;
+	/** A fixed sender (e.g. spam); otherwise a random contact writes. */
+	from?: { email: string; name: string };
 }
 
 /** Short, neutral messages for live arrivals; the seed corpus covers history. */
@@ -59,6 +61,13 @@ const TEMPLATES: readonly Template[] = [
 		subject: 'Lunch on Friday?',
 		body: 'A few of us are getting lunch on Friday around noon. Want to join?',
 		category: 'social'
+	},
+	{
+		// Junk for the on-device spam filter (AI-2) to catch; the mock server does not flag it.
+		subject: 'CONGRATULATIONS! You have won a gift card',
+		body: 'You were selected as our lucky winner! Claim your $500 prize now, offer expires in 24 hours.',
+		category: 'promotions',
+		from: { email: 'winner@prize-center.example', name: 'Prize Center' }
 	}
 ];
 
@@ -174,7 +183,8 @@ export class MockMailSimulator {
 		if (!user) return null;
 		const template = pick(TEMPLATES, this.#random);
 		const sender = contacts.length > 0 ? pick(contacts, this.#random) : null;
-		const from = sender ? { email: sender.email, name: sender.name } : NEM_SENDER;
+		const from =
+			template.from ?? (sender ? { email: sender.email, name: sender.name } : NEM_SENDER);
 		const id = newId(`${userId}-n`);
 		const sentAt = new Date(now).toISOString();
 		const message: Message = {

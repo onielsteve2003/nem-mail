@@ -58,6 +58,7 @@ export function resetOnUserChange(stores: AppStores): () => void {
 					stores.selection.clear();
 					stores.ui.closeAll();
 					stores.ui.scroll.clear();
+					stores.ai.clearInsights();
 				});
 			}
 			previous = userId;

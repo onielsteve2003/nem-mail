@@ -1,7 +1,8 @@
-import { DEFAULT_SETTINGS, type AIFeature, type Settings } from '@nem/shared';
+import { DEFAULT_SETTINGS, type AIFeature, type Message, type Settings } from '@nem/shared';
 import { createContext } from 'svelte';
 import type { SettingsRepository } from '#lib/data/repositories.js';
 import type { AIBackend } from './backend.js';
+import type { SpamVerdict } from './models/spam-nb.js';
 import { MODELS } from './registry.js';
 import type { AIWorkerConnection } from './worker/connect.js';
 
@@ -36,6 +37,9 @@ export class AIService {
 			MODELS.map((model) => [model.id, { status: 'unknown', progress: 0, error: null }])
 		)
 	);
+
+	/** Spam verdicts by message id (architecture �5: insights keyed by message). */
+	spam = $state<Record<string, SpamVerdict>>({});
 
 	#connection: Promise<AIWorkerConnection> | undefined;
 
@@ -97,6 +101,35 @@ export class AIService {
 		this.models[id] = { status: 'absent', progress: 0, error: null };
 	}
 
+	/**
+	 * Classifies a message with the user's spam model and remembers the verdict.
+	 * Null when the user turned spam detection off. Throws when the worker fails.
+	 */
+	async classifySpam(userId: string, message: Message): Promise<SpamVerdict | null> {
+		if (!this.isEnabled('spam')) return null;
+		const cached = this.spam[message.id];
+		if (cached) return cached;
+		const { api } = await this.#worker();
+		const [verdict] = await api.classifySpam(userId, [spamInput(message)]);
+		if (!verdict) return null;
+		this.spam[message.id] = verdict;
+		return verdict;
+	}
+
+	/** Teaches the user's spam model from "Report spam" (true) or "Not spam" (false). */
+	async learnSpam(userId: string, messages: Message[], isSpam: boolean): Promise<void> {
+		if (!this.isEnabled('spam') || messages.length === 0) return;
+		const { api } = await this.#worker();
+		await api.learnSpam(userId, messages.map(spamText), isSpam);
+		// The model changed, so earlier verdicts may be stale.
+		this.spam = {};
+	}
+
+	/** Forgets verdicts, e.g. after switching accounts. */
+	clearInsights(): void {
+		this.spam = {};
+	}
+
 	/** Stops the worker; the next call starts a fresh one. */
 	dispose(): void {
 		void this.#connection?.then((connection) => connection.terminate());
@@ -110,6 +143,22 @@ export class AIService {
 		});
 		return this.#connection;
 	}
+}
+
+/** The text the spam model reads: the same subject + body pair it was trained on. */
+export function spamText(message: Message): string {
+	return `${message.subject}
+${message.bodyText}`;
+}
+
+function spamInput(message: Message) {
+	return {
+		fromName: message.from.name ?? '',
+		fromEmail: message.from.email,
+		subject: message.subject,
+		bodyText: message.bodyText,
+		bodyHtml: message.bodyHtml
+	};
 }
 
 export const [getAIService, setAIService] = createContext<AIService>();

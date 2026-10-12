@@ -99,6 +99,9 @@ export interface MailboxStoreOptions {
  * mutations: the change shows at once, rolls back if the server refuses,
  * and Undo restores the previous state (architecture §5).
  */
+/** Told which threads changed and how, after a user's change is saved. */
+export type AppliedListener = (threadIds: string[], ops: readonly ThreadOp[]) => void;
+
 export class MailboxStore {
 	lists = $state<Record<string, ThreadList>>({});
 	counts = $state<CountsResponse | null>(null);
@@ -110,6 +113,7 @@ export class MailboxStore {
 	readonly #toasts: ToastStore;
 	readonly #sync: (() => Promise<void>) | undefined;
 	readonly #now: () => number;
+	#appliedListeners: AppliedListener[] = [];
 	/** Bumped by reset(), so responses that started before it are dropped. */
 	#generation = 0;
 
@@ -251,6 +255,7 @@ export class MailboxStore {
 		}
 		// Rows may now belong in lists that were not touched (e.g. starred).
 		for (const list of Object.values(this.lists)) list.isStale = true;
+		if (undoable) for (const listener of this.#appliedListeners) listener(ids, ops);
 		const copy = toastCopy(ops, ids.length);
 		if (undoable && copy) {
 			this.#toasts.show({
@@ -302,6 +307,17 @@ export class MailboxStore {
 
 	async refreshCounts(): Promise<void> {
 		this.counts = await this.#mail.counts();
+	}
+
+	/**
+	 * Calls `listener` after the user's own changes are saved (not undo or system
+	 * moves, which pass `undoable: false`), e.g. so AI can learn from "Report spam".
+	 */
+	onApplied(listener: AppliedListener): () => void {
+		this.#appliedListeners = [...this.#appliedListeners, listener];
+		return () => {
+			this.#appliedListeners = this.#appliedListeners.filter((l) => l !== listener);
+		};
 	}
 
 	/** Follows server events: new mail and count changes. Returns an unsubscribe function. */

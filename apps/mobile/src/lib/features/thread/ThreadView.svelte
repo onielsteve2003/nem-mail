@@ -5,6 +5,8 @@
 	import ErrorState from '#components/ui/ErrorState.svelte';
 	import Skeleton from '#components/ui/Skeleton.svelte';
 	import ThreadActions from '#components/ui/ThreadActions.svelte';
+	import { getAIService } from '#lib/ai/service.svelte.js';
+	import type { SpamVerdict } from '#lib/ai/models/spam-nb.js';
 	import { getRepositories } from '#lib/data/provider.js';
 	import { getMailboxStore } from '#lib/stores/mailbox.svelte.js';
 	import { getSessionStore } from '#lib/stores/session.svelte.js';
@@ -13,6 +15,7 @@
 	import { getUiStore } from '#lib/stores/ui.svelte.js';
 	import { errorMessage, toAppError } from '#lib/utils/errors.js';
 	import MessageList from './MessageList.svelte';
+	import SpamBanner from './SpamBanner.svelte';
 	import ThreadHeader from './ThreadHeader.svelte';
 	import { leavesThread } from './actions.js';
 	import {
@@ -48,6 +51,7 @@
 	const threads = getThreadStore();
 	const mailbox = getMailboxStore();
 	const ui = getUiStore();
+	const ai = getAIService();
 
 	let labels = $state<Label[]>([]);
 	// Labels name the pills; the thread still opens if they fail.
@@ -76,6 +80,35 @@
 			const id = thread.id;
 			untrack(() => void mailbox.apply([id], { op: 'markRead' }, { undoable: false }));
 		}
+	});
+
+	// AI-2: in Spam, explain the verdict for the latest message someone else sent.
+	const spamMessage = $derived.by(() => {
+		if (!thread?.mailboxes.includes('spam') || !ai.isEnabled('spam')) return null;
+		const self = session.user?.email.toLowerCase();
+		return thread.messages.findLast((m) => m.from.email.toLowerCase() !== self) ?? null;
+	});
+	let spamCheck = $state<{ id: string; verdict: SpamVerdict | null; error: unknown }>({
+		id: '',
+		verdict: null,
+		error: null
+	});
+	function checkSpam(message: Message): void {
+		const userId = session.user?.id;
+		if (!userId) return;
+		spamCheck = { id: message.id, verdict: null, error: null };
+		ai.classifySpam(userId, message).then(
+			(verdict) => {
+				if (spamCheck.id === message.id) spamCheck.verdict = verdict;
+			},
+			(error: unknown) => {
+				if (spamCheck.id === message.id) spamCheck.error = error;
+			}
+		);
+	}
+	$effect(() => {
+		const message = spamMessage;
+		if (message) untrack(() => checkSpam(message));
 	});
 
 	function act(op: ThreadOp | ThreadOp[]): void {
@@ -209,6 +242,15 @@
 
 	{#if thread}
 		<!-- Keyed so another thread starts with its own messages open. -->
+		{#if spamMessage}
+			<SpamBanner
+				verdict={spamCheck.id === spamMessage.id ? spamCheck.verdict : null}
+				isLoading={spamCheck.id !== spamMessage.id || (!spamCheck.verdict && !spamCheck.error)}
+				error={spamCheck.error ? errorMessage(spamCheck.error) : null}
+				onretry={() => spamMessage && checkSpam(spamMessage)}
+				onnotspam={() => act({ op: 'notSpam' })}
+			/>
+		{/if}
 		{#key thread.id}
 			<MessageList
 				messages={thread.messages}

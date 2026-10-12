@@ -18,6 +18,7 @@
 	import { setupIonic } from '#lib/ionic.js';
 	import { prefersReducedMotion, slideStack } from '#lib/motion/index.js';
 	import { createAppStores, resetOnUserChange, setAppStores } from '#lib/stores/app.svelte.js';
+	import { connectSpamFilter } from '#lib/stores/spam-filter.js';
 	import { ThemeStore, setThemeStore } from '#lib/stores/theme.svelte.js';
 	import { exitApp, listenBackButton } from '#lib/utils/back-button.js';
 	import { errorMessage } from '#lib/utils/errors.js';
@@ -45,6 +46,14 @@
 
 	$effect(() => data.start());
 	$effect(() => stores.mailbox.connect());
+	$effect(() =>
+		connectSpamFilter({
+			mail: data.repos.mail,
+			mailbox: stores.mailbox,
+			ai: stores.ai,
+			user: () => stores.session.user
+		})
+	);
 	$effect(() => resetOnUserChange(stores));
 
 	// Route guard (F1): the splash covers start-up and any redirect, so a guarded page never flashes.
