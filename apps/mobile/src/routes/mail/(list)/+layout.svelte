@@ -4,6 +4,8 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import AccountSheet from '#components/layout/AccountSheet.svelte';
+	import AiOrb from '#components/layout/AiOrb.svelte';
+	import Fab from '#components/layout/Fab.svelte';
 	import ReadingPane from '#components/layout/ReadingPane.svelte';
 	import SearchBar from '#components/layout/SearchBar.svelte';
 	import { getSessionStore } from '#lib/stores/session.svelte.js';
@@ -14,12 +16,18 @@
 
 	// Sheet name the account switcher opens under.
 	const ACCOUNT_SHEET = 'account';
+	// Sheet names for compose (T7.1) and the AI assistant (M10), which render them.
+	const COMPOSE_SHEET = 'compose';
+	const ASSISTANT_SHEET = 'assistant';
+	// The compose button shows its label only this close to the top of the list.
+	const FAB_EXTENDED_TOP = 8;
 
 	let { children }: LayoutProps = $props();
 
 	const session = getSessionStore();
 	const ui = getUiStore();
 	let scrollHide = $state(SCROLL_HIDE_INITIAL);
+	let isAtTop = $state(true);
 	let shell = $state<HTMLDivElement>();
 
 	// Two panes at >= 900px: the list plus a reading pane driven by ?thread=.
@@ -44,24 +52,33 @@
 		if (!to || !shell) return;
 		shell.scrollTop = ui.scroll.get(to.url.pathname);
 		scrollHide = SCROLL_HIDE_INITIAL;
+		isAtTop = shell.scrollTop <= FAB_EXTENDED_TOP;
 	});
 
 	function onscroll(event: Event & { currentTarget: HTMLDivElement }): void {
-		scrollHide = nextScrollHide(scrollHide, event.currentTarget.scrollTop);
+		const y = event.currentTarget.scrollTop;
+		scrollHide = nextScrollHide(scrollHide, y);
+		isAtTop = y <= FAB_EXTENDED_TOP;
 	}
 </script>
 
 <div class="panes">
-	<!-- List screens scroll inside this shell, under the floating search bar. -->
-	<div class="shell" bind:this={shell} {onscroll}>
-		<SearchBar
-			searchHref={resolve('/search')}
-			accountName={session.user?.name ?? ''}
-			onmenu={() => ui.openDrawer()}
-			onaccount={() => ui.openSheet(ACCOUNT_SHEET)}
-			hidden={!scrollHide.isVisible}
-		/>
-		{@render children()}
+	<div class="list">
+		<!-- List screens scroll inside this shell, under the floating search bar. -->
+		<div class="shell" bind:this={shell} {onscroll}>
+			<SearchBar
+				searchHref={resolve('/search')}
+				accountName={session.user?.name ?? ''}
+				onmenu={() => ui.openDrawer()}
+				onaccount={() => ui.openSheet(ACCOUNT_SHEET)}
+				hidden={!scrollHide.isVisible}
+			/>
+			{@render children()}
+		</div>
+		<div class="dock">
+			<AiOrb onclick={() => ui.openSheet(ASSISTANT_SHEET)} />
+			<Fab extended={isAtTop} onclick={() => ui.openSheet(COMPOSE_SHEET)} />
+		</div>
 	</div>
 	{#if twoPane.current}
 		<ReadingPane {threadId} onclose={closeThread} />
@@ -75,6 +92,21 @@
 			display: grid;
 			grid-template-columns: minmax(22rem, 26rem) 1fr;
 		}
+	}
+	.list {
+		position: relative;
+	}
+	/* Bottom right of the list column, above the content and below sheets. */
+	.dock {
+		position: absolute;
+		inset-block-end: calc(var(--nm-safe-bottom) + var(--nm-space-4));
+		inset-inline-end: max(var(--nm-space-4), var(--nm-safe-right));
+		z-index: var(--nm-z-fab);
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: var(--nm-space-3);
+		pointer-events: none;
 	}
 	.shell {
 		block-size: var(--nm-viewport-height);
