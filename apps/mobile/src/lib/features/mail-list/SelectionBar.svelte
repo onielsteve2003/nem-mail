@@ -63,6 +63,10 @@
 	}
 	.count {
 		flex: 1;
+		overflow: hidden;
+		min-inline-size: 0;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 		color: var(--nm-color-text);
 		font-weight: var(--nm-weight-semibold);
 	}

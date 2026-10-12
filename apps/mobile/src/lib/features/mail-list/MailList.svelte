@@ -1,5 +1,12 @@
 <script lang="ts">
-	import type { Label, Settings, SwipeAction, ThreadListFilter, ThreadSummary } from '@nem/shared';
+	import type {
+		Label,
+		Settings,
+		SwipeAction,
+		ThreadListFilter,
+		ThreadOp,
+		ThreadSummary
+	} from '@nem/shared';
 	import { DEFAULT_SETTINGS } from '@nem/shared';
 	import { untrack, type Snippet } from 'svelte';
 	import { MediaQuery } from 'svelte/reactivity';
@@ -15,6 +22,7 @@
 	import { getSessionStore } from '#lib/stores/session.svelte.js';
 	import { getUiStore } from '#lib/stores/ui.svelte.js';
 	import { TWO_PANE_QUERY, readingThreadId, withReadingThread } from '#lib/utils/reading-pane.js';
+	import BulkActions from './BulkActions.svelte';
 	import { emptyCopy, errorCopy } from './list-states.js';
 	import MailRow from './MailRow.svelte';
 	import MailRows from './MailRows.svelte';
@@ -93,6 +101,15 @@
 		!!list && list.items.length > 0 && list.items.every((thread) => selection.has(thread.id))
 	);
 
+	const selected = $derived(list?.items.filter((thread) => selection.has(thread.id)) ?? []);
+
+	/** Runs a bulk action and leaves selection mode; the store toasts and offers Undo. */
+	function applyToSelection(op: ThreadOp): void {
+		const ids = [...selection.ids];
+		selection.clear();
+		void mailbox.apply(ids, op);
+	}
+
 	function selectAll(): void {
 		if (isAllSelected) selection.clear();
 		else selection.select(list?.items.map((thread) => thread.id) ?? []);
@@ -132,7 +149,11 @@
 			{isAllSelected}
 			onselectall={selectAll}
 			onexit={() => selection.clear()}
-		/>
+		>
+			{#snippet actions()}
+				<BulkActions threads={selected} {labels} onapply={applyToSelection} />
+			{/snippet}
+		</SelectionBar>
 	{/if}
 	<h1 id="list-heading" class="list__title nm-text-label">{heading}</h1>
 	{@render header?.()}
