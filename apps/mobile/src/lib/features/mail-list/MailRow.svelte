@@ -16,6 +16,7 @@
 	import Icon from '#components/ui/Icon.svelte';
 	import LabelPill from '#components/ui/LabelPill.svelte';
 	import { MAX_ATTACHMENT_CHIPS, listTime, senderLine } from './format.js';
+	import { longPress } from './long-press.js';
 
 	const UNREAD = 'Unread';
 	const STARRED = 'Starred';
@@ -42,6 +43,10 @@
 		selected?: boolean;
 		/** Makes the avatar a select toggle. */
 		onselect?: () => void;
+		/** Multi-select mode: tapping the row toggles it instead of opening it. */
+		selecting?: boolean;
+		/** A long press on the row, which starts multi-select. */
+		onlongpress?: () => void;
 		/** AI badge slot, e.g. a category or priority explanation (M10). */
 		ai?: Snippet;
 	}
@@ -56,6 +61,8 @@
 		active = false,
 		selected = false,
 		onselect,
+		selecting = false,
+		onlongpress,
 		ai
 	}: Props = $props();
 
@@ -68,6 +75,12 @@
 	const showFiles = $derived(density !== 'compact' && thread.attachments.length > 0);
 	const files = $derived(thread.attachments.slice(0, MAX_ATTACHMENT_CHIPS));
 	const moreFiles = $derived(thread.attachments.length - files.length);
+
+	function onclick(event: MouseEvent): void {
+		if (!selecting || !onselect) return;
+		event.preventDefault();
+		onselect();
+	}
 </script>
 
 <div
@@ -76,6 +89,7 @@
 		`row--${density}`,
 		{ 'row--unread': thread.isUnread, 'row--active': active, 'row--selected': selected }
 	]}
+	use:longPress={() => onlongpress?.()}
 >
 	<Avatar
 		name={avatarName}
@@ -84,8 +98,16 @@
 		onclick={onselect}
 		class="row__avatar"
 	/>
-	<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- the caller passes a resolve()d route. -->
-	<a class="row__link" {href} aria-current={active ? 'page' : undefined}>
+	<!-- eslint-disable svelte/no-navigation-without-resolve -- the caller passes a resolve()d route. -->
+	<a
+		class="row__link"
+		{href}
+		aria-current={active ? 'page' : undefined}
+		role={selecting ? 'button' : undefined}
+		aria-pressed={selecting ? selected : undefined}
+		{onclick}
+	>
+		<!-- eslint-enable svelte/no-navigation-without-resolve -->
 		<span class="row__line">
 			{#if thread.isUnread}<span class="nm-visually-hidden">{UNREAD},</span>{/if}
 			<span class="row__sender nm-text-truncate">{sender}</span>
@@ -171,6 +193,8 @@
 		color: inherit;
 		font-size: var(--nm-text-body);
 		text-decoration: none;
+		/* iOS would show its link preview on a long press, which selects instead. */
+		-webkit-touch-callout: none;
 	}
 	.row__link:focus-visible {
 		outline: 2px solid var(--nm-color-focus);

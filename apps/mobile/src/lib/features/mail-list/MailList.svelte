@@ -11,6 +11,7 @@
 	import Skeleton from '#components/ui/Skeleton.svelte';
 	import { getRepositories } from '#lib/data/provider.js';
 	import { getMailboxStore, listKey } from '#lib/stores/mailbox.svelte.js';
+	import { getSelectionStore } from '#lib/stores/selection.svelte.js';
 	import { getSessionStore } from '#lib/stores/session.svelte.js';
 	import { getUiStore } from '#lib/stores/ui.svelte.js';
 	import { TWO_PANE_QUERY, readingThreadId, withReadingThread } from '#lib/utils/reading-pane.js';
@@ -18,6 +19,7 @@
 	import MailRow from './MailRow.svelte';
 	import MailRows from './MailRows.svelte';
 	import { getListRefresh } from './refresh.js';
+	import SelectionBar from './SelectionBar.svelte';
 	import { swipeOp } from './swipe.js';
 	import SwipeRow from './SwipeRow.svelte';
 
@@ -43,6 +45,7 @@
 	const mailbox = getMailboxStore();
 	const session = getSessionStore();
 	const ui = getUiStore();
+	const selection = getSelectionStore();
 
 	let labels = $state<Label[]>([]);
 	let density = $state<Settings['density']>(DEFAULT_SETTINGS.density);
@@ -80,6 +83,20 @@
 	});
 
 	const list = $derived(mailbox.lists[key]);
+
+	// Selection belongs to one list: switching lists or leaving ends it.
+	$effect(() => {
+		void key;
+		return () => selection.clear();
+	});
+	const isAllSelected = $derived(
+		!!list && list.items.length > 0 && list.items.every((thread) => selection.has(thread.id))
+	);
+
+	function selectAll(): void {
+		if (isAllSelected) selection.clear();
+		else selection.select(list?.items.map((thread) => thread.id) ?? []);
+	}
 	const isOffline = $derived(online.current === false);
 	const empty = $derived(emptyCopy('mailbox' in filter ? filter.mailbox : null));
 	const failure = $derived(errorCopy(isOffline));
@@ -109,6 +126,14 @@
 </script>
 
 <section class="list" aria-labelledby="list-heading">
+	{#if selection.isActive}
+		<SelectionBar
+			count={selection.count}
+			{isAllSelected}
+			onselectall={selectAll}
+			onexit={() => selection.clear()}
+		/>
+	{/if}
 	<h1 id="list-heading" class="list__title nm-text-label">{heading}</h1>
 	{@render header?.()}
 	<div {id} role={id ? 'tabpanel' : undefined}>
@@ -143,6 +168,7 @@
 						<SwipeRow
 							actions={swipe}
 							isUnread={thread.isUnread}
+							disabled={selection.isActive}
 							onswipe={(action) => onswipe(thread, action)}
 						>
 							<MailRow
@@ -152,6 +178,10 @@
 								{density}
 								selfEmail={session.user?.email}
 								active={twoPane.current && openId === thread.id}
+								selected={selection.has(thread.id)}
+								selecting={selection.isActive}
+								onselect={() => selection.toggle(thread.id)}
+								onlongpress={() => selection.select([thread.id])}
 							/>
 						</SwipeRow>
 					{/snippet}

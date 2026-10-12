@@ -9,6 +9,7 @@
 	import ReadingPane from '#components/layout/ReadingPane.svelte';
 	import SearchBar from '#components/layout/SearchBar.svelte';
 	import { ListRefresh, setListRefresh } from '#features/mail-list/refresh.js';
+	import { getSelectionStore } from '#lib/stores/selection.svelte.js';
 	import { getSessionStore } from '#lib/stores/session.svelte.js';
 	import { getUiStore } from '#lib/stores/ui.svelte.js';
 	import { TWO_PANE_QUERY, readingThreadId, withReadingThread } from '#lib/utils/reading-pane.js';
@@ -28,6 +29,7 @@
 
 	const session = getSessionStore();
 	const ui = getUiStore();
+	const selection = getSelectionStore();
 	let scrollHide = $state(SCROLL_HIDE_INITIAL);
 	let isAtTop = $state(true);
 	let shell = $state<HTMLDivElement>();
@@ -85,13 +87,16 @@
 				<ion-refresher-content pulling-text={PULL_TEXT}></ion-refresher-content>
 			</ion-refresher>
 			<div class="shell ion-content-scroll-host" bind:this={shell} {onscroll}>
-				<SearchBar
-					searchHref={resolve('/search')}
-					accountName={session.user?.name ?? ''}
-					onmenu={() => ui.openDrawer()}
-					onaccount={() => ui.openSheet(ACCOUNT_SHEET)}
-					hidden={!scrollHide.isVisible}
-				/>
+				<!-- The list shows its selection bar here instead while rows are selected. -->
+				{#if !selection.isActive}
+					<SearchBar
+						searchHref={resolve('/search')}
+						accountName={session.user?.name ?? ''}
+						onmenu={() => ui.openDrawer()}
+						onaccount={() => ui.openSheet(ACCOUNT_SHEET)}
+						hidden={!scrollHide.isVisible}
+					/>
+				{/if}
 				{@render children()}
 			</div>
 		</ion-content>

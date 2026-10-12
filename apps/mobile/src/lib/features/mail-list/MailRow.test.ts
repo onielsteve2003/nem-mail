@@ -85,4 +85,14 @@ describe('MailRow', () => {
 		await fireEvent.click(screen.getByRole('button', { name: 'Select Grace Hopper' }));
 		expect(onselect).toHaveBeenCalledOnce();
 	});
+
+	it('toggles instead of opening when tapped in selection mode', async () => {
+		const onselect = vi.fn();
+		render(MailRow, { thread: makeThread(), href: '/t1', now: NOW, selecting: true, onselect });
+		const link = screen.getByRole('button', { name: /Launch plan/ });
+		expect(link).toHaveAttribute('aria-pressed', 'false');
+		const isPrevented = !(await fireEvent.click(link));
+		expect(onselect).toHaveBeenCalledOnce();
+		expect(isPrevented).toBe(true);
+	});
 });
