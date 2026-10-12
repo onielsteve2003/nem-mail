@@ -153,6 +153,54 @@ a {
 }
 
 /*
+ * Page transitions (View Transitions API, T4.6). The root layout sets
+ * data-nav-direction; back slides the other way. The search bar has its own
+ * view-transition-name, so it stays put between list screens.
+ */
+::view-transition-old(root),
+::view-transition-new(root) {
+	animation-duration: var(--nm-duration-slow);
+	animation-timing-function: var(--nm-ease-emphasized);
+	animation-fill-mode: both;
+}
+::view-transition-old(root) {
+	animation-name: nm-page-out;
+}
+::view-transition-new(root) {
+	animation-name: nm-page-in;
+}
+:root[data-nav-direction='back']::view-transition-old(root) {
+	animation-name: nm-page-out-back;
+}
+:root[data-nav-direction='back']::view-transition-new(root) {
+	animation-name: nm-page-in-back;
+}
+@keyframes nm-page-in {
+	from {
+		opacity: 0;
+		transform: translateX(8%);
+	}
+}
+@keyframes nm-page-out {
+	to {
+		opacity: 0;
+		transform: translateX(-4%);
+	}
+}
+@keyframes nm-page-in-back {
+	from {
+		opacity: 0;
+		transform: translateX(-8%);
+	}
+}
+@keyframes nm-page-out-back {
+	to {
+		opacity: 0;
+		transform: translateX(4%);
+	}
+}
+
+/*
  * Reduced motion: collapse animations and transitions everywhere, so a
  * component that forgets its own reduced-motion path still stays calm.
  * Motion presets (lib/motion) also read this preference directly.

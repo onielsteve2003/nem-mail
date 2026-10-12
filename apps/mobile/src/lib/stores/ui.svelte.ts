@@ -1,4 +1,5 @@
 import { createContext } from 'svelte';
+import { ScrollMemory } from '#lib/utils/navigation.js';
 
 /**
  * Chrome state that is not in the URL: the drawer and the stack of open
@@ -9,6 +10,8 @@ export class UiStore {
 	sheets = $state<string[]>([]);
 	/** The topmost sheet, or null. */
 	readonly activeSheet = $derived(this.sheets.at(-1) ?? null);
+	/** Scroll position of each list screen (not reactive). */
+	readonly scroll = new ScrollMemory();
 
 	openDrawer(): void {
 		this.isDrawerOpen = true;

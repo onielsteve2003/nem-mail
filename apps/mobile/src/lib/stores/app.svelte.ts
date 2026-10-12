@@ -51,6 +51,7 @@ export function resetOnUserChange(stores: AppStores): () => void {
 					stores.thread.reset();
 					stores.selection.clear();
 					stores.ui.closeAll();
+					stores.ui.scroll.clear();
 				});
 			}
 			previous = userId;

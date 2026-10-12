@@ -54,6 +54,7 @@
 			max(var(--nm-space-3), var(--nm-safe-right));
 		transition: transform var(--nm-duration-base) var(--nm-ease-standard);
 		pointer-events: none;
+		view-transition-name: nm-search-bar;
 	}
 	.bar--hidden:not(:focus-within) {
 		transform: translateY(-110%);

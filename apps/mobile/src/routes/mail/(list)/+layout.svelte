@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { afterNavigate, beforeNavigate } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import AccountSheet from '#components/layout/AccountSheet.svelte';
 	import SearchBar from '#components/layout/SearchBar.svelte';
@@ -15,6 +16,17 @@
 	const session = getSessionStore();
 	const ui = getUiStore();
 	let scrollHide = $state(SCROLL_HIDE_INITIAL);
+	let shell = $state<HTMLDivElement>();
+
+	// Each mailbox and label keeps its own scroll position (the window never scrolls here).
+	beforeNavigate(({ from }) => {
+		if (from && shell) ui.scroll.save(from.url.pathname, shell.scrollTop);
+	});
+	afterNavigate(({ to }) => {
+		if (!to || !shell) return;
+		shell.scrollTop = ui.scroll.get(to.url.pathname);
+		scrollHide = SCROLL_HIDE_INITIAL;
+	});
 
 	function onscroll(event: Event & { currentTarget: HTMLDivElement }): void {
 		scrollHide = nextScrollHide(scrollHide, event.currentTarget.scrollTop);
@@ -22,7 +34,7 @@
 </script>
 
 <!-- List screens scroll inside this shell, under the floating search bar. -->
-<div class="shell" {onscroll}>
+<div class="shell" bind:this={shell} {onscroll}>
 	<SearchBar
 		searchHref={resolve('/search')}
 		accountName={session.user?.name ?? ''}
