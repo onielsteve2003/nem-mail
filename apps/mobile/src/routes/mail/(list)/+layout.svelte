@@ -19,8 +19,7 @@
 
 	// Sheet name the account switcher opens under.
 	const ACCOUNT_SHEET = 'account';
-	// Sheet names for compose (T7.1) and the AI assistant (M10), which render them.
-	const COMPOSE_SHEET = 'compose';
+	// Sheet name for the AI assistant (M10), which renders it.
 	const ASSISTANT_SHEET = 'assistant';
 	const PULL_TEXT = 'Pull to check for new mail';
 	// The compose button shows its label only this close to the top of the list.
@@ -116,7 +115,14 @@
 		</ion-content>
 		<div class="dock">
 			<AiOrb onclick={() => ui.openSheet(ASSISTANT_SHEET)} />
-			<Fab extended={isAtTop} onclick={() => ui.openSheet(COMPOSE_SHEET)} />
+			<Fab
+				extended={isAtTop}
+				onclick={(event) =>
+					ui.openCompose(
+						{ mode: 'new', threadId: null, messageId: null },
+						event.currentTarget.getBoundingClientRect()
+					)}
+			/>
 		</div>
 	</div>
 	{#if twoPane.current}

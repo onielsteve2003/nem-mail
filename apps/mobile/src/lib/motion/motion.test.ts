@@ -7,6 +7,7 @@ import {
 	SPRINGS,
 	collapse,
 	fadeScale,
+	morph,
 	prefersReducedMotion,
 	sheetIn,
 	slideStack,
@@ -63,7 +64,7 @@ describe('presets', () => {
 });
 
 describe('transitions', () => {
-	const transitions = { sheetIn, fadeScale, slideStack, collapse };
+	const transitions = { sheetIn, fadeScale, slideStack, collapse, morph };
 
 	it.each(Object.entries(transitions))('%s finishes at once under reduced motion', (_, fn) => {
 		setReducedMotion(true);
@@ -91,6 +92,22 @@ describe('transitions', () => {
 		expect(slideStack(node, { direction: -1, distance: 50 }).css?.(0, 1)).toContain(
 			'translateX(-50%)'
 		);
+	});
+
+	it('morph grows out of the origin rect, or slides up without one', () => {
+		setReducedMotion(false);
+		const surface = document.createElement('div');
+		surface.getBoundingClientRect = () =>
+			({ top: 0, left: 0, right: 400, bottom: 800, width: 400, height: 800 }) as DOMRect;
+		const origin = { top: 720, left: 320, right: 376, bottom: 776, width: 56, height: 56 };
+		const { css } = morph(surface, { origin });
+		expect(css?.(0, 1)).toBe(
+			'opacity: 0; transform: translate(-24px, -24px); clip-path: inset(744px 0px 0px 344px round 28px);'
+		);
+		expect(css?.(1, 0)).toContain(
+			'translate(0px, 0px); clip-path: inset(0px 0px 0px 0px round 0px)'
+		);
+		expect(morph(surface).css?.(0, 1)).toBe('transform: translateY(100%);');
 	});
 
 	it('collapse shrinks height and padding to zero', () => {

@@ -14,6 +14,9 @@ export interface ComposeRequest {
 	draftId?: string;
 }
 
+/** The rect compose grows from (a plain copy of a DOMRect). */
+export type ComposeOrigin = Pick<DOMRect, 'top' | 'right' | 'bottom' | 'left' | 'width' | 'height'>;
+
 /**
  * Chrome state that is not in the URL: the drawer and the stack of open
  * sheets (a sheet can open another, e.g. labels from the actions sheet).
@@ -23,6 +26,8 @@ export class UiStore {
 	sheets = $state<string[]>([]);
 	/** Read by the compose sheet (M7) when it opens. */
 	composeRequest = $state<ComposeRequest | null>(null);
+	/** Screen rect of the control compose morphs out of, when one opened it. */
+	composeOrigin = $state<ComposeOrigin | null>(null);
 	/** The topmost sheet, or null. */
 	readonly activeSheet = $derived(this.sheets.at(-1) ?? null);
 	/** Scroll position of each list screen (not reactive). */
@@ -51,9 +56,15 @@ export class UiStore {
 	}
 
 	/** Opens compose for a new message, a reply or forward, or a draft. */
-	openCompose(request: ComposeRequest): void {
+	openCompose(request: ComposeRequest, origin: ComposeOrigin | null = null): void {
 		this.composeRequest = request;
+		this.composeOrigin = origin;
 		this.openSheet(COMPOSE_SHEET);
+	}
+
+	/** Closes compose; the request stays until the sheet has animated out. */
+	closeCompose(): void {
+		this.closeSheet(COMPOSE_SHEET);
 	}
 
 	isSheetOpen(name: string): boolean {

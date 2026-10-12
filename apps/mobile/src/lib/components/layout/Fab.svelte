@@ -5,7 +5,7 @@
 	interface Props {
 		/** Shows the "Compose" label; false shrinks the button to its icon. */
 		extended: boolean;
-		onclick: () => void;
+		onclick: (event: MouseEvent & { currentTarget: HTMLButtonElement }) => void;
 	}
 
 	let { extended, onclick }: Props = $props();

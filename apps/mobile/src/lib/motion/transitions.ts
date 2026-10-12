@@ -80,3 +80,37 @@ export function collapse(node: Element, params: MotionParams = {}): TransitionCo
 			` padding-top: ${t * paddingTop}px; padding-bottom: ${t * paddingBottom}px;`
 	};
 }
+
+/** Where a morph starts: the rect of the control that opened the surface. */
+type Rect = Pick<DOMRect, 'top' | 'right' | 'bottom' | 'left' | 'width' | 'height'>;
+
+interface MorphParams extends MotionParams {
+	origin?: Rect | null;
+}
+
+/**
+ * Liquid morph: the surface grows out of `origin` (the compose button).
+ * A clip-path the size of the origin, moved onto it, opens to the full surface,
+ * so only transform, clip-path and opacity change. Without an origin it slides up like a sheet.
+ */
+export function morph(node: Element, params: MorphParams = {}): TransitionConfig {
+	if (prefersReducedMotion()) return NO_MOTION;
+	const { origin, delay = 0, duration = DURATIONS.slow, easing = EASINGS.emphasized } = params;
+	if (!origin) return sheetIn(node, { delay, duration, easing });
+	const box = node.getBoundingClientRect();
+	const top = Math.max(0, box.bottom - box.top - origin.height);
+	const left = Math.max(0, box.right - box.left - origin.width);
+	const dx = origin.right - box.right;
+	const dy = origin.bottom - box.bottom;
+	const from = Math.min(origin.width, origin.height) / 2;
+	const to = parseFloat(getComputedStyle(node).borderTopLeftRadius) || 0;
+	return {
+		delay,
+		duration,
+		easing,
+		css: (t, u) =>
+			`opacity: ${Math.min(1, t * 3)};` +
+			` transform: translate(${dx * u}px, ${dy * u}px);` +
+			` clip-path: inset(${top * u}px 0px 0px ${left * u}px round ${from * u + to * t}px);`
+	};
+}

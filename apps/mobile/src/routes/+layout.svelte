@@ -12,6 +12,7 @@
 	import Splash from '#components/layout/Splash.svelte';
 	import OfflineBanner from '#components/ui/OfflineBanner.svelte';
 	import Toaster from '#components/ui/Toaster.svelte';
+	import ComposeSheet from '#features/compose/ComposeSheet.svelte';
 	import { config } from '#lib/config.js';
 	import { createRepositories, setRepositories } from '#lib/data/provider.js';
 	import { setupIonic } from '#lib/ionic.js';
@@ -119,6 +120,10 @@
 				</div>
 			{/key}
 		</div>
+		{#if session.isSignedIn}
+			<!-- Here, not in a page, so compose opens over the list and the thread route alike. -->
+			<ComposeSheet />
+		{/if}
 	{:else}
 		<Splash
 			error={session.status === 'error' ? errorMessage(session.error) : null}

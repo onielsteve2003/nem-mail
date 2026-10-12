@@ -210,5 +210,16 @@ describe('UiStore', () => {
 		ui.openCompose({ mode: 'reply', threadId: 't1', messageId: 'm1' });
 		expect(ui.activeSheet).toBe('compose');
 		expect(ui.composeRequest).toEqual({ mode: 'reply', threadId: 't1', messageId: 'm1' });
+		expect(ui.composeOrigin).toBeNull();
+	});
+
+	it('keeps the rect compose morphs from, and closes only compose', () => {
+		const ui = new UiStore();
+		const origin = { top: 1, right: 2, bottom: 3, left: 4, width: 5, height: 6 };
+		ui.openSheet('account');
+		ui.openCompose({ mode: 'new', threadId: null, messageId: null }, origin);
+		expect(ui.composeOrigin).toEqual(origin);
+		ui.closeCompose();
+		expect(ui.activeSheet).toBe('account');
 	});
 });
