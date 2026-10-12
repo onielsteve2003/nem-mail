@@ -120,4 +120,30 @@ describe('MailRow', () => {
 		// The marks are buttons now, so the link no longer repeats them.
 		expect(screen.getByRole('link')).not.toHaveTextContent('Starred');
 	});
+
+	it('uses mailbox-specific sender and time text', () => {
+		render(MailRow, {
+			thread: makeThread(),
+			href: '#',
+			now: NOW,
+			text: { sender: 'To: Ada', when: { text: 'Sends 5:00 PM', datetime: '2026-10-12T17:00' } }
+		});
+		const link = screen.getByRole('link');
+		expect(link).toHaveTextContent('To: Ada');
+		expect(link.querySelector('time')).toHaveTextContent('Sends 5:00 PM');
+		expect(link.querySelector('time')).toHaveAttribute('datetime', '2026-10-12T17:00');
+	});
+
+	it('starts selection on a long press', async () => {
+		const onlongpress = vi.fn();
+		const { container } = render(MailRow, {
+			thread: makeThread(),
+			href: '#',
+			now: NOW,
+			onlongpress
+		});
+		// The browser's own long-press menu counts as the press.
+		await fireEvent.contextMenu(container.querySelector('.row') as Element);
+		expect(onlongpress).toHaveBeenCalledOnce();
+	});
 });

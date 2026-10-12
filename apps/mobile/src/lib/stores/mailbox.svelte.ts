@@ -3,6 +3,7 @@ import {
 	matchesFilter,
 	restoreOps,
 	sortKey,
+	toSummary,
 	type AppError,
 	type CountsResponse,
 	type Cursor,
@@ -195,19 +196,20 @@ export class MailboxStore {
 	/**
 	 * Applies an op at once to every cached list and open thread, then saves
 	 * it. On failure everything rolls back and an error toast offers Retry.
-	 * Ops with toast copy offer Undo. Resolves true when saved.
+	 * Ops with toast copy offer Undo. `known` holds rows no cached list has any
+	 * more (Undo passes them so they can come back). Resolves true when saved.
 	 */
 	async apply(
 		threadIds: string[],
 		op: ThreadOp,
-		{ undoable = true }: { undoable?: boolean } = {}
+		{ undoable = true, known = [] }: { undoable?: boolean; known?: ThreadSummary[] } = {}
 	): Promise<boolean> {
 		const ids = threadIds.filter((id, index) => threadIds.indexOf(id) === index);
 		if (ids.length === 0) return true;
 		const before = this.#summaries(ids);
 		const lists = $state.snapshot(this.lists) as Record<string, ThreadList>;
 		const threads = this.#threads?.snapshot();
-		this.#applyLocal(ids, op);
+		this.#applyLocal(ids, op, known);
 		const generation = this.#generation;
 		try {
 			await this.#mail.apply(ids, op);
@@ -215,7 +217,7 @@ export class MailboxStore {
 			if (generation !== this.#generation) return false;
 			this.lists = lists;
 			if (threads) this.#threads?.restore(threads);
-			this.#toastError(UPDATE_FAILED, error, () => void this.apply(ids, op, { undoable }));
+			this.#toastError(UPDATE_FAILED, error, () => void this.apply(ids, op, { undoable, known }));
 			return false;
 		}
 		// Rows may now belong in lists that were not touched (e.g. starred).
@@ -235,11 +237,7 @@ export class MailboxStore {
 		const now = this.#now();
 		for (const list of Object.values(this.lists)) {
 			const rest = list.items.filter((thread) => thread.id !== summary.id);
-			const key = sortKey(summary);
-			const index = rest.findIndex((thread) => sortKey(thread) < key);
-			// Past the loaded pages it is left out: a later page brings it.
-			const fits = matchesFilter(summary, list.filter, now) && (index !== -1 || !list.nextCursor);
-			if (fits) rest.splice(index === -1 ? rest.length : index, 0, summary);
+			const fits = matchesFilter(summary, list.filter, now) && insertSorted(list, rest, summary);
 			if (fits || rest.length !== list.items.length) list.items = rest;
 		}
 	}
@@ -263,12 +261,22 @@ export class MailboxStore {
 		this.counts = null;
 	}
 
-	#applyLocal(ids: string[], op: ThreadOp): void {
+	#applyLocal(ids: string[], op: ThreadOp, known: ThreadSummary[]): void {
 		const now = this.#now();
+		const found = this.#summaries(ids);
+		const changed = [...found, ...known.filter((k) => !found.some((f) => f.id === k.id))]
+			.filter((thread) => ids.includes(thread.id))
+			.map((thread) => applyThreadOp(thread, op));
 		for (const list of Object.values(this.lists)) {
-			list.items = list.items
+			const items = list.items
 				.map((thread) => (ids.includes(thread.id) ? applyThreadOp(thread, op) : thread))
 				.filter((thread) => !ids.includes(thread.id) || matchesFilter(thread, list.filter, now));
+			// Rows that now belong here come back too, e.g. the Inbox after Undo of archive.
+			for (const thread of changed) {
+				if (items.some((item) => item.id === thread.id)) continue;
+				if (matchesFilter(thread, list.filter, now)) insertSorted(list, items, thread);
+			}
+			list.items = items;
 		}
 		this.#threads?.applyLocal(ids, op);
 	}
@@ -287,8 +295,13 @@ export class MailboxStore {
 			group.ids.push(thread.id);
 		}
 		for (const { ops, ids } of Object.values(groups)) {
+			// Each thread as it is after `op`, then after each restore op.
+			let known = before
+				.filter((thread) => ids.includes(thread.id))
+				.map((thread) => applyThreadOp(thread, op));
 			for (const restore of ops) {
-				if (!(await this.apply(ids, restore, { undoable: false }))) return;
+				if (!(await this.apply(ids, restore, { undoable: false, known }))) return;
+				known = known.map((thread) => applyThreadOp(thread, restore));
 			}
 		}
 	}
@@ -297,7 +310,8 @@ export class MailboxStore {
 	#summaries(ids: string[]): ThreadSummary[] {
 		const items = Object.values(this.lists).flatMap((list) => list.items);
 		return ids.flatMap((id) => {
-			const thread = this.#threads?.get(id)?.thread ?? items.find((item) => item.id === id);
+			const open = this.#threads?.get(id)?.thread;
+			const thread = open ? toSummary(open) : items.find((item) => item.id === id);
 			return thread ? [$state.snapshot(thread) as ThreadSummary] : [];
 		});
 	}
@@ -314,6 +328,18 @@ export class MailboxStore {
 			action: appError.retryable ? { label: RETRY, onaction: retry } : undefined
 		});
 	}
+}
+
+/**
+ * Puts a row into `items` (the list's rows) by sort key. Past the loaded pages
+ * it is left out, since a later page brings it. Returns whether it went in.
+ */
+function insertSorted(list: ThreadList, items: ThreadSummary[], summary: ThreadSummary): boolean {
+	const key = sortKey(summary);
+	const index = items.findIndex((thread) => sortKey(thread) < key);
+	if (index === -1 && list.nextCursor) return false;
+	items.splice(index === -1 ? items.length : index, 0, summary);
+	return true;
 }
 
 export const [getMailboxStore, setMailboxStore] = createContext<MailboxStore>();

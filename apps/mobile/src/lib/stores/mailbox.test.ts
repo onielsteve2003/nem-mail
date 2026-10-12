@@ -89,6 +89,16 @@ describe('MailboxStore optimistic updates', () => {
 		await vi.waitFor(async () => expect((await repos.mail.get(id)).mailboxes).toContain('inbox'));
 	});
 
+	it('puts the row back in its place in the open list on Undo', async () => {
+		const before = inboxIds();
+		const id = before[1] ?? '';
+		await mailbox.apply([id], { op: 'archive' });
+		expect(inboxIds()).not.toContain(id);
+		toasts.runAction(toasts.current?.id ?? 0);
+		// Back at once, before any reload of the list.
+		expect(inboxIds()).toEqual(before);
+	});
+
 	it('undoes a trash from the archive back to the archive, not the inbox', async () => {
 		await repos.mail.apply([inboxIds()[0] ?? ''], { op: 'archive' });
 		await mailbox.load(ARCHIVE);
