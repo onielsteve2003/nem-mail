@@ -37,6 +37,20 @@ describe('createRepositories', () => {
 		db.close();
 	});
 
+	it('delivers one new inbox message on sync in mock mode', async () => {
+		const db = await openMockDb('provider-sync');
+		await seedIfEmpty(db, { now: new Date() });
+		const { repos, sync } = createRepositories(
+			{ dataSource: 'mock', apiUrl: '' },
+			{ mock: { db: async () => db, latency: { min: 0, max: 0 } } }
+		);
+		await repos.auth.signIn({ email: DEMO_EMAIL, password: 'anything-goes' });
+		const before = (await repos.mail.counts()).mailboxes.inbox ?? 0;
+		await sync();
+		expect((await repos.mail.counts()).mailboxes.inbox).toBe(before + 1);
+		db.close();
+	});
+
 	it('reads ?fail= into the simulated network', async () => {
 		const db = await openMockDb('provider-2');
 		const { repos } = createRepositories(

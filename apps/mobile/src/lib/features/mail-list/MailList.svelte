@@ -15,6 +15,7 @@
 	import { TWO_PANE_QUERY, readingThreadId, withReadingThread } from '#lib/utils/reading-pane.js';
 	import { emptyCopy, errorCopy } from './list-states.js';
 	import MailRow from './MailRow.svelte';
+	import { getListRefresh } from './refresh.js';
 
 	const SKELETON_ROWS = 8;
 	const LOADING = 'Loading conversations';
@@ -57,6 +58,13 @@
 	$effect(() => {
 		void key;
 		untrack(() => void mailbox.load(filter));
+	});
+
+	// Pull to refresh in the list layout reloads this list.
+	const listRefresh = getListRefresh();
+	$effect(() => {
+		const current = filter;
+		return listRefresh.register(() => mailbox.refresh(current));
 	});
 
 	const list = $derived(mailbox.lists[key]);

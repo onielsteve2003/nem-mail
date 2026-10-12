@@ -16,6 +16,8 @@ export interface DataLayer {
 	repos: Repositories;
 	/** Starts background work (the mock's delivery and arrival simulator). Returns a stop function. */
 	start(): () => void;
+	/** Checks for new mail now (pull to refresh). The mock delivers one simulated arrival. */
+	sync(): Promise<void>;
 }
 
 export interface DataLayerOptions {
@@ -31,7 +33,11 @@ export function createRepositories(
 	options: DataLayerOptions = {}
 ): DataLayer {
 	if (config.dataSource === 'api') {
-		return { repos: createHttpRepositories(config.apiUrl), start: () => () => {} };
+		return {
+			repos: createHttpRepositories(config.apiUrl),
+			start: () => () => {},
+			sync: async () => {}
+		};
 	}
 	const ctx = new MockContext({ failRate: readFailRate(options.search ?? ''), ...options.mock });
 	const simulator = new MockMailSimulator(ctx);
@@ -50,6 +56,9 @@ export function createRepositories(
 		start() {
 			simulator.start();
 			return () => simulator.stop();
+		},
+		async sync() {
+			await simulator.arrive();
 		}
 	};
 }

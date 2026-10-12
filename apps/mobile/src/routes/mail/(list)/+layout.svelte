@@ -8,6 +8,7 @@
 	import Fab from '#components/layout/Fab.svelte';
 	import ReadingPane from '#components/layout/ReadingPane.svelte';
 	import SearchBar from '#components/layout/SearchBar.svelte';
+	import { ListRefresh, setListRefresh } from '#features/mail-list/refresh.js';
 	import { getSessionStore } from '#lib/stores/session.svelte.js';
 	import { getUiStore } from '#lib/stores/ui.svelte.js';
 	import { TWO_PANE_QUERY, readingThreadId, withReadingThread } from '#lib/utils/reading-pane.js';
@@ -19,6 +20,7 @@
 	// Sheet names for compose (T7.1) and the AI assistant (M10), which render them.
 	const COMPOSE_SHEET = 'compose';
 	const ASSISTANT_SHEET = 'assistant';
+	const PULL_TEXT = 'Pull to check for new mail';
 	// The compose button shows its label only this close to the top of the list.
 	const FAB_EXTENDED_TOP = 8;
 
@@ -29,6 +31,18 @@
 	let scrollHide = $state(SCROLL_HIDE_INITIAL);
 	let isAtTop = $state(true);
 	let shell = $state<HTMLDivElement>();
+
+	// Pull to refresh: the visible list registers what a pull reloads.
+	const listRefresh = new ListRefresh();
+	setListRefresh(listRefresh);
+
+	async function onrefresh(event: CustomEvent): Promise<void> {
+		try {
+			await listRefresh.run();
+		} finally {
+			void (event.target as HTMLIonRefresherElement).complete();
+		}
+	}
 
 	// Two panes at >= 900px: the list plus a reading pane driven by ?thread=.
 	const twoPane = new MediaQuery(TWO_PANE_QUERY, false);
@@ -64,17 +78,23 @@
 
 <div class="panes">
 	<div class="list">
-		<!-- List screens scroll inside this shell, under the floating search bar. -->
-		<div class="shell" bind:this={shell} {onscroll}>
-			<SearchBar
-				searchHref={resolve('/search')}
-				accountName={session.user?.name ?? ''}
-				onmenu={() => ui.openDrawer()}
-				onaccount={() => ui.openSheet(ACCOUNT_SHEET)}
-				hidden={!scrollHide.isVisible}
-			/>
-			{@render children()}
-		</div>
+		<!-- ion-content only hosts the refresher; the shell is its scroll host, so
+		     list screens scroll inside it, under the floating search bar. -->
+		<ion-content scroll-y={false}>
+			<ion-refresher slot="fixed" onionRefresh={onrefresh}>
+				<ion-refresher-content pulling-text={PULL_TEXT}></ion-refresher-content>
+			</ion-refresher>
+			<div class="shell ion-content-scroll-host" bind:this={shell} {onscroll}>
+				<SearchBar
+					searchHref={resolve('/search')}
+					accountName={session.user?.name ?? ''}
+					onmenu={() => ui.openDrawer()}
+					onaccount={() => ui.openSheet(ACCOUNT_SHEET)}
+					hidden={!scrollHide.isVisible}
+				/>
+				{@render children()}
+			</div>
+		</ion-content>
 		<div class="dock">
 			<AiOrb onclick={() => ui.openSheet(ASSISTANT_SHEET)} />
 			<Fab extended={isAtTop} onclick={() => ui.openSheet(COMPOSE_SHEET)} />
@@ -108,8 +128,12 @@
 		gap: var(--nm-space-3);
 		pointer-events: none;
 	}
-	.shell {
+	ion-content {
+		--background: transparent;
 		block-size: var(--nm-viewport-height);
+	}
+	.shell {
+		block-size: 100%;
 		overflow-y: auto;
 		overscroll-behavior-y: contain;
 	}

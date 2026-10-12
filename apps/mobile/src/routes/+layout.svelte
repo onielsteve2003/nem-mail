@@ -38,7 +38,7 @@
 	// One data layer and one set of stores for the whole app (architecture §8).
 	const data = createRepositories(config, { search: location.search });
 	setRepositories(data.repos);
-	const stores = createAppStores(data.repos);
+	const stores = createAppStores(data.repos, data.sync);
 	setAppStores(stores);
 	void stores.session.restore();
 

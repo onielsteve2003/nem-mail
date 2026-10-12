@@ -118,3 +118,29 @@ describe('MailboxStore optimistic updates', () => {
 		expect(mailbox.list(INBOX)?.items[0]?.isStarred).toBe(true);
 	});
 });
+
+describe('MailboxStore.refresh', () => {
+	it('checks for new mail, then reloads the first page', async () => {
+		const sync = vi.fn(async () => {});
+		const store = new MailboxStore({ mail: repos.mail, toasts, sync, now: () => NOW });
+		await store.load(INBOX);
+		const list = vi.spyOn(repos.mail, 'list');
+		await store.refresh(INBOX);
+		expect(sync).toHaveBeenCalledOnce();
+		expect(list).toHaveBeenCalledOnce();
+		expect(store.list(INBOX)?.status).toBe('ready');
+	});
+
+	it('still reloads when the check fails', async () => {
+		const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+		const sync = vi.fn(async () => {
+			throw new Error('offline');
+		});
+		const store = new MailboxStore({ mail: repos.mail, toasts, sync, now: () => NOW });
+		await store.load(INBOX);
+		const list = vi.spyOn(repos.mail, 'list');
+		await store.refresh(INBOX);
+		expect(list).toHaveBeenCalledOnce();
+		expect(error).toHaveBeenCalled();
+	});
+});

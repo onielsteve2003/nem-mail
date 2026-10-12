@@ -15,12 +15,12 @@ export interface AppStores {
 	ui: UiStore;
 }
 
-/** Builds the stores over one set of repositories. */
-export function createAppStores(repos: Repositories): AppStores {
+/** Builds the stores over one set of repositories; `sync` checks for new mail (pull to refresh). */
+export function createAppStores(repos: Repositories, sync?: () => Promise<void>): AppStores {
 	const thread = new ThreadStore(repos.mail);
 	return {
 		session: new SessionStore(repos.auth),
-		mailbox: new MailboxStore({ mail: repos.mail, threads: thread }),
+		mailbox: new MailboxStore({ mail: repos.mail, threads: thread, sync }),
 		thread,
 		selection: new SelectionStore(),
 		ui: new UiStore()

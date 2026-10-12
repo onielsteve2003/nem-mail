@@ -68,6 +68,8 @@ export interface MailboxStoreOptions {
 	/** Cached open threads, kept in step with list mutations. */
 	threads?: ThreadStore;
 	toasts?: ToastStore;
+	/** Asks the server for new mail before a pull to refresh reloads. */
+	sync?: () => Promise<void>;
 	now?: () => number;
 }
 
@@ -83,12 +85,14 @@ export class MailboxStore {
 	readonly #mail: MailRepository;
 	readonly #threads: ThreadStore | undefined;
 	readonly #toasts: ToastStore;
+	readonly #sync: (() => Promise<void>) | undefined;
 	readonly #now: () => number;
 	/** Bumped by reset(), so responses that started before it are dropped. */
 	#generation = 0;
 
-	constructor({ mail, threads, toasts = toastStore, now = Date.now }: MailboxStoreOptions) {
+	constructor({ mail, threads, toasts = toastStore, sync, now = Date.now }: MailboxStoreOptions) {
 		this.#mail = mail;
+		this.#sync = sync;
 		this.#threads = threads;
 		this.#toasts = toasts;
 		this.#now = now;
@@ -147,6 +151,20 @@ export class MailboxStore {
 			const list = this.#current(key, generation);
 			if (list) list.isRefreshing = false;
 		}
+	}
+
+	/**
+	 * Pull to refresh: checks for new mail, then reloads the first page. A
+	 * failed check still reloads; the reload reports its own errors.
+	 */
+	async refresh(filter: ThreadListFilter): Promise<void> {
+		try {
+			await this.#sync?.();
+		} catch (error) {
+			// New mail is a bonus here; the list reload below is what the user asked for.
+			console.error('Mail sync failed', error);
+		}
+		await this.load(filter, { refresh: true });
 	}
 
 	/** Appends the next page (infinite scroll). Does nothing on the last page. */
