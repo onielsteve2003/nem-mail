@@ -152,6 +152,45 @@ describe('MailboxStore optimistic updates', () => {
 		expect(toasts.current?.message).toMatch(/^Back from snooze: /);
 	});
 
+	it('undoes a snooze back into the inbox with no snooze left', async () => {
+		const [id = ''] = inboxIds();
+		await mailbox.apply([id], { op: 'snooze', until: new Date(NOW + 60_000).toISOString() });
+		expect(inboxIds()).not.toContain(id);
+		expect(toasts.current).toMatchObject({ message: 'Snoozed', action: { label: 'Undo' } });
+		toasts.runAction(toasts.current?.id ?? 0);
+		expect(inboxIds()).toContain(id);
+		await vi.waitFor(async () =>
+			expect(await repos.mail.get(id)).toMatchObject({ snoozedUntil: null })
+		);
+	});
+
+	it('counts several woken snoozes in one toast', async () => {
+		const ids = inboxIds().slice(0, 2);
+		await mailbox.apply(ids, { op: 'snooze', until: new Date(NOW + 60_000).toISOString() });
+		const listener = vi.spyOn(repos.mail, 'subscribe');
+		mailbox.connect();
+		const summaries = await Promise.all(
+			ids.map(async (id) => ({ ...(await repos.mail.get(id)), snoozedUntil: null }))
+		);
+		toasts.clear();
+		listener.mock.calls[0]?.[0]?.({ type: 'snooze.woke', summaries });
+		expect(inboxIds()).toEqual(expect.arrayContaining(ids));
+		expect(toasts.current?.message).toBe('2 snoozed conversations are back in your Inbox');
+	});
+
+	it('moves rows in and out of a cached label list at once', async () => {
+		const LABEL = { labelId: 'u1-test' } as const;
+		await mailbox.load(LABEL);
+		const [id = ''] = inboxIds();
+		const adding = mailbox.apply([id], { op: 'addLabels', labelIds: ['u1-test'] });
+		expect(mailbox.list(LABEL)?.items.map((t) => t.id)).toEqual([id]);
+		await adding;
+		expect(toasts.current?.message).toBe('Labels added');
+		await mailbox.apply([id], { op: 'removeLabels', labelIds: ['u1-test'] });
+		expect(mailbox.list(LABEL)?.items).toEqual([]);
+		expect(inboxIds()).toContain(id);
+	});
+
 	it('shows no toast for quiet ops and ignores an empty selection', async () => {
 		const apply = vi.spyOn(repos.mail, 'apply');
 		expect(await mailbox.apply([], { op: 'archive' })).toBe(true);

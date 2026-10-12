@@ -3,7 +3,7 @@ import { AppError, type ServerEvent, type ThreadSummary } from '@nem/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { MockContext, readFailRate } from './context.js';
 import { openMockDb, seedIfEmpty, type MockDb } from './db.js';
-import { MockMailRepository } from './mail.js';
+import { MockMailRepository, wakeDue } from './mail.js';
 
 const NOW = Date.parse('2026-10-11T09:00:00.000Z');
 let n = 0;
@@ -173,6 +173,68 @@ describe('MockMailRepository delete forever', () => {
 		expect(await listAll({ mailbox: 'trash' })).toEqual([]);
 		expect(await listAll({ mailbox: 'spam' })).toHaveLength(spamBefore.length);
 		expect((await mail.counts()).mailboxes.trash).toBe(0);
+	});
+});
+
+describe('snooze engine (wakeDue)', () => {
+	const HOUR = 3_600_000;
+	const at = (ms: number) => new Date(NOW + ms).toISOString();
+
+	it('wakes only due snoozes, unread and back in the inbox', async () => {
+		const [due, later] = (await mail.list({ mailbox: 'inbox' })).items;
+		await mail.apply([due!.id, later!.id], { op: 'markRead' });
+		await mail.apply([due!.id], { op: 'snooze', until: at(HOUR) });
+		await mail.apply([later!.id], { op: 'snooze', until: at(2 * HOUR) });
+		expect(await wakeDue(db, 'u1', NOW)).toEqual([]);
+
+		const woke = await wakeDue(db, 'u1', NOW + HOUR);
+		expect(woke.map((t) => t.id)).toEqual([due!.id]);
+		expect(woke[0]).toMatchObject({ snoozedUntil: null, isUnread: true, mailboxes: ['inbox'] });
+		expect(await mail.get(later!.id)).toMatchObject({ snoozedUntil: at(2 * HOUR) });
+		// Running again finds nothing new to wake.
+		expect(await wakeDue(db, 'u1', NOW + HOUR)).toEqual([]);
+	});
+
+	it('wakes a thread trashed while snoozed quietly, leaving it in Trash', async () => {
+		const [thread] = (await mail.list({ mailbox: 'inbox' })).items;
+		await mail.apply([thread!.id], { op: 'snooze', until: at(HOUR) });
+		await mail.apply([thread!.id], { op: 'trash' });
+		expect(await wakeDue(db, 'u1', NOW + HOUR)).toEqual([]);
+		expect(await mail.get(thread!.id)).toMatchObject({ snoozedUntil: null });
+		expect((await mail.get(thread!.id)).mailboxes).toContain('trash');
+	});
+
+	it("leaves other accounts' snoozes alone", async () => {
+		const [thread] = (await mail.list({ mailbox: 'inbox' })).items;
+		await mail.apply([thread!.id], { op: 'snooze', until: at(HOUR) });
+		expect(await wakeDue(db, 'u2', NOW + HOUR)).toEqual([]);
+		expect(await mail.get(thread!.id)).toMatchObject({ snoozedUntil: at(HOUR) });
+	});
+});
+
+describe('label operations', () => {
+	it('lists and counts a label without its Spam and Trash threads', async () => {
+		const [thread] = (await mail.list({ mailbox: 'inbox' })).items;
+		await mail.apply([thread!.id], { op: 'markUnread' });
+		await mail.apply([thread!.id], { op: 'addLabels', labelIds: ['u1-test'] });
+		expect((await mail.list({ labelId: 'u1-test' })).items.map((t) => t.id)).toEqual([thread!.id]);
+		expect((await mail.counts()).labels['u1-test']).toBe(1);
+
+		await mail.apply([thread!.id], { op: 'spam' });
+		expect((await mail.list({ labelId: 'u1-test' })).items).toEqual([]);
+		expect((await mail.counts()).labels['u1-test']).toBeUndefined();
+		// The label is kept, so Not spam brings the thread back to its label.
+		await mail.apply([thread!.id], { op: 'notSpam' });
+		expect((await mail.list({ labelId: 'u1-test' })).items).toHaveLength(1);
+	});
+
+	it('reports no change for a label the thread already has', async () => {
+		const [thread] = (await mail.list({ mailbox: 'inbox' })).items;
+		await mail.apply([thread!.id], { op: 'addLabels', labelIds: ['u1-test'] });
+		const again = await mail.apply([thread!.id], { op: 'addLabels', labelIds: ['u1-test'] });
+		expect(again.updatedIds).toEqual([]);
+		const removed = await mail.apply([thread!.id], { op: 'removeLabels', labelIds: ['u1-test'] });
+		expect(removed.updatedIds).toEqual([thread!.id]);
 	});
 });
 
