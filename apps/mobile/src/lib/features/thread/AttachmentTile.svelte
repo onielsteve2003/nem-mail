@@ -1,33 +1,12 @@
 <script lang="ts">
 	import Download from '@lucide/svelte/icons/download';
-	import File from '@lucide/svelte/icons/file';
-	import FileArchive from '@lucide/svelte/icons/file-archive';
-	import FileImage from '@lucide/svelte/icons/file-image';
-	import FileMusic from '@lucide/svelte/icons/file-music';
-	import FilePlay from '@lucide/svelte/icons/file-play';
-	import FileSpreadsheet from '@lucide/svelte/icons/file-spreadsheet';
-	import FileText from '@lucide/svelte/icons/file-text';
-	import Presentation from '@lucide/svelte/icons/presentation';
-	import type { LucideIcon } from '@lucide/svelte';
 	import type { Attachment } from '@nem/shared';
 	import Icon from '#components/ui/Icon.svelte';
 	import IconButton from '#components/ui/IconButton.svelte';
-	import { fileKind, formatBytes, type FileKind } from './attachments.js';
+	import { FILE_ICONS, fileKind, formatBytes } from '#lib/utils/files.js';
 
 	const OPEN = (name: string) => `Preview ${name}`;
 	const SAVE = (name: string) => `Download ${name}`;
-
-	const ICONS: Record<FileKind, LucideIcon> = {
-		image: FileImage,
-		pdf: FileText,
-		doc: FileText,
-		sheet: FileSpreadsheet,
-		slides: Presentation,
-		archive: FileArchive,
-		audio: FileMusic,
-		video: FilePlay,
-		other: File
-	};
 
 	interface Props {
 		attachment: Attachment;
@@ -82,7 +61,7 @@
 			{#if thumbnail}
 				<img src={thumbnail} alt="" loading="lazy" />
 			{:else}
-				<Icon icon={ICONS[kind]} size="lg" />
+				<Icon icon={FILE_ICONS[kind]} size="lg" />
 			{/if}
 		</span>
 		<span class="tile__meta">

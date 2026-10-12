@@ -5,7 +5,7 @@
 	import Icon from '#components/ui/Icon.svelte';
 	import Modal from '#components/ui/Modal.svelte';
 	import { toastStore } from '#lib/stores/toast.svelte.js';
-	import { downloadBlob } from './attachments.js';
+	import { downloadBlob } from '#lib/utils/files.js';
 	import AttachmentTile from './AttachmentTile.svelte';
 
 	const HEADING = (count: number) => `${count} attachment${count === 1 ? '' : 's'}`;

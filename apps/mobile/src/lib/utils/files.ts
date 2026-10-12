@@ -1,3 +1,12 @@
+import File from '@lucide/svelte/icons/file';
+import FileArchive from '@lucide/svelte/icons/file-archive';
+import FileImage from '@lucide/svelte/icons/file-image';
+import FileMusic from '@lucide/svelte/icons/file-music';
+import FilePlay from '@lucide/svelte/icons/file-play';
+import FileSpreadsheet from '@lucide/svelte/icons/file-spreadsheet';
+import FileText from '@lucide/svelte/icons/file-text';
+import Presentation from '@lucide/svelte/icons/presentation';
+import type { LucideIcon } from '@lucide/svelte';
 import type { Attachment } from '@nem/shared';
 
 export type FileKind =
@@ -39,6 +48,19 @@ export function fileKind(attachment: Pick<Attachment, 'filename' | 'mime'>): Fil
 	const extension = attachment.filename.toLowerCase().split('.').pop() ?? '';
 	return BY_EXTENSION[extension] ?? 'other';
 }
+
+/** One icon per kind, shared by the thread tiles and the compose chips. */
+export const FILE_ICONS: Record<FileKind, LucideIcon> = {
+	image: FileImage,
+	pdf: FileText,
+	doc: FileText,
+	sheet: FileSpreadsheet,
+	slides: Presentation,
+	archive: FileArchive,
+	audio: FileMusic,
+	video: FilePlay,
+	other: File
+};
 
 const UNITS = ['KB', 'MB', 'GB'] as const;
 

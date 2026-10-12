@@ -1,17 +1,22 @@
 <script lang="ts">
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
+	import Paperclip from '@lucide/svelte/icons/paperclip';
 	import Send from '@lucide/svelte/icons/send';
 	import X from '@lucide/svelte/icons/x';
 	import Button from '#components/ui/Button.svelte';
 	import Icon from '#components/ui/Icon.svelte';
 	import IconButton from '#components/ui/IconButton.svelte';
+	import { MAX_ATTACHMENT_BYTES } from '@nem/shared';
 	import { untrack } from 'svelte';
 	import { getRepositories } from '#lib/data/provider.js';
 	import { getSessionStore } from '#lib/stores/session.svelte.js';
 	import { getThreadStore } from '#lib/stores/thread.svelte.js';
 	import type { ComposeRequest } from '#lib/stores/ui.svelte.js';
+	import { errorMessage } from '#lib/utils/errors.js';
+	import { pendingAttachment, uploadWithProgress, type ComposeAttachment } from './attachments.js';
 	import { initialBody } from './body.js';
 	import BodyEditor from './BodyEditor.svelte';
+	import ComposeAttachments from './ComposeAttachments.svelte';
 	import { composeTitle } from './compose.js';
 	import { prefill } from './prefill.js';
 	import RecipientField from './RecipientField.svelte';
@@ -20,6 +25,7 @@
 	const COPY = {
 		close: 'Close compose',
 		send: 'Send',
+		attach: 'Attach files',
 		to: 'To',
 		cc: 'Cc',
 		bcc: 'Bcc',
@@ -48,6 +54,11 @@
 	let showCcBcc = $state(false);
 	let subject = $state('');
 	let bodyHtml = $state('');
+	let attachments = $state<ComposeAttachment[]>([]);
+	let fileInput: HTMLInputElement | undefined = $state();
+	// The picked files, kept so a failed upload can be retried.
+	const files: Record<string, File> = {};
+	let nextKey = 0;
 
 	// Drafts are restored in T7.6; everything else starts here once, when compose opens.
 	$effect(() => {
@@ -83,12 +94,66 @@
 		if (!bodyHtml) bodyHtml = fill.bodyHtml;
 	}
 
+	function addFiles(list: FileList | null) {
+		for (const file of list ?? []) {
+			const key = `file-${nextKey++}`;
+			files[key] = file;
+			const item = pendingAttachment(file, key);
+			attachments.push(item);
+			if (item.status === 'uploading') void upload(key);
+		}
+		// Lets the same file be picked again after it was removed.
+		if (fileInput) fileInput.value = '';
+	}
+
+	function update(key: string, patch: Partial<ComposeAttachment>) {
+		const item = attachments.find((a) => a.key === key);
+		if (item) Object.assign(item, patch);
+	}
+
+	async function upload(key: string) {
+		const file = files[key];
+		if (!file) return;
+		update(key, { status: 'uploading', progress: 0, error: null });
+		try {
+			const attachment = await uploadWithProgress(
+				file,
+				(f) => repos.drafts.uploadAttachment(f),
+				(progress) => update(key, { progress })
+			);
+			update(key, { status: 'ready', attachment });
+		} catch (error) {
+			update(key, { status: 'error', error: errorMessage(error, 'Upload failed') });
+		}
+	}
+
+	function removeAttachment(key: string) {
+		delete files[key];
+		attachments = attachments.filter((a) => a.key !== key);
+	}
+
+	// Files over the limit cannot be retried; failed uploads can.
+	const canRetry = (key: string) => {
+		const file = files[key];
+		return !!file && file.size <= MAX_ATTACHMENT_BYTES;
+	};
+
 	const search = (q: string) => repos.contacts.search({ q, limit: 8 });
 </script>
 
 <header class="form__head">
 	<IconButton icon={X} label={COPY.close} onclick={onclose} />
 	<h2 id={titleId} class="form__title nm-text-title-3">{title}</h2>
+	<IconButton icon={Paperclip} label={COPY.attach} onclick={() => fileInput?.click()} />
+	<input
+		bind:this={fileInput}
+		class="nm-visually-hidden"
+		type="file"
+		multiple
+		tabindex="-1"
+		aria-hidden="true"
+		onchange={(event) => addFiles(event.currentTarget.files)}
+	/>
 	<!-- Enabled once sending exists (T7.7). -->
 	<Button size="sm" disabled>
 		{#snippet leading()}<Icon icon={Send} size="sm" />{/snippet}
@@ -123,6 +188,7 @@
 			maxlength="998"
 		/>
 	</div>
+	<ComposeAttachments items={attachments} onremove={removeAttachment} onretry={upload} {canRetry} />
 	<BodyEditor bind:value={bodyHtml} />
 </div>
 

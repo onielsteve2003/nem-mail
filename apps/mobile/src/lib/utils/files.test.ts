@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fileKind, formatBytes } from './attachments.js';
+import { fileKind, formatBytes } from './files.js';
 
 describe('fileKind', () => {
 	it.each([
