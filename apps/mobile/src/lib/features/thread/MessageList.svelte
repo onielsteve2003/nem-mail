@@ -10,9 +10,10 @@
 	interface Props {
 		messages: Message[];
 		selfEmail?: string;
+		loadAttachment?: (id: string) => Promise<Blob>;
 	}
 
-	let { messages, selfEmail }: Props = $props();
+	let { messages, selfEmail, loadAttachment }: Props = $props();
 
 	// Which messages start open is decided once per thread (the parent keys this list).
 	const expanded = new SvelteSet(untrack(() => initialExpanded(messages)));
@@ -39,6 +40,7 @@
 					expanded={expanded.has(item.message.id)}
 					ontoggle={() => toggle(item.message.id)}
 					{selfEmail}
+					{loadAttachment}
 				/>
 			{/if}
 		</li>

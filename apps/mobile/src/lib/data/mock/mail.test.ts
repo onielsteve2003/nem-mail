@@ -173,7 +173,10 @@ describe('MockMailRepository.getAttachment', () => {
 		const thread = await mail.get(withFile?.id ?? '');
 		const attachment = thread.messages.flatMap((m) => m.attachments)[0];
 		const blob = await mail.getAttachment(attachment?.id ?? '');
-		expect(blob.type).toBe(attachment?.mime);
+		// Seed images are drawn as SVG so thumbnails render; other files keep their type.
+		expect(blob.type).toBe(
+			attachment?.mime.startsWith('image/') ? 'image/svg+xml' : attachment?.mime
+		);
 
 		await db.put('blobs', new Blob(['hi'], { type: 'text/plain' }), 'upload-1');
 		// fake-indexeddb clones jsdom Blobs into plain objects, so only check it came from the store.

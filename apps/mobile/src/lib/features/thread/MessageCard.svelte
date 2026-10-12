@@ -3,6 +3,7 @@
 	import type { Address, Message } from '@nem/shared';
 	import Avatar from '#components/ui/Avatar.svelte';
 	import Icon from '#components/ui/Icon.svelte';
+	import AttachmentList from './AttachmentList.svelte';
 	import EmailBody from './EmailBody.svelte';
 	import { addressName, fullTime, messageTime, recipientLine } from './messages.js';
 
@@ -18,9 +19,18 @@
 		selfEmail?: string;
 		/** Reference time for the card's date; tests pin it. */
 		now?: number;
+		/** Fetches an attachment's bytes for thumbnails and downloads. */
+		loadAttachment?: (id: string) => Promise<Blob>;
 	}
 
-	let { message, expanded, ontoggle, selfEmail, now = Date.now() }: Props = $props();
+	let {
+		message,
+		expanded,
+		ontoggle,
+		selfEmail,
+		now = Date.now(),
+		loadAttachment
+	}: Props = $props();
 
 	let showDetails = $state(false);
 
@@ -82,6 +92,9 @@
 		<div class="card__body nm-text-body">
 			<EmailBody html={message.bodyHtml} text={message.bodyText} />
 		</div>
+		{#if loadAttachment && message.attachments.length > 0}
+			<AttachmentList attachments={message.attachments} load={loadAttachment} />
+		{/if}
 	{/if}
 </article>
 

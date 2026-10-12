@@ -65,7 +65,11 @@
 	{#if thread}
 		<!-- Keyed so another thread starts with its own messages open. -->
 		{#key thread.id}
-			<MessageList messages={thread.messages} selfEmail={session.user?.email} />
+			<MessageList
+				messages={thread.messages}
+				selfEmail={session.user?.email}
+				loadAttachment={(id) => repos.mail.getAttachment(id)}
+			/>
 		{/key}
 	{:else if view === 'loading'}
 		<div class="thread__skeleton" role="status" aria-label={LOADING}>

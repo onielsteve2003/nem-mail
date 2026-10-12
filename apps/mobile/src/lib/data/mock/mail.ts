@@ -6,6 +6,7 @@ import {
 	matchesFilter,
 	sortKey,
 	toSummary,
+	type Attachment,
 	type BulkThreadResponse,
 	type CountsResponse,
 	type Page,
@@ -75,7 +76,7 @@ export class MockMailRepository implements MailRepository {
 		return this.#ctx.authed((db, userId) => countsFor(db, userId, this.#ctx.now()));
 	}
 
-	/** The attachment's bytes; seed attachments get a small placeholder file. */
+	/** The attachment's bytes; seed attachments get a small placeholder file or picture. */
 	getAttachment(attachmentId: string): Promise<Blob> {
 		return this.#ctx.authed(async (db, userId) => {
 			const blob = await db.get('blobs', attachmentId);
@@ -83,11 +84,7 @@ export class MockMailRepository implements MailRepository {
 			for (const thread of await ownThreads(db, userId)) {
 				for (const message of thread.messages) {
 					const found = message.attachments.find((a) => a.id === attachmentId);
-					if (found) {
-						return new Blob([`Nem Mail demo attachment: ${found.filename}`], {
-							type: found.mime
-						});
-					}
+					if (found) return placeholderFile(found);
 				}
 			}
 			throw new AppError('NOT_FOUND', 'Attachment not found');
@@ -136,4 +133,24 @@ export async function ownThread(
 	const thread = await db.get('threads', threadId);
 	if (!thread || thread.ownerId !== userId) throw new AppError('NOT_FOUND', 'Thread not found');
 	return thread;
+}
+
+/** Seed attachments have no bytes. Images get a drawn picture so thumbnails and previews show something. */
+function placeholderFile(attachment: Attachment): Blob {
+	if (!attachment.mime.startsWith('image/')) {
+		return new Blob([`Nem Mail demo attachment: ${attachment.filename}`], {
+			type: attachment.mime
+		});
+	}
+	// The hue follows the id, so each picture looks different but stays the same across loads.
+	const hue = [...attachment.id].reduce((sum, char) => sum + char.charCodeAt(0), 0) % 360;
+	const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+<stop offset="0" stop-color="hsl(${hue} 70% 55%)"/><stop offset="1" stop-color="hsl(${(hue + 60) % 360} 70% 30%)"/>
+</linearGradient></defs>
+<rect width="800" height="600" fill="url(#g)"/>
+<circle cx="600" cy="170" r="70" fill="hsl(${hue} 90% 85%)" opacity="0.8"/>
+<path d="M0 600 L260 300 L420 460 L560 340 L800 600 Z" fill="hsl(${hue} 40% 18%)" opacity="0.7"/>
+</svg>`;
+	return new Blob([svg], { type: 'image/svg+xml' });
 }
