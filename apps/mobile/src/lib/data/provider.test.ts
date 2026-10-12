@@ -36,6 +36,8 @@ describe('createRepositories', () => {
 	});
 
 	it('delivers one new inbox message on sync in mock mode', async () => {
+		// 0 picks a new thread, not a reply (a reply to an unread thread leaves the count as is).
+		const random = vi.spyOn(Math, 'random').mockReturnValue(0);
 		const db = await openMockDb('provider-sync');
 		await seedIfEmpty(db, { now: new Date() });
 		const { repos, sync } = createRepositories(
@@ -47,6 +49,7 @@ describe('createRepositories', () => {
 		await sync();
 		expect((await repos.mail.counts()).mailboxes.inbox).toBe(before + 1);
 		db.close();
+		random.mockRestore();
 	});
 
 	it('reads ?fail= into the simulated network', async () => {
