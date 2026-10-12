@@ -17,7 +17,8 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "cap:sync": "npm run build && cap sync",
-    "cap:android": "cap open android"
+    "cap:android": "cap open android",
+    "eval:ai": "vitest run src/lib/ai/models -t evaluation"
   },
   "devDependencies": {
     "@capacitor/cli": "8.5.3",
