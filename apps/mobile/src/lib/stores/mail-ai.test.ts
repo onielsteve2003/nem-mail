@@ -7,7 +7,7 @@ import { createWorkerApi } from '#lib/ai/worker/api.js';
 import type { Repositories } from '#lib/data/repositories.js';
 import { DEMO_EMAIL, createTestRepositories } from '#lib/data/testing.js';
 import { MailboxStore } from './mailbox.svelte.js';
-import { connectSpamFilter, receivedMessages, spamFeedback } from './spam-filter.js';
+import { categoryFeedback, connectMailAI, receivedMessages, spamFeedback } from './mail-ai.js';
 import { ToastStore } from './toast.svelte.js';
 
 const NOW = Date.parse('2026-10-11T09:00:00.000Z');
@@ -59,7 +59,7 @@ beforeEach(async () => {
 			return typeof value === 'function' ? value.bind(target) : value;
 		}
 	});
-	stop = connectSpamFilter({ mail, mailbox, ai, user: () => user, toasts });
+	stop = connectMailAI({ mail, mailbox, ai, user: () => user, toasts });
 });
 
 afterEach(() => {
@@ -79,25 +79,28 @@ describe('spam feedback helpers', () => {
 		expect(spamFeedback({ op: 'move', to: 'spam' })).toBe(true);
 		expect(spamFeedback({ op: 'notSpam' })).toBe(false);
 		expect(spamFeedback({ op: 'archive' })).toBeNull();
+		expect(categoryFeedback({ op: 'setCategory', category: 'social' })).toBe('social');
+		expect(categoryFeedback({ op: 'archive' })).toBeNull();
 		const mine = { from: { email: 'Me@Example.com' } } as never;
 		const theirs = { from: { email: 'ada@example.com' } } as never;
 		expect(receivedMessages([mine, theirs], 'me@example.com')).toEqual([theirs]);
 	});
 });
 
-describe('connectSpamFilter', () => {
+describe('connectMailAI', () => {
 	it('moves new spam out of the inbox and offers Not spam', async () => {
 		const spam = await firstIn('spam');
 		// Back in the inbox without a lesson, as if it had just arrived.
 		await mailbox.apply([spam.id], { op: 'notSpam' }, { undoable: false });
 		emit({ type: 'mail.new', summary: { ...spam, mailboxes: ['inbox'] } });
-		await vi.waitFor(async () =>
-			expect((await repos.mail.get(spam.id)).mailboxes).toContain('spam')
+		// The toast comes after the save, so wait for it rather than the repository.
+		await vi.waitFor(() =>
+			expect(toasts.current).toMatchObject({
+				message: `Moved to Spam: ${spam.subject}`,
+				action: { label: 'Not spam' }
+			})
 		);
-		expect(toasts.current).toMatchObject({
-			message: `Moved to Spam: ${spam.subject}`,
-			action: { label: 'Not spam' }
-		});
+		expect((await repos.mail.get(spam.id)).mailboxes).toContain('spam');
 		expect(store.saved.size).toBe(0);
 	});
 
@@ -116,12 +119,34 @@ describe('connectSpamFilter', () => {
 		await vi.waitFor(() => expect(store.saved.has(`${user.id}:spam`)).toBe(true));
 	});
 
+	it('sorts new mail into the tab the model picks', async () => {
+		const inbox = await firstIn('inbox');
+		const target = inbox.category === 'social' ? 'forums' : 'social';
+		vi.spyOn(ai, 'classifyCategory').mockResolvedValue({
+			value: target,
+			confidence: 0.9,
+			explanation: 'test',
+			source: 'model'
+		});
+		emit({ type: 'mail.new', summary: inbox });
+		await vi.waitFor(async () => expect((await repos.mail.get(inbox.id)).category).toBe(target));
+		expect(store.saved.size).toBe(0);
+	});
+
+	it('learns from Move to tab and saves the category model', async () => {
+		const inbox = await firstIn('inbox');
+		await mailbox.apply([inbox.id], { op: 'setCategory', category: 'forums' });
+		await vi.waitFor(() => expect(store.saved.has(`${user.id}:category`)).toBe(true));
+		expect(store.saved.has(`${user.id}:spam`)).toBe(false);
+	});
+
 	it('does nothing when spam detection is off', async () => {
 		ai.toggles.spam = false;
 		const inbox = await firstIn('inbox');
 		const learn = vi.spyOn(ai, 'learnSpam');
 		await mailbox.apply([inbox.id], { op: 'spam' });
-		await new Promise((resolve) => setTimeout(resolve, 0));
-		expect(learn).not.toHaveBeenCalled();
+		await vi.waitFor(() => expect(learn).toHaveBeenCalled());
+		await learn.mock.results[0]!.value;
+		expect(store.saved.size).toBe(0);
 	});
 });

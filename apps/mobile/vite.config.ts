@@ -18,6 +18,9 @@ export default defineConfig({
 		// Resolves Svelte's browser build under Vitest and cleans up the DOM after each test.
 		svelteTesting()
 	],
+	// The AI worker is a module worker; ES output lets its heavy, optional parts
+	// (Transformers.js for the zero-shot upgrade) stay in chunks loaded on first use.
+	worker: { format: 'es' },
 	test: {
 		environment: 'jsdom',
 		include: ['src/**/*.test.ts'],

@@ -114,3 +114,34 @@ describe('AIService', () => {
 		expect(service.isEnabled('spam')).toBe(false);
 	});
 });
+
+describe('category zero-shot upgrade', () => {
+	const memory = () => {
+		const saved = new Map<string, unknown>();
+		return { get: async (key: string) => saved.get(key), put: async () => {} };
+	};
+	const vague = { fromEmail: 'x@y.example', subject: 'Hello', bodyText: 'Zzz qqq.' };
+
+	it('asks the zero-shot model only when it is downloaded and the model is unsure', async () => {
+		const { env } = fakeEnv();
+		const zeroShot = vi.fn(async () => ({ category: 'social' as const, score: 0.82 }));
+		const api = createWorkerApi(
+			env,
+			() => [],
+			async () => 'wasm',
+			memory(),
+			async () => zeroShot
+		);
+		const [before] = await api.classifyCategory('u1', [vague]);
+		expect(zeroShot).not.toHaveBeenCalled();
+		expect(before!.confidence).toBeLessThan(0.6);
+
+		await api.download('mobilebert-mnli');
+		const [after] = await api.classifyCategory('u1', [vague]);
+		expect(after).toMatchObject({ value: 'social', confidence: 0.82, source: 'model' });
+		expect(after!.explanation).toContain('language model');
+		// Confident rule answers never wait for the transformer.
+		await api.classifyCategory('u1', [{ ...vague, subject: '[club] Meeting' }]);
+		expect(zeroShot).toHaveBeenCalledOnce();
+	});
+});

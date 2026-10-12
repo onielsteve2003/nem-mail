@@ -25,7 +25,10 @@ export function connectWorker(): AIWorkerConnection {
 			download: (id, onProgress) => remote.download(id, onProgress && proxy(onProgress)),
 			remove: (id) => remote.remove(id),
 			classifySpam: (userId, messages) => remote.classifySpam(userId, messages),
-			learnSpam: (userId, texts, isSpam) => remote.learnSpam(userId, texts, isSpam)
+			learnSpam: (userId, texts, isSpam) => remote.learnSpam(userId, texts, isSpam),
+			classifyCategory: (userId, messages) => remote.classifyCategory(userId, messages),
+			learnCategory: (userId, messages, category) =>
+				remote.learnCategory(userId, messages, category)
 		},
 		terminate: () => worker.terminate()
 	};

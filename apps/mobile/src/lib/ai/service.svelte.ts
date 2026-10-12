@@ -1,7 +1,14 @@
-import { DEFAULT_SETTINGS, type AIFeature, type Message, type Settings } from '@nem/shared';
+import {
+	DEFAULT_SETTINGS,
+	type AIFeature,
+	type Category,
+	type Message,
+	type Settings
+} from '@nem/shared';
 import { createContext } from 'svelte';
 import type { SettingsRepository } from '#lib/data/repositories.js';
 import type { AIBackend } from './backend.js';
+import type { CategoryVerdict } from './models/category.js';
 import type { SpamVerdict } from './models/spam-nb.js';
 import { MODELS } from './registry.js';
 import type { AIWorkerConnection } from './worker/connect.js';
@@ -40,6 +47,8 @@ export class AIService {
 
 	/** Spam verdicts by message id (architecture �5: insights keyed by message). */
 	spam = $state<Record<string, SpamVerdict>>({});
+	/** Inbox tab verdicts by message id. */
+	categories = $state<Record<string, CategoryVerdict>>({});
 
 	#connection: Promise<AIWorkerConnection> | undefined;
 
@@ -125,9 +134,33 @@ export class AIService {
 		this.spam = {};
 	}
 
+	/**
+	 * Picks the inbox tab for a message with the user's category model (AI-1).
+	 * Null when the user turned smart categories off.
+	 */
+	async classifyCategory(userId: string, message: Message): Promise<CategoryVerdict | null> {
+		if (!this.isEnabled('categories')) return null;
+		const cached = this.categories[message.id];
+		if (cached) return cached;
+		const { api } = await this.#worker();
+		const [verdict] = await api.classifyCategory(userId, [categoryInput(message)]);
+		if (!verdict) return null;
+		this.categories[message.id] = verdict;
+		return verdict;
+	}
+
+	/** Teaches the user's category model from "Move to tab". */
+	async learnCategory(userId: string, messages: Message[], category: Category): Promise<void> {
+		if (!this.isEnabled('categories') || messages.length === 0) return;
+		const { api } = await this.#worker();
+		await api.learnCategory(userId, messages.map(categoryInput), category);
+		this.categories = {};
+	}
+
 	/** Forgets verdicts, e.g. after switching accounts. */
 	clearInsights(): void {
 		this.spam = {};
+		this.categories = {};
 	}
 
 	/** Stops the worker; the next call starts a fresh one. */
@@ -149,6 +182,10 @@ export class AIService {
 export function spamText(message: Message): string {
 	return `${message.subject}
 ${message.bodyText}`;
+}
+
+function categoryInput(message: Message) {
+	return { fromEmail: message.from.email, subject: message.subject, bodyText: message.bodyText };
 }
 
 function spamInput(message: Message) {
