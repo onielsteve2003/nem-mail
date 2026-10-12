@@ -204,4 +204,11 @@ describe('UiStore', () => {
 		expect(ui.isDrawerOpen).toBe(false);
 		expect(ui.sheets).toEqual([]);
 	});
+
+	it('opens compose with what to start from', () => {
+		const ui = new UiStore();
+		ui.openCompose({ mode: 'reply', threadId: 't1', messageId: 'm1' });
+		expect(ui.activeSheet).toBe('compose');
+		expect(ui.composeRequest).toEqual({ mode: 'reply', threadId: 't1', messageId: 'm1' });
+	});
 });

@@ -1,10 +1,11 @@
 <script lang="ts">
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
-	import type { Address, Message } from '@nem/shared';
+	import type { Address, ComposeMode, Message } from '@nem/shared';
 	import Avatar from '#components/ui/Avatar.svelte';
 	import Icon from '#components/ui/Icon.svelte';
 	import AttachmentList from './AttachmentList.svelte';
 	import EmailBody from './EmailBody.svelte';
+	import MessageActions from './MessageActions.svelte';
 	import { addressName, fullTime, messageTime, recipientLine } from './messages.js';
 
 	const UNREAD = 'Unread';
@@ -21,6 +22,8 @@
 		now?: number;
 		/** Fetches an attachment's bytes for thumbnails and downloads. */
 		loadAttachment?: (id: string) => Promise<Blob>;
+		/** Reply, reply all and forward; the buttons show only when it is set. */
+		oncompose?: (mode: Exclude<ComposeMode, 'new'>, message: Message) => void;
 	}
 
 	let {
@@ -29,7 +32,8 @@
 		ontoggle,
 		selfEmail,
 		now = Date.now(),
-		loadAttachment
+		loadAttachment,
+		oncompose
 	}: Props = $props();
 
 	let showDetails = $state(false);
@@ -94,6 +98,9 @@
 		</div>
 		{#if loadAttachment && message.attachments.length > 0}
 			<AttachmentList attachments={message.attachments} load={loadAttachment} />
+		{/if}
+		{#if oncompose}
+			<MessageActions {message} {selfEmail} {oncompose} />
 		{/if}
 	{/if}
 </article>

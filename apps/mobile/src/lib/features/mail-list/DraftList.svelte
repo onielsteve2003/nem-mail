@@ -19,8 +19,6 @@
 	const NO_SUBJECT = '(no subject)';
 	const LOADING = 'Loading drafts';
 	const SKELETON_ROWS = 4;
-	// Compose (T7.1) opens the draft; it reads which one from the sheet stack later.
-	const COMPOSE_SHEET = 'compose';
 
 	const repos = getRepositories();
 	const session = getSessionStore();
@@ -77,7 +75,17 @@
 		<ul class="drafts">
 			{#each drafts as draft (draft.id)}
 				<li>
-					<button type="button" class="draft" onclick={() => ui.openSheet(COMPOSE_SHEET)}>
+					<button
+						type="button"
+						class="draft"
+						onclick={() =>
+							ui.openCompose({
+								mode: draft.mode,
+								threadId: draft.threadId,
+								messageId: draft.inReplyTo,
+								draftId: draft.id
+							})}
+					>
 						<span class="draft__line">
 							<span class="draft__tag"><Icon icon={Pencil} size="sm" />{DRAFT}</span>
 							<span class="draft__to nm-text-truncate">{draftRecipients(draft)}</span>

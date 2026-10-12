@@ -1,6 +1,6 @@
 import type { Message } from '@nem/shared';
 import { fireEvent, render, screen } from '@testing-library/svelte';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import MessageList from './MessageList.svelte';
 
 const messages = ['a', 'b', 'c', 'd', 'e'].map(
@@ -40,5 +40,16 @@ describe('MessageList', () => {
 		await fireEvent.click(toggle);
 		expect(toggle).toHaveAttribute('aria-expanded', 'true');
 		expect(screen.getByText('Grace <grace@example.com>')).toBeInTheDocument();
+	});
+
+	it('replies, replies all and forwards from the open message', async () => {
+		const oncompose = vi.fn();
+		render(MessageList, { messages, selfEmail: 'me@nem.mail', oncompose });
+		await fireEvent.click(screen.getByRole('button', { name: 'Reply all' }));
+		await fireEvent.click(screen.getByRole('button', { name: 'Forward' }));
+		expect(oncompose.mock.calls.map(([mode, message]) => [mode, message.id])).toEqual([
+			['replyAll', 'e'],
+			['forward', 'e']
+		]);
 	});
 });

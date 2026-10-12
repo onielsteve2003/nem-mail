@@ -9,6 +9,7 @@
 	import { getMailboxStore } from '#lib/stores/mailbox.svelte.js';
 	import { getSessionStore } from '#lib/stores/session.svelte.js';
 	import { getThreadStore } from '#lib/stores/thread.svelte.js';
+	import { getUiStore } from '#lib/stores/ui.svelte.js';
 	import { errorMessage } from '#lib/utils/errors.js';
 	import MessageList from './MessageList.svelte';
 	import ThreadHeader from './ThreadHeader.svelte';
@@ -33,6 +34,7 @@
 	const session = getSessionStore();
 	const threads = getThreadStore();
 	const mailbox = getMailboxStore();
+	const ui = getUiStore();
 
 	let labels = $state<Label[]>([]);
 	// Labels name the pills; the thread still opens if they fail.
@@ -96,6 +98,8 @@
 				messages={thread.messages}
 				selfEmail={session.user?.email}
 				loadAttachment={(id) => repos.mail.getAttachment(id)}
+				oncompose={(mode, message) =>
+					ui.openCompose({ mode, threadId: message.threadId, messageId: message.id })}
 			/>
 		{/key}
 	{:else if view === 'loading'}

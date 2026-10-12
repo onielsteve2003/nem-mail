@@ -62,3 +62,14 @@ export function messageTime(iso: string, now: number, locale?: string): string {
 export function fullTime(iso: string, locale?: string): string {
 	return new Date(iso).toLocaleString(locale, { dateStyle: 'full', timeStyle: 'short' });
 }
+
+/** Whether "Reply all" would reach anyone beyond a plain reply: more than one other person is on the message. */
+export function canReplyAll(message: Message, selfEmail?: string): boolean {
+	const self = selfEmail?.toLowerCase();
+	const others = new Set(
+		[message.from, ...message.to, ...message.cc]
+			.map((address) => address.email.toLowerCase())
+			.filter((email) => email !== self)
+	);
+	return others.size > 1;
+}

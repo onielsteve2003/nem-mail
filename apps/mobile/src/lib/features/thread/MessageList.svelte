@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Message } from '@nem/shared';
+	import type { ComposeMode, Message } from '@nem/shared';
 	import { untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import MessageCard from './MessageCard.svelte';
@@ -11,9 +11,10 @@
 		messages: Message[];
 		selfEmail?: string;
 		loadAttachment?: (id: string) => Promise<Blob>;
+		oncompose?: (mode: Exclude<ComposeMode, 'new'>, message: Message) => void;
 	}
 
-	let { messages, selfEmail, loadAttachment }: Props = $props();
+	let { messages, selfEmail, loadAttachment, oncompose }: Props = $props();
 
 	// Which messages start open is decided once per thread (the parent keys this list).
 	const expanded = new SvelteSet(untrack(() => initialExpanded(messages)));
@@ -41,6 +42,7 @@
 					ontoggle={() => toggle(item.message.id)}
 					{selfEmail}
 					{loadAttachment}
+					{oncompose}
 				/>
 			{/if}
 		</li>

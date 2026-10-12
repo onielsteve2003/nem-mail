@@ -1,6 +1,7 @@
 import type { Message } from '@nem/shared';
 import { describe, expect, it } from 'vitest';
 import {
+	canReplyAll,
 	initialExpanded,
 	messageLayout,
 	messageTime,
@@ -52,5 +53,23 @@ describe('thread messages', () => {
 		expect(messageTime('2026-10-12T09:05:00', now, 'en-US')).toBe('9:05 AM');
 		expect(messageTime('2026-10-03T09:05:00', now, 'en-US')).toBe('Oct 3, 9:05 AM');
 		expect(messageTime('2025-10-03T09:05:00', now, 'en-US')).toBe('Oct 3, 2025, 9:05 AM');
+	});
+});
+
+describe('canReplyAll', () => {
+	const base = {
+		from: { email: 'ada@example.com' },
+		to: [{ email: 'me@nem.mail' }],
+		cc: []
+	} as unknown as Message;
+
+	it('is false when only the sender and the user are on it', () => {
+		expect(canReplyAll(base, 'me@nem.mail')).toBe(false);
+	});
+
+	it('is true when someone else is on To or Cc', () => {
+		expect(canReplyAll({ ...base, cc: [{ email: 'grace@example.com' }] }, 'ME@nem.mail')).toBe(
+			true
+		);
 	});
 });
