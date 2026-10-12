@@ -26,7 +26,7 @@ export function createAppStores(repos: Repositories, sync?: () => Promise<void>)
 		thread,
 		selection: new SelectionStore(),
 		ui: new UiStore(),
-		ai: new AIService(repos.settings)
+		ai: new AIService(repos.settings, undefined, repos.contacts)
 	};
 }
 

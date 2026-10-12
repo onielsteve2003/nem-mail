@@ -2,12 +2,14 @@
 	import type { Category, ThreadListFilter } from '@nem/shared';
 	import { mailboxTitle } from '#components/layout/nav.js';
 	import ConfirmDialog from '#components/ui/ConfirmDialog.svelte';
+	import SegmentedControl from '#components/ui/SegmentedControl.svelte';
 	import CategoryBundles from '#lib/features/mail-list/CategoryBundles.svelte';
 	import CategoryTabs from '#lib/features/mail-list/CategoryTabs.svelte';
 	import DraftList from '#lib/features/mail-list/DraftList.svelte';
 	import PurgeBanner from '#lib/features/mail-list/PurgeBanner.svelte';
 	import { CATEGORY_TITLES } from '#lib/features/mail-list/categories.js';
 	import MailList from '#lib/features/mail-list/MailList.svelte';
+	import type { ListSort } from '#lib/features/mail-list/priority.js';
 	import { getMailboxStore, listKey } from '#lib/stores/mailbox.svelte.js';
 	import type { PageProps } from './$types';
 
@@ -16,6 +18,11 @@
 		trash: { title: 'Empty Trash?', message: 'Everything in Trash will be deleted forever.' },
 		spam: { title: 'Empty Spam?', message: 'Everything in Spam will be deleted forever.' }
 	} as const;
+	const SORT_LABEL = 'Sort conversations';
+	const SORTS: { value: ListSort; label: string }[] = [
+		{ value: 'newest', label: 'Newest' },
+		{ value: 'priority', label: 'Priority' }
+	];
 	const CANT_UNDO = "This can't be undone.";
 	const EMPTY_NOW = 'Empty now';
 
@@ -26,6 +33,8 @@
 	// The inbox splits into tabs (FR-2.2); every other mailbox is one list.
 	const isInbox = $derived(data.mailbox === 'inbox');
 	let category = $state<Category>('primary');
+	// AI-6 priority inbox: rank the loaded conversations by importance.
+	let sort = $state<ListSort>('newest');
 	const counts = $derived(mailbox.counts?.categories ?? {});
 
 	const filter = $derived<ThreadListFilter>(
@@ -52,7 +61,7 @@
 	{#if data.mailbox === 'drafts'}
 		<DraftList />
 	{:else}
-		<MailList {filter} {title} id={LIST_ID}>
+		<MailList {filter} {title} id={LIST_ID} sort={isInbox ? sort : 'newest'}>
 			{#snippet header()}
 				{#if isInbox}
 					<CategoryTabs
@@ -61,6 +70,7 @@
 						controls={LIST_ID}
 						onchange={(next) => (category = next)}
 					/>
+					<SegmentedControl label={SORT_LABEL} options={SORTS} bind:value={sort} class="sort" />
 					{#if category === 'primary'}
 						<CategoryBundles {counts} onopen={(next) => (category = next)} />
 					{/if}
@@ -85,3 +95,10 @@
 		/>
 	{/if}
 </main>
+
+<style>
+	main :global(.sort) {
+		margin-block: var(--nm-space-2);
+		margin-inline: var(--nm-space-4);
+	}
+</style>

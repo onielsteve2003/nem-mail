@@ -13,9 +13,12 @@
 	import { online } from 'svelte/reactivity/window';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import AIBadge from '#components/ui/AIBadge.svelte';
 	import EmptyState from '#components/ui/EmptyState.svelte';
 	import ErrorState from '#components/ui/ErrorState.svelte';
 	import Skeleton from '#components/ui/Skeleton.svelte';
+	import { IMPORTANT_THRESHOLD } from '#lib/ai/models/priority-lr.js';
+	import { getAIService } from '#lib/ai/service.svelte.js';
 	import { getRepositories } from '#lib/data/provider.js';
 	import { getMailboxStore, listKey } from '#lib/stores/mailbox.svelte.js';
 	import { getSelectionStore } from '#lib/stores/selection.svelte.js';
@@ -30,6 +33,7 @@
 	import { emptyCopy, errorCopy } from './list-states.js';
 	import MailRow from './MailRow.svelte';
 	import MailRows from './MailRows.svelte';
+	import { priorityOrder, type ListSort } from './priority.js';
 	import { getListRefresh } from './refresh.js';
 	import SelectionBar from './SelectionBar.svelte';
 	import { swipeOp } from './swipe.js';
@@ -48,15 +52,18 @@
 		header?: Snippet;
 		/** Id of the rows region, e.g. for tabs that control it. */
 		id?: string;
+		/** Row order; "priority" ranks the loaded rows by the AI-6 score. */
+		sort?: ListSort;
 	}
 
-	let { filter, title, header, id }: Props = $props();
+	let { filter, title, header, id, sort = 'newest' }: Props = $props();
 
 	const repos = getRepositories();
 	const mailbox = getMailboxStore();
 	const session = getSessionStore();
 	const ui = getUiStore();
 	const selection = getSelectionStore();
+	const ai = getAIService();
 
 	let labels = $state<Label[]>([]);
 	let density = $state<Settings['density']>(DEFAULT_SETTINGS.density);
@@ -95,6 +102,23 @@
 	});
 
 	const list = $derived(mailbox.lists[key]);
+
+	// AI-6: score the loaded rows for the Priority sort. Unscored rows (model off,
+	// still working, or failed) fall back to the user's own flags.
+	const isPriority = $derived(sort === 'priority');
+	$effect(() => {
+		const user = session.user;
+		const items = list?.items;
+		if (!isPriority || !user || !items?.length) return;
+		untrack(() =>
+			ai
+				.scorePriority(user, items)
+				.catch((error: unknown) => console.error('Priority scoring failed', error))
+		);
+	});
+	const rows = $derived(
+		isPriority ? priorityOrder(list?.items ?? [], ai.priority) : (list?.items ?? [])
+	);
 
 	// Selection belongs to one list: switching lists or leaving ends it.
 	$effect(() => {
@@ -166,6 +190,11 @@
 	}
 </script>
 
+<!-- Inside the row's link, so a plain badge; the thread header explains the score. -->
+{#snippet priorityBadge()}
+	<AIBadge />
+{/snippet}
+
 <MoveSheet
 	open={moving !== null}
 	{labels}
@@ -229,7 +258,7 @@
 			<!-- A new list replaces the rows outright instead of collapsing the old ones. -->
 			{#key key}
 				<MailRows
-					items={list.items}
+					items={rows}
 					hasMore={list.nextCursor !== null}
 					isLoadingMore={list.isLoadingMore}
 					onloadmore={() => void mailbox.loadMore(filter)}
@@ -259,6 +288,9 @@
 									void mailbox.apply([thread.id], {
 										op: thread.isImportant ? 'markNotImportant' : 'markImportant'
 									})}
+								ai={isPriority && (ai.priority[thread.id]?.value ?? 0) >= IMPORTANT_THRESHOLD
+									? priorityBadge
+									: undefined}
 							/>
 						</SwipeRow>
 					{/snippet}

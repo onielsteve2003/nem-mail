@@ -3,17 +3,27 @@ import {
 	type AIFeature,
 	type Category,
 	type Message,
-	type Settings
+	type Settings,
+	type Thread,
+	type ThreadSummary
 } from '@nem/shared';
 import { createContext } from 'svelte';
-import type { SettingsRepository } from '#lib/data/repositories.js';
+import type { ContactRepository, SettingsRepository } from '#lib/data/repositories.js';
 import type { AIBackend } from './backend.js';
 import type { CategoryVerdict } from './models/category.js';
+import type { PrioritySignal, PriorityVerdict } from './models/priority-lr.js';
 import type { SpamVerdict } from './models/spam-nb.js';
+import { priorityInput, senderFrequencies } from './priority-input.js';
 import { MODELS } from './registry.js';
 import type { AIWorkerConnection } from './worker/connect.js';
 
 export type AIToggles = Settings['ai'];
+
+/** The signed-in user, as the priority model sees them. */
+export interface AIUser {
+	id: string;
+	email: string;
+}
 
 const DOWNLOAD_FAILED = 'Download failed. Check your connection and try again.';
 
@@ -49,12 +59,16 @@ export class AIService {
 	spam = $state<Record<string, SpamVerdict>>({});
 	/** Inbox tab verdicts by message id. */
 	categories = $state<Record<string, CategoryVerdict>>({});
+	/** Priority scores by thread id (AI-6). */
+	priority = $state<Record<string, PriorityVerdict>>({});
 
 	#connection: Promise<AIWorkerConnection> | undefined;
+	#frequencies: Promise<ReadonlyMap<string, number>> | undefined;
 
 	constructor(
 		private readonly settings: SettingsRepository | null = null,
-		private readonly connect: ConnectWorker = connectDefault
+		private readonly connect: ConnectWorker = connectDefault,
+		private readonly contacts: ContactRepository | null = null
 	) {}
 
 	/** True when the user has the feature on in Settings (all are on by default). */
@@ -157,10 +171,59 @@ export class AIService {
 		this.categories = {};
 	}
 
+	/**
+	 * Scores threads for the priority inbox (AI-6) and remembers the scores by thread id.
+	 * Already-scored threads are skipped. Null when the user turned priority off.
+	 */
+	async scorePriority(
+		user: AIUser,
+		threads: readonly (ThreadSummary | Thread)[]
+	): Promise<Record<string, PriorityVerdict> | null> {
+		if (!this.isEnabled('priority')) return null;
+		const fresh = threads.filter((thread) => !this.priority[thread.id]);
+		if (fresh.length > 0) {
+			const inputs = await this.#priorityInputs(user, fresh);
+			const { api } = await this.#worker();
+			const verdicts = await api.scorePriority(user.id, inputs);
+			fresh.forEach((thread, i) => {
+				const verdict = verdicts[i];
+				if (verdict) this.priority[thread.id] = verdict;
+			});
+		}
+		return this.priority;
+	}
+
+	/** Teaches the priority model: marking important / not important, or opening a thread. */
+	async learnPriority(
+		user: AIUser,
+		threads: readonly (ThreadSummary | Thread)[],
+		isImportant: boolean,
+		signal: PrioritySignal
+	): Promise<void> {
+		if (!this.isEnabled('priority') || threads.length === 0) return;
+		const inputs = await this.#priorityInputs(user, threads);
+		const { api } = await this.#worker();
+		await api.learnPriority(user.id, inputs, isImportant, signal);
+		// An open nudges the model only slightly; rescoring the inbox for it is not worth it.
+		if (signal === 'mark') this.priority = {};
+	}
+
 	/** Forgets verdicts, e.g. after switching accounts. */
 	clearInsights(): void {
 		this.spam = {};
 		this.categories = {};
+		this.priority = {};
+		this.#frequencies = undefined;
+	}
+
+	async #priorityInputs(user: AIUser, threads: readonly (ThreadSummary | Thread)[]) {
+		const frequencies = await this.#senderFrequencies();
+		return threads.map((thread) => priorityInput(thread, user.email, frequencies));
+	}
+
+	#senderFrequencies(): Promise<ReadonlyMap<string, number>> {
+		this.#frequencies ??= senderFrequencies(this.contacts);
+		return this.#frequencies;
 	}
 
 	/** Stops the worker; the next call starts a fresh one. */

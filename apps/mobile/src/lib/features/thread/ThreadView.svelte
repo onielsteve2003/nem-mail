@@ -6,6 +6,7 @@
 	import Skeleton from '#components/ui/Skeleton.svelte';
 	import ThreadActions from '#components/ui/ThreadActions.svelte';
 	import { getAIService } from '#lib/ai/service.svelte.js';
+	import { IMPORTANT_THRESHOLD } from '#lib/ai/models/priority-lr.js';
 	import type { SpamVerdict } from '#lib/ai/models/spam-nb.js';
 	import { getRepositories } from '#lib/data/provider.js';
 	import { getMailboxStore } from '#lib/stores/mailbox.svelte.js';
@@ -80,6 +81,32 @@
 			const id = thread.id;
 			untrack(() => void mailbox.apply([id], { op: 'markRead' }, { undoable: false }));
 		}
+		// AI-6 learns from opens (a light signal next to marking important).
+		const user = session.user;
+		const opened = thread;
+		if (user && opened.mailboxes.includes('inbox')) {
+			untrack(() =>
+				ai
+					.learnPriority(user, [opened], true, 'open')
+					.catch((error: unknown) => console.error('Priority learning failed', error))
+			);
+		}
+	});
+
+	// AI-6: explain an Important marker the model agrees with.
+	$effect(() => {
+		const user = session.user;
+		if (!user || !thread?.isImportant || !ai.isEnabled('priority')) return;
+		const current = thread;
+		untrack(() =>
+			ai
+				.scorePriority(user, [current])
+				.catch((error: unknown) => console.error('Priority scoring failed', error))
+		);
+	});
+	const importance = $derived.by(() => {
+		const verdict = thread ? ai.priority[thread.id] : undefined;
+		return verdict && verdict.value >= IMPORTANT_THRESHOLD ? verdict : null;
 	});
 
 	// AI-2: in Spam, explain the verdict for the latest message someone else sent.
@@ -223,6 +250,7 @@
 		subject={thread?.subject ?? null}
 		labels={threadLabels}
 		isImportant={thread?.isImportant}
+		{importance}
 		{variant}
 		{onclose}
 	>

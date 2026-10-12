@@ -7,7 +7,13 @@ import { createWorkerApi } from '#lib/ai/worker/api.js';
 import type { Repositories } from '#lib/data/repositories.js';
 import { DEMO_EMAIL, createTestRepositories } from '#lib/data/testing.js';
 import { MailboxStore } from './mailbox.svelte.js';
-import { categoryFeedback, connectMailAI, receivedMessages, spamFeedback } from './mail-ai.js';
+import {
+	categoryFeedback,
+	connectMailAI,
+	importantFeedback,
+	receivedMessages,
+	spamFeedback
+} from './mail-ai.js';
 import { ToastStore } from './toast.svelte.js';
 
 const NOW = Date.parse('2026-10-11T09:00:00.000Z');
@@ -81,6 +87,9 @@ describe('spam feedback helpers', () => {
 		expect(spamFeedback({ op: 'archive' })).toBeNull();
 		expect(categoryFeedback({ op: 'setCategory', category: 'social' })).toBe('social');
 		expect(categoryFeedback({ op: 'archive' })).toBeNull();
+		expect(importantFeedback({ op: 'markImportant' })).toBe(true);
+		expect(importantFeedback({ op: 'markNotImportant' })).toBe(false);
+		expect(importantFeedback({ op: 'star' })).toBeNull();
 		const mine = { from: { email: 'Me@Example.com' } } as never;
 		const theirs = { from: { email: 'ada@example.com' } } as never;
 		expect(receivedMessages([mine, theirs], 'me@example.com')).toEqual([theirs]);
@@ -148,5 +157,21 @@ describe('connectMailAI', () => {
 		await vi.waitFor(() => expect(learn).toHaveBeenCalled());
 		await learn.mock.results[0]!.value;
 		expect(store.saved.size).toBe(0);
+	});
+
+	it('marks new mail important when the priority model scores it high', async () => {
+		const inbox = (await repos.mail.list({ mailbox: 'inbox' })).items.find((t) => !t.isImportant)!;
+		vi.spyOn(ai, 'scorePriority').mockResolvedValue({
+			[inbox.id]: { value: 0.9, confidence: 0.9, explanation: 'test', source: 'model' }
+		});
+		emit({ type: 'mail.new', summary: inbox });
+		await vi.waitFor(async () => expect((await repos.mail.get(inbox.id)).isImportant).toBe(true));
+		expect(store.saved.has(`${user.id}:priority`)).toBe(false);
+	});
+
+	it('learns from Mark not important and saves the priority model', async () => {
+		const inbox = await firstIn('inbox');
+		await mailbox.apply([inbox.id], { op: 'markNotImportant' });
+		await vi.waitFor(() => expect(store.saved.has(`${user.id}:priority`)).toBe(true));
 	});
 });

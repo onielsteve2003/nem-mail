@@ -2,8 +2,9 @@
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import Bookmark from '@lucide/svelte/icons/bookmark';
 	import X from '@lucide/svelte/icons/x';
-	import type { Label } from '@nem/shared';
+	import type { AIInsight, Label } from '@nem/shared';
 	import type { Snippet } from 'svelte';
+	import AIBadge from '#components/ui/AIBadge.svelte';
 	import Icon from '#components/ui/Icon.svelte';
 	import IconButton from '#components/ui/IconButton.svelte';
 	import LabelPill from '#components/ui/LabelPill.svelte';
@@ -19,6 +20,8 @@
 		subject: string | null;
 		labels?: Label[];
 		isImportant?: boolean;
+		/** Why the priority model rates the thread important (AI-6); shows an AI badge. */
+		importance?: AIInsight<number> | null;
 		/** Back arrow on the full-screen route, X in the reading pane. */
 		variant?: 'back' | 'close';
 		onclose: () => void;
@@ -30,6 +33,7 @@
 		subject,
 		labels = [],
 		isImportant = false,
+		importance = null,
 		variant = 'back',
 		onclose,
 		actions
@@ -50,6 +54,7 @@
 			{subject || NO_SUBJECT}
 			{#if isImportant}
 				<Icon icon={Bookmark} size="md" label={IMPORTANT} class="header__important" />
+				{#if importance}<AIBadge insight={importance} class="header__why" />{/if}
 			{/if}
 		</h1>
 	{/if}
@@ -90,6 +95,9 @@
 		vertical-align: middle;
 		color: var(--nm-color-amber);
 		fill: currentColor;
+	}
+	.header :global(.header__why) {
+		vertical-align: middle;
 	}
 	.header__labels {
 		display: flex;

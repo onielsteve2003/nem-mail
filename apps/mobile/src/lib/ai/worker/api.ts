@@ -20,6 +20,16 @@ import {
 	type SpamModel,
 	type SpamVerdict
 } from '../models/spam-nb.js';
+import {
+	isLogisticModel,
+	learnPriorityFeedback,
+	scorePriority,
+	trainPriorityModel,
+	type LogisticModel,
+	type PriorityInput,
+	type PrioritySignal,
+	type PriorityVerdict
+} from '../models/priority-lr.js';
 import { findModel } from '../registry.js';
 import {
 	deleteModel,
@@ -46,6 +56,15 @@ export interface AIWorkerApi {
 	classifyCategory(userId: string, messages: CategoryInput[]): Promise<CategoryVerdict[]>;
 	/** Learns from "Move to tab" and saves the model. */
 	learnCategory(userId: string, messages: CategoryInput[], category: Category): Promise<void>;
+	/** Priority scores (AI-6) from the user's logistic regression model. */
+	scorePriority(userId: string, inputs: PriorityInput[]): Promise<PriorityVerdict[]>;
+	/** Learns from marking important / not important, or from opening a message, and saves. */
+	learnPriority(
+		userId: string,
+		inputs: PriorityInput[],
+		isImportant: boolean,
+		signal: PrioritySignal
+	): Promise<void>;
 }
 
 /** Runs the optional zero-shot model; tests pass their own. */
@@ -72,6 +91,7 @@ export function createWorkerApi(
 ): AIWorkerApi {
 	let backend: Promise<AIBackend> | undefined;
 	const models = new Map<string, Promise<NaiveBayesState>>();
+	let priority: { userId: string; model: Promise<LogisticModel> } | undefined;
 	const model = (id: string) => {
 		const spec = findModel(id);
 		if (!spec) throw new Error(`Unknown model "${id}"`);
@@ -92,6 +112,16 @@ export function createWorkerApi(
 	const spamModel = (userId: string) => learned<SpamModel>(`${userId}:spam`, trainSpamModel);
 	const categoryModel = (userId: string) =>
 		learned<CategoryModel>(`${userId}:category`, trainCategoryModel);
+	function priorityModel(userId: string): Promise<LogisticModel> {
+		if (priority?.userId !== userId) {
+			const model = store
+				.get(`${userId}:priority`)
+				.catch(() => undefined)
+				.then((saved) => (isLogisticModel(saved) ? saved : trainPriorityModel()));
+			priority = { userId, model };
+		}
+		return priority.model;
+	}
 	// The zero-shot upgrade runs only when its model is downloaded (opt-in, AI settings).
 	async function upgrade(): Promise<ZeroShot | null> {
 		if (!(await isModelCached(model(ZERO_SHOT_MODEL), env).catch(() => false))) return null;
@@ -148,6 +178,15 @@ export function createWorkerApi(
 			const category = await categoryModel(userId);
 			for (const message of messages) learnCategoryFeedback(category, message, target);
 			await store.put(`${userId}:category`, category);
+		},
+		async scorePriority(userId, inputs) {
+			const model = await priorityModel(userId);
+			return inputs.map((input) => scorePriority(model, input));
+		},
+		async learnPriority(userId, inputs, isImportant, signal) {
+			const model = await priorityModel(userId);
+			for (const input of inputs) learnPriorityFeedback(model, input, isImportant, signal);
+			await store.put(`${userId}:priority`, model);
 		}
 	};
 }

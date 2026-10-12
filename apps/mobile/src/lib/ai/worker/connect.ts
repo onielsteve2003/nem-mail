@@ -28,7 +28,10 @@ export function connectWorker(): AIWorkerConnection {
 			learnSpam: (userId, texts, isSpam) => remote.learnSpam(userId, texts, isSpam),
 			classifyCategory: (userId, messages) => remote.classifyCategory(userId, messages),
 			learnCategory: (userId, messages, category) =>
-				remote.learnCategory(userId, messages, category)
+				remote.learnCategory(userId, messages, category),
+			scorePriority: (userId, inputs) => remote.scorePriority(userId, inputs),
+			learnPriority: (userId, inputs, isImportant, signal) =>
+				remote.learnPriority(userId, inputs, isImportant, signal)
 		},
 		terminate: () => worker.terminate()
 	};
