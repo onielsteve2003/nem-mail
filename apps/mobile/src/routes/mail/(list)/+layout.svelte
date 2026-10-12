@@ -9,6 +9,7 @@
 	import ReadingPane from '#components/layout/ReadingPane.svelte';
 	import SearchBar from '#components/layout/SearchBar.svelte';
 	import { ListRefresh, setListRefresh } from '#features/mail-list/refresh.js';
+	import ThreadView from '#features/thread/ThreadView.svelte';
 	import { getSelectionStore } from '#lib/stores/selection.svelte.js';
 	import { getSessionStore } from '#lib/stores/session.svelte.js';
 	import { getUiStore } from '#lib/stores/ui.svelte.js';
@@ -78,6 +79,10 @@
 	}
 </script>
 
+{#snippet openThread()}
+	{#if threadId}<ThreadView {threadId} variant="close" onclose={closeThread} />{/if}
+{/snippet}
+
 <div class="panes">
 	<div class="list">
 		<!-- ion-content only hosts the refresher; the shell is its scroll host, so
@@ -106,7 +111,7 @@
 		</div>
 	</div>
 	{#if twoPane.current}
-		<ReadingPane {threadId} onclose={closeThread} />
+		<ReadingPane children={threadId ? openThread : undefined} />
 	{/if}
 </div>
 <AccountSheet open={ui.isSheetOpen(ACCOUNT_SHEET)} onclose={() => ui.closeSheet(ACCOUNT_SHEET)} />

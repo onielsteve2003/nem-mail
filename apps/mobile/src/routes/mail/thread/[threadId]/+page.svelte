@@ -1,12 +1,23 @@
 <script lang="ts">
-	import EmptyState from '#components/ui/EmptyState.svelte';
+	import { afterNavigate, goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
+	import ThreadView from '#features/thread/ThreadView.svelte';
 	import type { PageProps } from './$types';
 
-	// Placeholder until the thread view (M6).
 	const TITLE = 'Conversation';
-	const MESSAGE = 'This conversation will open here.';
 
 	let { params }: PageProps = $props();
+
+	// Opened from inside the app: back returns there. A deep link has nowhere to go back to.
+	let cameFromApp = false;
+	afterNavigate(({ from }) => {
+		cameFromApp = !!from;
+	});
+
+	function close(): void {
+		if (cameFromApp) history.back();
+		else void goto(resolve('/mail/(list)/[mailbox]', { mailbox: 'inbox' }), { replaceState: true });
+	}
 </script>
 
 <svelte:head>
@@ -14,7 +25,7 @@
 </svelte:head>
 
 <main class="screen">
-	<EmptyState title={TITLE} message={`${MESSAGE} (${params.threadId})`} />
+	<ThreadView threadId={params.threadId} onclose={close} />
 </main>
 
 <style>
