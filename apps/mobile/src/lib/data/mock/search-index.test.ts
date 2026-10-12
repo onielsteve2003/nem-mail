@@ -113,6 +113,24 @@ describe('searchIndex', () => {
 		expect(ids('after:2026-02-01 budget')).toEqual(['a', 'b']);
 	});
 
+	it('ranks repeated words higher and a short body above a long one (BM25)', () => {
+		const filler = ' lorem'.repeat(60);
+		const ranked = buildIndex([
+			thread('once', 'Notes', `the invoice is here${filler}`),
+			thread('twice', 'Notes', `invoice and another invoice${filler}`),
+			thread('short', 'Notes', 'invoice attached')
+		]);
+		const order = searchIndex(ranked, 'invoice', []).map((h) => h.summary.id);
+		expect(order.indexOf('twice')).toBeLessThan(order.indexOf('once'));
+		expect(order.indexOf('short')).toBeLessThan(order.indexOf('once'));
+	});
+
+	it('scores rarer words higher than common ones', () => {
+		const [rare] = searchIndex(index, 'cafe', labels);
+		const [common] = searchIndex(index, 'the', labels);
+		expect(rare?.score).toBeGreaterThan(common?.score ?? Infinity);
+	});
+
 	it('gives descending keys that follow the ranking', () => {
 		const hits = searchIndex(index, 'budget', labels);
 		const keys = hits.map(hitKey);
