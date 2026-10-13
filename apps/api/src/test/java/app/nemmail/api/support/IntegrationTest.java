@@ -23,7 +23,8 @@ import org.springframework.context.annotation.Import;
     webEnvironment = WebEnvironment.RANDOM_PORT,
     properties = {
       "nem.rate-limit.requests-per-minute=100000",
-      "nem.rate-limit.auth-requests-per-minute=100000"
+      "nem.rate-limit.auth-requests-per-minute=100000",
+      "nem.demo.reset-key=test-reset-key"
     })
 @AutoConfigureMockMvc
 @Import({TestcontainersConfiguration.class, ApiClient.class, TestData.class})

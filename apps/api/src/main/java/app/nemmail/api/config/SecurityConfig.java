@@ -46,6 +46,9 @@ class SecurityConfig {
             auth ->
                 auth.requestMatchers(HttpMethod.POST, "/auth/signup", "/auth/signin")
                     .permitAll()
+                    // Guarded by its own key in DemoController, for the nightly cron.
+                    .requestMatchers(HttpMethod.POST, "/admin/demo/reset")
+                    .permitAll()
                     .requestMatchers("/health", "/error")
                     .permitAll()
                     .anyRequest()

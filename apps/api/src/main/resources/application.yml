@@ -74,3 +74,9 @@ nem:
     requests-per-minute: 120
     # Sign-in and sign-up: enough for typos, too few to guess passwords.
     auth-requests-per-minute: 10
+  demo:
+    # Public: the same DEMO_PASSWORD the app sends for "Try the demo".
+    password: demo-account
+    # Shared with the nightly demo-reset GitHub Actions workflow; unset turns
+    # POST /admin/demo/reset off.
+    reset-key: ${DEMO_RESET_KEY:}

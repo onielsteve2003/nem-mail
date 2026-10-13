@@ -1,0 +1,34 @@
+name: Demo reset
+
+# Puts the shared demo accounts back to the seed every night. The API also does
+# this on a schedule while it is awake, but the free host sleeps when idle, so
+# this call wakes it. Needs the API_URL variable (e.g. https://<app>.onrender.com)
+# and the DEMO_RESET_KEY secret; until both are set it skips with a notice.
+on:
+  schedule:
+    - cron: '15 3 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  reset:
+    name: Reset demo data
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: POST /admin/demo/reset
+        env:
+          API_URL: ${{ vars.API_URL }}
+          DEMO_RESET_KEY: ${{ secrets.DEMO_RESET_KEY }}
+        run: |
+          if [ -z "$API_URL" ] || [ -z "$DEMO_RESET_KEY" ]; then
+            echo "::notice::API_URL or DEMO_RESET_KEY is not set yet; skipping."
+            exit 0
+          fi
+          # A cold start can take about a minute, so wait and retry.
+          curl --fail-with-body --silent --show-error --max-time 180 \
+            --retry 3 --retry-delay 30 --retry-all-errors \
+            -X POST "$API_URL/api/v1/admin/demo/reset" \
+            -H "X-Demo-Reset-Key: $DEMO_RESET_KEY"
+          echo "Demo reset."

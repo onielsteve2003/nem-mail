@@ -2,6 +2,7 @@ package app.nemmail.api.seed;
 
 import app.nemmail.api.auth.User;
 import app.nemmail.api.auth.UserRepository;
+import app.nemmail.api.config.ApiProperties;
 import app.nemmail.api.mail.Attachment;
 import app.nemmail.api.mail.AttachmentRepository;
 import app.nemmail.api.mail.Category;
@@ -35,6 +36,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.JsonNode;
@@ -46,9 +48,6 @@ import tools.jackson.databind.node.ObjectNode;
  */
 @Service
 public class SeedLoader {
-
-  /** No password matches this hash; sign-in for seeded accounts arrives with Argon2 in T15.1. */
-  static final String NO_PASSWORD = "!";
 
   private static final Set<String> OWN_MAILBOXES = Set.of("sent", "scheduled", "outbox", "drafts");
 
@@ -62,6 +61,8 @@ public class SeedLoader {
   private final AttachmentRepository attachments;
   private final DraftRepository drafts;
   private final UserSettingsRepository settings;
+  private final PasswordEncoder passwords;
+  private final String demoPassword;
 
   public SeedLoader(
       UserRepository users,
@@ -73,7 +74,9 @@ public class SeedLoader {
       MailboxEntryRepository entries,
       AttachmentRepository attachments,
       DraftRepository drafts,
-      UserSettingsRepository settings) {
+      UserSettingsRepository settings,
+      PasswordEncoder passwords,
+      ApiProperties properties) {
     this.users = users;
     this.labels = labels;
     this.contacts = contacts;
@@ -84,6 +87,8 @@ public class SeedLoader {
     this.attachments = attachments;
     this.drafts = drafts;
     this.settings = settings;
+    this.passwords = passwords;
+    this.demoPassword = properties.demo().password();
   }
 
   /** The database id for a seed id such as {@code u1-t12m2}. */
@@ -93,8 +98,10 @@ public class SeedLoader {
         : UUID.nameUUIDFromBytes(("nem-seed:" + seedId).getBytes(StandardCharsets.UTF_8));
   }
 
+  /** Writes every seed account; each one signs in with the demo password. */
   @Transactional
   public void load(SeedData data, Instant now) {
+    String passwordHash = passwords.encode(demoPassword);
     Duration shift = Duration.between(data.generatedAt(), now);
     Map<String, UUID> userIdsByEmail =
         data.accounts().stream()
@@ -103,7 +110,7 @@ public class SeedLoader {
                     account -> account.user().email().toLowerCase(Locale.ROOT),
                     account -> idOf(account.user().id())));
     for (SeedData.Account account : data.accounts()) {
-      new AccountWriter(account, shift, userIdsByEmail).write();
+      new AccountWriter(account, shift, userIdsByEmail, passwordHash).write();
     }
   }
 
@@ -114,18 +121,24 @@ public class SeedLoader {
     private final Map<String, UUID> userIdsByEmail;
     private final UUID userId;
     private final String email;
+    private final String passwordHash;
 
-    AccountWriter(SeedData.Account account, Duration shift, Map<String, UUID> userIdsByEmail) {
+    AccountWriter(
+        SeedData.Account account,
+        Duration shift,
+        Map<String, UUID> userIdsByEmail,
+        String passwordHash) {
       this.account = account;
       this.shift = shift;
       this.userIdsByEmail = userIdsByEmail;
       this.userId = idOf(account.user().id());
       this.email = account.user().email();
+      this.passwordHash = passwordHash;
     }
 
     void write() {
       SeedData.User seedUser = account.user();
-      User user = new User(userId, email, seedUser.name(), NO_PASSWORD, seedUser.avatarSeed());
+      User user = new User(userId, email, seedUser.name(), passwordHash, seedUser.avatarSeed());
       user.setCreatedAt(shifted(seedUser.createdAt()));
       users.save(user);
       settings.save(new UserSettings(userId, account.settings().toString()));

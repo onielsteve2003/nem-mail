@@ -27,7 +27,7 @@ class SeedLoaderTest {
   @Test
   void loadsTheSharedSeedWithTimestampsMovedToNow() throws Exception {
     SeedData data;
-    try (InputStream in = SeedRunner.SEED.getInputStream()) {
+    try (InputStream in = DemoService.SEED.getInputStream()) {
       data = json.readValue(in, SeedData.class);
     }
     // Other test classes share this database, so compare counts before and after.

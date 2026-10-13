@@ -5,7 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /** Settings under {@code nem.*} in application.yml. */
 @ConfigurationProperties("nem")
-public record ApiProperties(Cors cors, RateLimit rateLimit) {
+public record ApiProperties(Cors cors, RateLimit rateLimit, Demo demo) {
 
   /** Origins allowed to call the API: the web app and the Capacitor shells. */
   public record Cors(List<String> allowedOrigins) {}
@@ -15,4 +15,11 @@ public record ApiProperties(Cors cors, RateLimit rateLimit) {
    * sign-up, which also count toward the first.
    */
   public record RateLimit(int requestsPerMinute, int authRequestsPerMinute) {}
+
+  /**
+   * The seeded demo accounts. {@code password} is public on purpose: it is {@code DEMO_PASSWORD} in
+   * {@code @nem/shared}, which the app sends for "Try the demo". {@code resetKey} guards the reset
+   * endpoint; blank turns that endpoint off.
+   */
+  public record Demo(String password, String resetKey) {}
 }
