@@ -47,7 +47,8 @@ class WebConfig {
   }
 
   @Bean
-  FilterRegistrationBean<CorsFilter> corsFilter(UrlBasedCorsConfigurationSource source) {
+  FilterRegistrationBean<CorsFilter> corsFilterRegistration(
+      UrlBasedCorsConfigurationSource source) {
     return register(new CorsFilter(source), 2);
   }
 

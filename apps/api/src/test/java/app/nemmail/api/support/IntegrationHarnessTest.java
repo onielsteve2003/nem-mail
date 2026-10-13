@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
+import org.springframework.transaction.annotation.Transactional;
 
 @IntegrationTest
 class IntegrationHarnessTest {
@@ -23,26 +24,27 @@ class IntegrationHarnessTest {
 
   @Test
   void mockMvcRunsTheFiltersWithoutTheContextPath() {
-    assertThat(mvc.get().uri("/nowhere"))
-        .hasStatus(404)
+    assertThat(mvc.get().uri("/threads"))
+        .hasStatus(401)
         .hasHeader("X-Content-Type-Options", "nosniff")
         .bodyJson()
         .extractingPath("$.error.code")
-        .isEqualTo("NOT_FOUND");
+        .isEqualTo("UNAUTHORIZED");
   }
 
   @Test
   void apiClientHitsTheRealServerAndNeverThrows() {
     ResponseEntity<String> health =
         api.http().get().uri("/health").retrieve().toEntity(String.class);
-    ResponseEntity<String> missing =
-        api.as("some-token").get().uri("/nowhere").retrieve().toEntity(String.class);
+    ResponseEntity<String> signedOut =
+        api.http().get().uri("/threads").retrieve().toEntity(String.class);
 
     assertThat(health.getBody()).contains("\"status\":\"UP\"");
-    assertThat(missing.getStatusCode().value()).isEqualTo(404);
+    assertThat(signedOut.getStatusCode().value()).isEqualTo(401);
   }
 
   @Test
+  @Transactional
   void factoriesCreateUniqueUsersAndInboxMail() {
     User ada = data.user("Ada");
     User another = data.user("Ada");

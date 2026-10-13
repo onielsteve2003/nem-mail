@@ -14,10 +14,15 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -52,6 +57,16 @@ class ApiInfrastructureTest {
     @GetMapping("/probe/ping")
     String ping() {
       return "pong";
+    }
+
+    /** Opens the probe endpoints, ahead of the API chain that requires a signed-in user. */
+    @Bean
+    @Order(0)
+    SecurityFilterChain probeSecurity(HttpSecurity http) {
+      return http.securityMatcher("/probe/**")
+          .csrf(AbstractHttpConfigurer::disable)
+          .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+          .build();
     }
   }
 
@@ -92,7 +107,8 @@ class ApiInfrastructureTest {
             .toEntity(String.class);
     ResponseEntity<String> conflict =
         http.get().uri("/probe/conflict").retrieve().toEntity(String.class);
-    ResponseEntity<String> missing = http.get().uri("/nowhere").retrieve().toEntity(String.class);
+    ResponseEntity<String> missing =
+        http.get().uri("/probe/nowhere").retrieve().toEntity(String.class);
     ResponseEntity<String> boom = http.get().uri("/probe/boom").retrieve().toEntity(String.class);
 
     assertThat(malformed.getStatusCode().value()).isEqualTo(400);

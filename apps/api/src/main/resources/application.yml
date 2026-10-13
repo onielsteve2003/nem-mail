@@ -1,6 +1,9 @@
 spring:
   application:
     name: nem-mail-api
+  autoconfigure:
+    # Users sign in with bearer tokens, not Spring's generated in-memory user.
+    exclude: org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
   threads:
     virtual:
       enabled: true

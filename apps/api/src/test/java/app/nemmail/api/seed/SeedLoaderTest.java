@@ -30,6 +30,12 @@ class SeedLoaderTest {
     try (InputStream in = SeedRunner.SEED.getInputStream()) {
       data = json.readValue(in, SeedData.class);
     }
+    // Other test classes share this database, so compare counts before and after.
+    long users = count("users");
+    long threadRows = count("threads");
+    long messageRows = count("messages");
+    long entryRows = count("mailbox_entries");
+    long settingsRows = count("settings");
     Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
     loader.load(data, now);
     // The checks below use JDBC, which does not trigger Hibernate's auto-flush.
@@ -41,11 +47,11 @@ class SeedLoaderTest {
             .flatMap(a -> a.threads().stream())
             .mapToLong(t -> t.messages().size())
             .sum();
-    assertThat(count("users")).isEqualTo(data.accounts().size());
-    assertThat(count("threads")).isEqualTo(threads);
-    assertThat(count("messages")).isEqualTo(messages);
-    assertThat(count("mailbox_entries")).isEqualTo(messages);
-    assertThat(count("settings")).isEqualTo(data.accounts().size());
+    assertThat(count("users") - users).isEqualTo(data.accounts().size());
+    assertThat(count("threads") - threadRows).isEqualTo(threads);
+    assertThat(count("messages") - messageRows).isEqualTo(messages);
+    assertThat(count("mailbox_entries") - entryRows).isEqualTo(messages);
+    assertThat(count("settings") - settingsRows).isEqualTo(data.accounts().size());
 
     // The newest delivered mail sits as far before now as it sat before generatedAt.
     Instant newestSeed =
