@@ -190,7 +190,8 @@
 	.frame {
 		position: absolute;
 		inset-inline: 0;
-		inset-block-end: 0;
+		/* Sits above an overlaid keyboard so the focused field stays in view. */
+		inset-block-end: var(--nm-keyboard-inset);
 		display: flex;
 		justify-content: center;
 		pointer-events: none;
@@ -199,7 +200,9 @@
 		display: flex;
 		flex-direction: column;
 		inline-size: min(100%, 40rem);
-		max-block-size: calc(var(--nm-viewport-height) - var(--nm-safe-top) - var(--nm-space-6));
+		max-block-size: calc(
+			var(--nm-viewport-height) - var(--nm-safe-top) - var(--nm-space-6) - var(--nm-keyboard-inset)
+		);
 		border: 1px solid var(--nm-color-border);
 		border-block-end: 0;
 		border-start-start-radius: var(--nm-radius-2xl);

@@ -19,11 +19,15 @@
 	import { prefersReducedMotion, slideStack } from '#lib/motion/index.js';
 	import { createAppStores, resetOnUserChange, setAppStores } from '#lib/stores/app.svelte.js';
 	import { connectMailAI } from '#lib/stores/mail-ai.js';
+	import { connectMailAlerts } from '#lib/stores/mail-alerts.js';
 	import { ThemeStore, setThemeStore } from '#lib/stores/theme.svelte.js';
 	import { exitApp, listenBackButton } from '#lib/utils/back-button.js';
 	import { errorMessage } from '#lib/utils/errors.js';
 	import { guardRedirect } from '#lib/utils/guard.js';
+	import { watchKeyboard } from '#lib/utils/keyboard.js';
 	import { backAction, navDirection, type NavDirection } from '#lib/utils/navigation.js';
+	import { hideSplashScreen } from '#lib/utils/splash-screen.js';
+	import { syncStatusBar } from '#lib/utils/status-bar.js';
 	import type { LayoutProps } from './$types';
 
 	// The element the drawer slides over.
@@ -36,6 +40,13 @@
 	const theme = setThemeStore(new ThemeStore());
 	$effect(() => theme.watchSystem());
 	$effect(() => theme.apply());
+	// Native app only: status bar icons follow the theme.
+	$effect(() => {
+		syncStatusBar(theme.resolved).catch((error: unknown) =>
+			console.error('Status bar sync failed', error)
+		);
+	});
+	$effect(() => watchKeyboard(document.documentElement));
 
 	// One data layer and one set of stores for the whole app (architecture §8).
 	const data = createRepositories(config, { search: location.search });
@@ -56,6 +67,13 @@
 		})
 	);
 	$effect(() => resetOnUserChange(stores));
+	$effect(() =>
+		connectMailAlerts({
+			mail: data.repos.mail,
+			settings: data.repos.settings,
+			onopen: (threadId) => void goto(resolve('/mail/thread/[threadId]', { threadId }))
+		})
+	);
 
 	// Route guard (F1): the splash covers start-up and any redirect, so a guarded page never flashes.
 	const session = stores.session;
@@ -64,6 +82,11 @@
 	);
 	const isReady = $derived(session.status === 'ready' && redirect === null);
 	// The drawer swipes open only over the list screens (FR-2.3).
+	// The native launch screen stays up until the session is restored (or failed to).
+	$effect(() => {
+		if (session.status !== 'ready' && session.status !== 'error') return;
+		hideSplashScreen().catch((error: unknown) => console.error('Splash hide failed', error));
+	});
 	const isListRoute = $derived(page.route.id?.startsWith('/mail/(list)') ?? false);
 	$effect(() => {
 		if (!redirect) return;

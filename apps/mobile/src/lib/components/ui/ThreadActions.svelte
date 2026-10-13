@@ -9,6 +9,7 @@
 	import Mail from '@lucide/svelte/icons/mail';
 	import MailOpen from '@lucide/svelte/icons/mail-open';
 	import OctagonAlert from '@lucide/svelte/icons/octagon-alert';
+	import Share2 from '@lucide/svelte/icons/share-2';
 	import Star from '@lucide/svelte/icons/star';
 	import Tag from '@lucide/svelte/icons/tag';
 	import Trash from '@lucide/svelte/icons/trash';
@@ -43,7 +44,8 @@
 		mute: 'Mute',
 		unmute: 'Unmute',
 		snoozeTitle: 'Snooze until',
-		snoozeConfirm: 'Snooze'
+		snoozeConfirm: 'Snooze',
+		share: 'Share'
 	};
 
 	interface Props {
@@ -59,6 +61,8 @@
 		readInBar?: boolean;
 		/** Deletes the selection forever, after a confirmation; offered only in Spam and Trash. */
 		ondeleteforever?: () => void;
+		/** Shares the thread through the system share sheet; offered when set. */
+		onshare?: () => void;
 	}
 
 	let {
@@ -67,7 +71,8 @@
 		onapply,
 		oncreatelabel,
 		readInBar = false,
-		ondeleteforever
+		ondeleteforever,
+		onshare
 	}: Props = $props();
 
 	let sheet = $state<'more' | 'labels' | 'move' | 'snooze' | 'delete' | null>(null);
@@ -117,7 +122,8 @@
 			label: COPY[toggles.mute.op],
 			icon: toggles.mute.op === 'mute' ? BellOff : Bell,
 			onselect: () => onapply(toggles.mute)
-		}
+		},
+		...(onshare ? [{ label: COPY.share, icon: Share2, onselect: onshare }] : [])
 	]);
 	const close = () => (sheet = null);
 </script>

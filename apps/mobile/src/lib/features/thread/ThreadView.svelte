@@ -18,6 +18,7 @@
 	import { toastStore } from '#lib/stores/toast.svelte.js';
 	import { getUiStore } from '#lib/stores/ui.svelte.js';
 	import { errorMessage, toAppError } from '#lib/utils/errors.js';
+	import { shareContent } from '#lib/utils/share.js';
 	import ExtractionChips from './ExtractionChips.svelte';
 	import MessageList from './MessageList.svelte';
 	import SmartReplies from './SmartReplies.svelte';
@@ -32,6 +33,7 @@
 		threadShortcut,
 		type ThreadShortcut
 	} from './thread-nav.js';
+	import { threadShareContent } from './share.js';
 	import { mayNeedSummary } from './summary.js';
 	import { threadViewState } from './view-state.js';
 
@@ -42,6 +44,9 @@
 	const SCHEDULE_CANCELLED = 'Schedule cancelled. Moved to Drafts.';
 	const ALREADY_SENT = 'Too late to cancel. The message was sent.';
 	const CANCEL_FAILED = "Couldn't cancel the scheduled send";
+	const SHARE_COPIED = 'Copied to the clipboard';
+	const SHARE_UNSUPPORTED = "This browser can't share";
+	const SHARE_FAILED = "Couldn't share this conversation";
 
 	interface Props {
 		threadId: string;
@@ -79,6 +84,20 @@
 	const entry = $derived(threads.get(threadId));
 	const view = $derived(threadViewState(entry));
 	const thread = $derived(entry?.thread ?? null);
+
+	async function share(): Promise<void> {
+		if (!thread) return;
+		try {
+			const result = await shareContent(threadShareContent(thread));
+			if (result === 'copied') toastStore.show({ message: SHARE_COPIED, tone: 'success' });
+			else if (result === 'unsupported') {
+				toastStore.show({ message: SHARE_UNSUPPORTED, tone: 'error' });
+			}
+		} catch (error) {
+			console.error('Share failed', error);
+			toastStore.show({ message: SHARE_FAILED, tone: 'error' });
+		}
+	}
 	// Opening a thread reads it (FR-4.5). Once per open, so "Mark unread" is not undone at once.
 	let markedId: string | null = null;
 	$effect(() => {
@@ -363,6 +382,7 @@
 					onapply={act}
 					oncreatelabel={createLabel}
 					ondeleteforever={deleteForever}
+					onshare={() => void share()}
 					readInBar
 				/>
 			{/if}

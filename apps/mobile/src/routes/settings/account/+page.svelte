@@ -8,6 +8,11 @@
 	import SettingsScreen from '#features/settings/SettingsScreen.svelte';
 	import TextArea from '#features/settings/TextArea.svelte';
 	import VacationForm from '#features/settings/VacationForm.svelte';
+	import {
+		alertPermission,
+		requestAlertPermission,
+		type AlertPermission
+	} from '#lib/utils/notifications.js';
 
 	const COPY = {
 		title: 'Account',
@@ -19,7 +24,7 @@
 		notifications: 'Notifications',
 		newMail: 'New mail',
 		newMailHint: 'Alerts on this device when mail arrives',
-		blocked: 'This browser blocks notifications for Nem Mail, so alerts show inside the app only.',
+		blocked: 'Notifications are blocked for Nem Mail, so alerts show inside the app only.',
 		unsupported: 'This browser has no notifications, so alerts show inside the app only.'
 	};
 
@@ -31,19 +36,15 @@
 	// The draft follows saved settings and saves on change (blur), not on every key.
 	let signature = $derived(settings.signature);
 
-	const hasNotifications = typeof Notification !== 'undefined';
-	let permission = $state<NotificationPermission | 'unsupported'>(
-		hasNotifications ? Notification.permission : 'unsupported'
-	);
+	let permission = $state<AlertPermission>('default');
+	void alertPermission().then((state) => (permission = state));
 
 	const update = (patch: Partial<Settings>) => void editor.update(patch);
 
 	async function setNewMail(isOn: boolean): Promise<void> {
 		update({ notifications: { ...settings.notifications, newMail: isOn } });
-		// Ask only when turned on, so the browser prompt follows a clear user action.
-		if (isOn && hasNotifications && Notification.permission === 'default') {
-			permission = await Notification.requestPermission();
-		}
+		// Ask only when turned on, so the system prompt follows a clear user action.
+		if (isOn && permission === 'default') permission = await requestAlertPermission();
 	}
 </script>
 

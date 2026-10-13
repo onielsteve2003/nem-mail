@@ -11,6 +11,9 @@
 	--nm-safe-bottom: env(safe-area-inset-bottom, 0px);
 	--nm-safe-left: env(safe-area-inset-left, 0px);
 
+	/* Height of an on-screen keyboard the browser overlays (lib/utils/keyboard.ts). */
+	--nm-keyboard-inset: 0px;
+
 	/* Full viewport height that follows mobile browser toolbars. */
 	--nm-viewport-height: 100dvh;
 
