@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Menu from '@lucide/svelte/icons/menu';
+	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import Search from '@lucide/svelte/icons/search';
 	import Avatar from '#components/ui/Avatar.svelte';
 	import Icon from '#components/ui/Icon.svelte';
@@ -7,6 +8,7 @@
 
 	const MENU_LABEL = 'Open menu';
 	const PLACEHOLDER = 'Search in mail';
+	const REFRESH_LABEL = 'Check for new mail';
 	const ACCOUNT_LABEL = (name: string) => `Account: ${name}`;
 
 	interface Props {
@@ -16,11 +18,25 @@
 		accountName: string;
 		onmenu: () => void;
 		onaccount: () => void;
+		/** Reloads the list: the button alternative to pull to refresh. */
+		onrefresh?: () => Promise<void>;
 		/** Slides the bar away (scrolling down). It comes back while it holds focus. */
 		hidden?: boolean;
 	}
 
-	let { searchHref, accountName, onmenu, onaccount, hidden = false }: Props = $props();
+	let { searchHref, accountName, onmenu, onaccount, onrefresh, hidden = false }: Props = $props();
+
+	let refreshing = $state(false);
+
+	async function refresh(): Promise<void> {
+		if (!onrefresh || refreshing) return;
+		refreshing = true;
+		try {
+			await onrefresh();
+		} finally {
+			refreshing = false;
+		}
+	}
 </script>
 
 <header class="bar" class:bar--hidden={hidden}>
@@ -32,6 +48,9 @@
 			<Icon icon={Search} size="md" />
 			<span>{PLACEHOLDER}</span>
 		</a>
+		{#if onrefresh}
+			<IconButton icon={RefreshCw} label={REFRESH_LABEL} loading={refreshing} onclick={refresh} />
+		{/if}
 		<button
 			type="button"
 			class="account"

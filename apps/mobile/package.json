@@ -21,6 +21,7 @@
     "eval:ai": "vitest run src/lib/ai/models -t evaluation"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
     "@capacitor/cli": "8.5.3",
     "@playwright/test": "1.64.0",
     "@sveltejs/adapter-static": "^4.0.0",

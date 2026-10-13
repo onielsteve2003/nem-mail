@@ -109,6 +109,7 @@
 						accountName={session.user?.name ?? ''}
 						onmenu={() => ui.openDrawer()}
 						onaccount={() => ui.openSheet(ACCOUNT_SHEET)}
+						onrefresh={() => listRefresh.run()}
 						hidden={!scrollHide.isVisible}
 					/>
 				{/if}

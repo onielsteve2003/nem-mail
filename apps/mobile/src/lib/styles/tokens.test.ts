@@ -64,6 +64,7 @@ const TEXT_TOKENS = [
 const FILL_PAIRS = [
 	['--nm-color-accent', '--nm-color-on-accent'],
 	['--nm-color-accent-pressed', '--nm-color-on-accent'],
+	['--nm-color-accent-hover', '--nm-color-on-accent'],
 	['--nm-color-danger-fill', '--nm-color-on-danger'],
 	// Avatar fills: violet is only ever a corner blob, never under the initials.
 	['--nm-color-lime', '--nm-color-on-aurora'],

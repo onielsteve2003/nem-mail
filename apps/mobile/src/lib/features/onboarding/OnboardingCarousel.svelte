@@ -38,7 +38,9 @@
 
 <section class="carousel" aria-roledescription="carousel" aria-label={CAROUSEL_LABEL}>
 	<!-- Native scroll snapping gives the swipe, momentum and arrow-key scrolling. -->
-	<div class="track" bind:this={track} {onscroll} tabindex="-1">
+	<!-- A scroll area must take focus so keyboards can scroll it (WCAG 2.1.1). -->
+	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+	<div class="track" bind:this={track} {onscroll} tabindex="0">
 		{#each ONBOARDING_SLIDES as slide, index (slide.id)}
 			<div
 				class="slide"

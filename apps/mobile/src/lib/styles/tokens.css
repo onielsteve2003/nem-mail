@@ -40,7 +40,7 @@
 
 	/* Accent used as a fill with text on top (buttons, selected states). */
 	--nm-color-accent: #7050f5;
-	--nm-color-accent-hover: #7c5cff;
+	--nm-color-accent-hover: #7656fa;
 	--nm-color-accent-pressed: #6243e0;
 	--nm-color-on-accent: #ffffff;
 	--nm-color-accent-soft: rgba(124, 92, 255, 0.16);

@@ -62,7 +62,7 @@
 				class="tabs__tab"
 				aria-selected={category === value}
 				aria-controls={controls}
-				tabindex={category === value ? 0 : -1}
+				tabindex={i === index ? 0 : -1}
 				onclick={() => onchange(category)}
 			>
 				<span>{CATEGORY_TITLES[category]}</span>

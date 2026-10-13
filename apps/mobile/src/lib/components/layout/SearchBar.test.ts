@@ -29,4 +29,17 @@ describe('SearchBar', () => {
 		await rerender({ ...p, hidden: true });
 		expect(screen.getByRole('banner')).toHaveClass('bar--hidden');
 	});
+
+	it('offers a refresh button instead of pulling, busy until it finishes', async () => {
+		let finish = () => {};
+		const onrefresh = vi.fn(() => new Promise<void>((done) => (finish = done)));
+		render(SearchBar, { ...props(), onrefresh });
+
+		const button = screen.getByRole('button', { name: 'Check for new mail' });
+		await fireEvent.click(button);
+		await fireEvent.click(button);
+		expect(onrefresh).toHaveBeenCalledOnce();
+		finish();
+		await vi.waitFor(() => expect(button).not.toHaveClass('btn--loading'));
+	});
 });
