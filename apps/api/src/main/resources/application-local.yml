@@ -1,0 +1,12 @@
+# Local development: run with SPRING_PROFILES_ACTIVE=local against compose.yaml.
+spring:
+  config:
+    # Same .env as docker compose; optional, so the defaults below still work without it.
+    import: optional:file:.env[.properties]
+  datasource:
+    url: jdbc:postgresql://localhost:${DB_PORT:5432}/${DB_NAME:nemmail}
+    username: ${DB_USER:nemmail}
+    password: ${DB_PASSWORD:nemmail}
+  mail:
+    host: localhost
+    port: ${MAIL_PORT:1025}
