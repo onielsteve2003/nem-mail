@@ -1,5 +1,12 @@
 import { detectBackend, type AIBackend } from '../backend.js';
-import { idbModelStore, type ModelStore } from '../model-store.js';
+import {
+	idbEmbeddingStore,
+	idbModelStore,
+	type EmbeddingStore,
+	type ModelStore
+} from '../model-store.js';
+import type { Embed } from '../models/embedder.js';
+import { dot, textHash, type SemanticDoc } from '../models/hybrid.js';
 import type { Category } from '@nem/shared';
 import {
 	classifyCategory,
@@ -92,6 +99,16 @@ export interface AIWorkerApi {
 	 * downloaded. Null for an empty message.
 	 */
 	checkTone(text: string): Promise<ToneVerdict | null>;
+	/**
+	 * Meaning similarity (-1 to 1) of each thread to the query, by thread id (AI-7).
+	 * Vectors are cached per thread and recomputed only when its text changes. Null
+	 * when MiniLM is not downloaded.
+	 */
+	semanticScores(
+		userId: string,
+		query: string,
+		docs: SemanticDoc[]
+	): Promise<Record<string, number> | null>;
 	/** Priority scores (AI-6) from the user's logistic regression model. */
 	scorePriority(userId: string, inputs: PriorityInput[]): Promise<PriorityVerdict[]>;
 	/** Learns from marking important / not important, or from opening a message, and saves. */
@@ -118,6 +135,9 @@ function isNaiveBayes(value: unknown): value is NaiveBayesState {
 const ZERO_SHOT_MODEL = 'mobilebert-mnli';
 const SUMMARY_MODEL = 'distilbart-cnn';
 const SENTIMENT_MODEL = 'distilbert-sst2';
+const EMBEDDING_MODEL = 'minilm';
+/** Texts per embedding call: small batches keep each call short. */
+const EMBED_BATCH = 16;
 
 /** Builds the worker API over the given storage, so tests can run it on the main thread. */
 export function createWorkerApi(
@@ -127,8 +147,10 @@ export function createWorkerApi(
 	store: ModelStore = idbModelStore(),
 	zeroShot?: () => Promise<ZeroShot>,
 	abstractive?: () => Promise<Summarize>,
-	sentiment?: () => Promise<ClassifySentiment>
+	sentiment?: () => Promise<ClassifySentiment>,
+	semantic: { store?: EmbeddingStore; embed?: () => Promise<Embed> } = {}
 ): AIWorkerApi {
+	const embeddings = semantic.store ?? idbEmbeddingStore();
 	let backend: Promise<AIBackend> | undefined;
 	const models = new Map<string, Promise<NaiveBayesState>>();
 	let priority: { userId: string; model: Promise<LogisticModel> } | undefined;
@@ -196,6 +218,12 @@ export function createWorkerApi(
 		if (sentiment) return sentiment();
 		const { sentimentClassifier } = await import('../models/sentiment.js');
 		return sentimentClassifier(model(SENTIMENT_MODEL));
+	}
+	async function embedder(): Promise<Embed | null> {
+		if (!(await isModelCached(model(EMBEDDING_MODEL), env).catch(() => false))) return null;
+		if (semantic.embed) return semantic.embed();
+		const { sentenceEmbedder } = await import('../models/embedder.js');
+		return sentenceEmbedder(model(EMBEDDING_MODEL));
 	}
 	return {
 		backend: () => (backend ??= probe()),
@@ -274,6 +302,36 @@ export function createWorkerApi(
 			// A model that fails to load or run leaves the word list check, never no check.
 			const read = classify ? await classify(text).catch(() => null) : null;
 			return checkTone(text, read);
+		},
+		async semanticScores(userId, query, docs) {
+			const embed = await embedder();
+			if (!embed) return null;
+			const keys = docs.map((doc) => `${userId}:${doc.id}`);
+			const hashes = docs.map((doc) => textHash(doc.text));
+			// A broken cache only costs recomputing; it never stops the search.
+			const cached = await embeddings.getMany(keys).catch(() => keys.map(() => undefined));
+			const vectors = cached.map((entry, i) =>
+				entry && entry.hash === hashes[i] ? entry.vector : undefined
+			);
+			const missing = docs.flatMap((_, i) => (vectors[i] ? [] : [i]));
+			for (let start = 0; start < missing.length; start += EMBED_BATCH) {
+				const batch = missing.slice(start, start + EMBED_BATCH);
+				const fresh = await embed(batch.map((i) => docs[i]?.text ?? ''));
+				batch.forEach((i, j) => (vectors[i] = fresh[j]));
+				await embeddings
+					.putMany(
+						batch.flatMap((i) => {
+							const vector = vectors[i];
+							return vector ? [[keys[i] ?? '', { hash: hashes[i] ?? '', vector }] as const] : [];
+						}) as [string, { hash: string; vector: number[] }][]
+					)
+					.catch(() => {});
+			}
+			const [target] = await embed([query]);
+			if (!target) return {};
+			return Object.fromEntries(
+				docs.map((doc, i) => [doc.id, Math.round(dot(target, vectors[i] ?? []) * 1000) / 1000])
+			);
 		},
 		hasComposeModel: async (userId) => (await composeModel(userId)).isSaved,
 		async learnCompose(userId, texts) {

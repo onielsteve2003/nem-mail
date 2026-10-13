@@ -15,6 +15,7 @@ import type {
 } from '#lib/data/repositories.js';
 import type { AIBackend } from './backend.js';
 import type { CategoryVerdict } from './models/category.js';
+import { hybridRank } from './models/hybrid.js';
 import type { ComposeVerdict } from './models/ngram.js';
 import type { PrioritySignal, PriorityVerdict } from './models/priority-lr.js';
 import type { SmartReplyVerdict } from './models/smart-reply.js';
@@ -36,6 +37,10 @@ export interface AIUser {
 const YOU = 'You';
 /** How many sent conversations smart compose first learns from. */
 const SENT_SAMPLE = 25;
+/** Semantic search looks at up to this many conversations (pages of 100). */
+const CORPUS_PAGES = 5;
+/** The thread list for semantic search is reused this long, so new mail joins soon. */
+const CORPUS_TTL_MS = 60_000;
 const DOWNLOAD_FAILED = 'Download failed. Check your connection and try again.';
 
 /** Where one optional model stands on this device. */
@@ -80,6 +85,7 @@ export class AIService {
 	#connection: Promise<AIWorkerConnection> | undefined;
 	#frequencies: Promise<ReadonlyMap<string, number>> | undefined;
 	#composeTrained: { userId: string; done: Promise<void> } | undefined;
+	#corpus: { userId: string; at: number; threads: Promise<ThreadSummary[]> } | undefined;
 
 	constructor(
 		private readonly settings: SettingsRepository | null = null,
@@ -256,6 +262,48 @@ export class AIService {
 		return api.checkTone(text);
 	}
 
+	/**
+	 * Semantic search (AI-7): ranks conversations by meaning with MiniLM, blended with the
+	 * keyword hits in their order. With `allowNew`, conversations that share no word with
+	 * the query can come in on meaning alone (only for plain text queries, since operator
+	 * filters were applied to the keyword hits only). Null when the feature is off or
+	 * the model is not downloaded, so the caller keeps the keyword results.
+	 */
+	async semanticSearch(
+		userId: string,
+		text: string,
+		keywordHits: readonly ThreadSummary[],
+		allowNew: boolean
+	): Promise<ThreadSummary[] | null> {
+		if (!this.isEnabled('semanticSearch') || !text.trim()) return null;
+		const corpus = allowNew ? await this.#threadsFor(userId) : [];
+		const byId: Record<string, ThreadSummary> = Object.fromEntries(
+			[...corpus, ...keywordHits].map((thread) => [thread.id, thread])
+		);
+		const docs = Object.values(byId).map((thread) => ({
+			id: thread.id,
+			text: `${thread.subject}. ${thread.snippet}`
+		}));
+		const { api } = await this.#worker();
+		const scores = await api.semanticScores(userId, text, docs);
+		if (!scores) return null;
+		return hybridRank(
+			keywordHits.map((thread) => thread.id),
+			scores,
+			allowNew
+		).flatMap((id) => byId[id] ?? []);
+	}
+
+	#threadsFor(userId: string): Promise<ThreadSummary[]> {
+		const now = Date.now();
+		if (this.#corpus?.userId !== userId || now - this.#corpus.at > CORPUS_TTL_MS) {
+			const threads = listAll(this.mail);
+			threads.catch(() => (this.#corpus = undefined));
+			this.#corpus = { userId, at: now, threads };
+		}
+		return this.#corpus.threads;
+	}
+
 	#trainCompose(user: AIUser): Promise<void> {
 		if (this.#composeTrained?.userId !== user.id) {
 			const done = (async () => {
@@ -316,6 +364,7 @@ export class AIService {
 		this.replies = {};
 		this.#frequencies = undefined;
 		this.#composeTrained = undefined;
+		this.#corpus = undefined;
 	}
 
 	async #priorityInputs(user: AIUser, threads: readonly (ThreadSummary | Thread)[]) {
@@ -347,6 +396,20 @@ export class AIService {
 export function spamText(message: Message): string {
 	return `${message.subject}
 ${message.bodyText}`;
+}
+
+/** The latest conversations in All Mail (Spam and Trash left out), for semantic search. */
+async function listAll(mail: MailRepository | null): Promise<ThreadSummary[]> {
+	if (!mail) return [];
+	const threads: ThreadSummary[] = [];
+	let cursor: string | undefined;
+	for (let page = 0; page < CORPUS_PAGES; page++) {
+		const result = await mail.list({ mailbox: 'all' }, { limit: 100, cursor });
+		threads.push(...result.items);
+		if (!result.nextCursor) break;
+		cursor = result.nextCursor;
+	}
+	return threads;
 }
 
 /** Body text of the user's own messages in their latest sent conversations. */
