@@ -4,6 +4,7 @@ import { openDB, type IDBPDatabase } from 'idb';
 export interface ModelStore {
 	get(key: string): Promise<unknown>;
 	put(key: string, value: unknown): Promise<void>;
+	delete(key: string): Promise<void>;
 }
 
 /** A cached sentence embedding and a hash of the text it was computed from. */
@@ -48,7 +49,8 @@ function open(name: string): Promise<IDBPDatabase> {
 export function idbModelStore(name = DB_NAME): ModelStore {
 	return {
 		get: async (key) => (await open(name)).get(STORE, key),
-		put: async (key, value) => void (await (await open(name)).put(STORE, value, key))
+		put: async (key, value) => void (await (await open(name)).put(STORE, value, key)),
+		delete: async (key) => (await open(name)).delete(STORE, key)
 	};
 }
 

@@ -12,7 +12,8 @@ function memoryStore(): ModelStore & { data: Map<string, unknown> } {
 	return {
 		data,
 		get: async (key) => structuredClone(data.get(key)),
-		put: async (key, value) => void data.set(key, structuredClone(value))
+		put: async (key, value) => void data.set(key, structuredClone(value)),
+		delete: async (key) => void data.delete(key)
 	};
 }
 
@@ -41,6 +42,18 @@ function setup(store = memoryStore()) {
 	const connect = async () => ({ api, terminate() {} });
 	return { service: new AIService(null, connect, null, mail), mail, store };
 }
+
+describe('resetting learned models', () => {
+	it("deletes only this user's saved models and retrains from the seed", async () => {
+		const { service, store } = setup();
+		await service.learnCompose('u1', 'Our offsite agenda is attached.');
+		store.data.set('u1:spam', { saved: true });
+		store.data.set('u2:ngram', { other: true });
+		await service.resetLearning('u1');
+		expect([...store.data.keys()]).toEqual(['u2:ngram']);
+		expect((await service.complete(USER, 'Our offsite '))?.value).not.toBe('agenda is attached.');
+	});
+});
 
 describe('smart compose in AIService', () => {
 	it("trains once on the user's own sent mail, then suggests their phrasing", async () => {

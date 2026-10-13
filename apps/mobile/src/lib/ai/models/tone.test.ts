@@ -36,7 +36,7 @@ describe('tone check', () => {
 	it('uses the sentiment model in the worker only when it is downloaded', async () => {
 		const cache = { match: async () => new Response('x') };
 		const env = { caches: { open: async () => cache } } as unknown as StorageEnv;
-		const store = { get: async () => undefined, put: async () => {} };
+		const store = { get: async () => undefined, put: async () => {}, delete: async () => {} };
 		const sentiment = async () => async () => ({ label: 'NEGATIVE' as const, score: 0.99 });
 		const api = createWorkerApi(env, () => [], undefined, store, undefined, undefined, sentiment);
 		expect((await api.checkTone('The numbers are wrong.'))?.source).toBe('model');

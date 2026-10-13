@@ -118,7 +118,11 @@ describe('AIService', () => {
 describe('category zero-shot upgrade', () => {
 	const memory = () => {
 		const saved = new Map<string, unknown>();
-		return { get: async (key: string) => saved.get(key), put: async () => {} };
+		return {
+			get: async (key: string) => saved.get(key),
+			put: async () => {},
+			delete: async () => {}
+		};
 	};
 	const vague = { fromEmail: 'x@y.example', subject: 'Hello', bodyText: 'Zzz qqq.' };
 
@@ -147,7 +151,7 @@ describe('category zero-shot upgrade', () => {
 });
 
 describe('thread summary', () => {
-	const memory = { get: async () => undefined, put: async () => {} };
+	const memory = { get: async () => undefined, put: async () => {}, delete: async () => {} };
 	const messages = [
 		{
 			from: 'Ada',

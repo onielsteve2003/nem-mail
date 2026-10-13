@@ -23,7 +23,8 @@ function memoryStore(): ModelStore & { saved: Map<string, unknown> } {
 	return {
 		saved,
 		get: async (key) => saved.get(key),
-		put: async (key, value) => void saved.set(key, structuredClone(value))
+		put: async (key, value) => void saved.set(key, structuredClone(value)),
+		delete: async (key) => void saved.delete(key)
 	};
 }
 

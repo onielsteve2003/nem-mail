@@ -55,7 +55,7 @@ function setup(threads: Thread[]) {
 	const env = {
 		caches: { open: async () => ({ match: async () => undefined }) }
 	} as never as StorageEnv;
-	const models = { get: async () => undefined, put: async () => {} };
+	const models = { get: async () => undefined, put: async () => {}, delete: async () => {} };
 	const api = createWorkerApi(
 		env,
 		() => [],

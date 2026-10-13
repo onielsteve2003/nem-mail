@@ -74,6 +74,8 @@ export interface AIWorkerApi {
 	/** Downloads a model into the cache; `onProgress` is a Comlink proxy from the page. */
 	download(id: string, onProgress?: (progress: DownloadProgress) => void): Promise<void>;
 	remove(id: string): Promise<void>;
+	/** Forgets what the user's models learned: they start again from the seed training. */
+	resetLearning(userId: string): Promise<void>;
 	/** Spam verdicts for messages, with the user's own spam model (AI-2). */
 	classifySpam(userId: string, messages: PhishingInput[]): Promise<SpamVerdict[]>;
 	/** Learns from "Report spam" / "Not spam" and saves the model. */
@@ -139,6 +141,8 @@ const ZERO_SHOT_MODEL = 'mobilebert-mnli';
 const SUMMARY_MODEL = 'distilbart-cnn';
 const SENTIMENT_MODEL = 'distilbert-sst2';
 const EMBEDDING_MODEL = 'minilm';
+/** Models that learn from the user, saved as `<userId>:<kind>`. */
+const LEARNED = ['spam', 'category', 'priority', 'ngram'] as const;
 /** Texts per embedding call: small batches keep each call short. */
 const EMBED_BATCH = 16;
 
@@ -237,6 +241,13 @@ export function createWorkerApi(
 		},
 		download: (id, onProgress) => downloadModel(model(id), env, onProgress),
 		remove: (id) => deleteModel(model(id), env),
+		async resetLearning(userId) {
+			await Promise.all(LEARNED.map((kind) => store.delete(`${userId}:${kind}`)));
+			models.delete(`${userId}:spam`);
+			models.delete(`${userId}:category`);
+			compose.delete(userId);
+			if (priority?.userId === userId) priority = undefined;
+		},
 		async classifySpam(userId, messages) {
 			const spam = await spamModel(userId);
 			return messages.map((message) => classifySpam(spam, message));

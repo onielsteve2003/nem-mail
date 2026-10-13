@@ -2,6 +2,7 @@
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
 	import Hand from '@lucide/svelte/icons/hand';
+	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import Tag from '@lucide/svelte/icons/tag';
 	import { resolve } from '$app/paths';
 	import Icon from '#components/ui/Icon.svelte';
@@ -22,6 +23,12 @@
 			subtitle: 'What swiping a conversation left or right does',
 			icon: Hand,
 			href: resolve('/settings/swipe')
+		},
+		{
+			title: 'AI features',
+			subtitle: 'Turn features on or off, manage on-device models',
+			icon: Sparkles,
+			href: resolve('/settings/ai')
 		},
 		{
 			title: 'Labels',

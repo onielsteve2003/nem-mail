@@ -24,6 +24,7 @@ export function connectWorker(): AIWorkerConnection {
 			// Callbacks cannot be cloned to a worker; a Comlink proxy calls back across.
 			download: (id, onProgress) => remote.download(id, onProgress && proxy(onProgress)),
 			remove: (id) => remote.remove(id),
+			resetLearning: (userId) => remote.resetLearning(userId),
 			classifySpam: (userId, messages) => remote.classifySpam(userId, messages),
 			learnSpam: (userId, texts, isSpam) => remote.learnSpam(userId, texts, isSpam),
 			classifyCategory: (userId, messages) => remote.classifyCategory(userId, messages),

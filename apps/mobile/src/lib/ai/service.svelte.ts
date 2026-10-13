@@ -191,6 +191,16 @@ export class AIService {
 	}
 
 	/**
+	 * Resets the user's learned models (spam, categories, priority, smart compose) to
+	 * their seed training and forgets every verdict made with them.
+	 */
+	async resetLearning(userId: string): Promise<void> {
+		const { api } = await this.#worker();
+		await api.resetLearning(userId);
+		this.clearInsights();
+	}
+
+	/**
 	 * Classifies a message with the user's spam model and remembers the verdict.
 	 * Null when the user turned spam detection off. Throws when the worker fails.
 	 */

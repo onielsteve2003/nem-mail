@@ -30,7 +30,7 @@ function setup(isCached = true) {
 	const env = { caches: { open: async () => cache } } as unknown as StorageEnv;
 	const store = memoryEmbeddings();
 	const embed = vi.fn(async (texts: string[]) => texts.map(toyEmbed));
-	const models = { get: async () => undefined, put: async () => {} };
+	const models = { get: async () => undefined, put: async () => {}, delete: async () => {} };
 	const api = createWorkerApi(env, () => [], undefined, models, undefined, undefined, undefined, {
 		store,
 		embed: async () => embed
