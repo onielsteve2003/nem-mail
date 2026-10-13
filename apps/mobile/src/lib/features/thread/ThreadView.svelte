@@ -7,6 +7,7 @@
 	import ThreadActions from '#components/ui/ThreadActions.svelte';
 	import { getAIService } from '#lib/ai/service.svelte.js';
 	import { IMPORTANT_THRESHOLD } from '#lib/ai/models/priority-lr.js';
+	import type { SmartReplyVerdict } from '#lib/ai/models/smart-reply.js';
 	import type { SpamVerdict } from '#lib/ai/models/spam-nb.js';
 	import type { SummaryVerdict } from '#lib/ai/models/textrank.js';
 	import { getRepositories } from '#lib/data/provider.js';
@@ -17,6 +18,7 @@
 	import { getUiStore } from '#lib/stores/ui.svelte.js';
 	import { errorMessage, toAppError } from '#lib/utils/errors.js';
 	import MessageList from './MessageList.svelte';
+	import SmartReplies from './SmartReplies.svelte';
 	import SpamBanner from './SpamBanner.svelte';
 	import SummaryCard from './SummaryCard.svelte';
 	import ThreadHeader from './ThreadHeader.svelte';
@@ -181,6 +183,32 @@
 			(isSummaryLoading ? mayNeedSummary(thread) : !!summary.verdict || summary.error)
 	);
 
+	// AI-4: smart replies to the latest message, when someone else sent it (not in Spam).
+	const replyTo = $derived.by(() => {
+		const last = thread?.messages.at(-1);
+		const self = session.user?.email.toLowerCase();
+		if (!last || spamMessage || last.status !== 'sent' || !ai.isEnabled('smartReply')) return null;
+		return last.from.email.toLowerCase() === self ? null : last;
+	});
+	let replies = $state<{ id: string; verdict: SmartReplyVerdict | null }>({
+		id: '',
+		verdict: null
+	});
+	$effect(() => {
+		const message = replyTo;
+		if (!message) return;
+		untrack(() => {
+			replies = { id: message.id, verdict: null };
+			ai.smartReplies(message, session.user?.email ?? '').then(
+				(verdict) => {
+					if (replies.id === message.id) replies.verdict = verdict;
+				},
+				// Chips are optional: without them the Reply button still works.
+				(error: unknown) => console.error('Smart replies failed', error)
+			);
+		});
+	});
+
 	function act(op: ThreadOp | ThreadOp[]): void {
 		if (!thread) return;
 		const ops = Array.isArray(op) ? op : [op];
@@ -341,6 +369,19 @@
 				oncancelsend={(message) => void cancelSend(message)}
 			/>
 		{/key}
+		{#if replyTo && replies.id === replyTo.id && replies.verdict}
+			<SmartReplies
+				verdict={replies.verdict}
+				onpick={(text) =>
+					replyTo &&
+					ui.openCompose({
+						mode: 'reply',
+						threadId: replyTo.threadId,
+						messageId: replyTo.id,
+						replyText: text
+					})}
+			/>
+		{/if}
 	{:else if view === 'loading'}
 		<div class="thread__skeleton" role="status" aria-label={LOADING}>
 			<Skeleton width="70%" height="var(--nm-space-6)" />

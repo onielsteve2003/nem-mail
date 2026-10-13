@@ -99,4 +99,10 @@ describe('prefill', () => {
 		);
 		expect(result.bodyHtml).toMatch(/<br>Ship it$/);
 	});
+
+	it('starts a reply with a smart reply above the signature', () => {
+		const result = prefill('reply', message(), ME, 'Me', 'Sounds good & see you then!');
+		expect(result.bodyHtml.startsWith('<div>Sounds good &amp; see you then!</div>')).toBe(true);
+		expect(result.bodyHtml.indexOf('Sounds good')).toBeLessThan(result.bodyHtml.indexOf('Me'));
+	});
 });

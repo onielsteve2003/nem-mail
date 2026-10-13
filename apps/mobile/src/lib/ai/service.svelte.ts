@@ -12,6 +12,7 @@ import type { ContactRepository, SettingsRepository } from '#lib/data/repositori
 import type { AIBackend } from './backend.js';
 import type { CategoryVerdict } from './models/category.js';
 import type { PrioritySignal, PriorityVerdict } from './models/priority-lr.js';
+import type { SmartReplyVerdict } from './models/smart-reply.js';
 import type { SpamVerdict } from './models/spam-nb.js';
 import type { SummaryVerdict } from './models/textrank.js';
 import { priorityInput, senderFrequencies } from './priority-input.js';
@@ -63,6 +64,8 @@ export class AIService {
 	categories = $state<Record<string, CategoryVerdict>>({});
 	/** Thread summaries by thread id, with the message count they cover (AI-3). */
 	summaries = $state<Record<string, { count: number; verdict: SummaryVerdict | null }>>({});
+	/** Smart replies by the id of the message they answer (AI-4). */
+	replies = $state<Record<string, SmartReplyVerdict | null>>({});
 	/** Priority scores by thread id (AI-6). */
 	priority = $state<Record<string, PriorityVerdict>>({});
 
@@ -196,6 +199,25 @@ export class AIService {
 	}
 
 	/**
+	 * Three short replies to a message (AI-4). Null when the user turned smart replies
+	 * off, the message is the user's own, or nobody replies to it (no-reply, bulk).
+	 */
+	async smartReplies(message: Message, selfEmail: string): Promise<SmartReplyVerdict | null> {
+		if (!this.isEnabled('smartReply')) return null;
+		if (message.from.email.toLowerCase() === selfEmail.toLowerCase()) return null;
+		if (message.id in this.replies) return this.replies[message.id] ?? null;
+		const { api } = await this.#worker();
+		const verdict = await api.smartReplies({
+			fromName: message.from.name ?? '',
+			fromEmail: message.from.email,
+			subject: message.subject,
+			text: message.bodyText
+		});
+		this.replies[message.id] = verdict;
+		return verdict;
+	}
+
+	/**
 	 * Scores threads for the priority inbox (AI-6) and remembers the scores by thread id.
 	 * Already-scored threads are skipped. Null when the user turned priority off.
 	 */
@@ -238,6 +260,7 @@ export class AIService {
 		this.categories = {};
 		this.priority = {};
 		this.summaries = {};
+		this.replies = {};
 		this.#frequencies = undefined;
 	}
 

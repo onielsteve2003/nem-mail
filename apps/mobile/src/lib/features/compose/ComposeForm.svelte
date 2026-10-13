@@ -271,7 +271,12 @@
 	 * subject and quote (FR-5.1). Only empty fields are filled, so nothing the
 	 * user typed while settings loaded is lost. Returns what it filled in.
 	 */
-	async function start({ mode, threadId, messageId }: ComposeRequest): Promise<DraftFields> {
+	async function start({
+		mode,
+		threadId,
+		messageId,
+		replyText
+	}: ComposeRequest): Promise<DraftFields> {
 		// No signature is better than a broken compose; the user can still write.
 		const signature = await repos.settings
 			.get()
@@ -288,7 +293,7 @@
 			if (!bodyHtml) bodyHtml = blank.bodyHtml;
 			return blank;
 		}
-		const fill = prefill(mode, message, session.user?.email, signature);
+		const fill = prefill(mode, message, session.user?.email, signature, replyText);
 		const filled = {
 			...EMPTY_FIELDS,
 			to: fromAddresses(fill.to),

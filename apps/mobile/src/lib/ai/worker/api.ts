@@ -31,6 +31,7 @@ import {
 	type PriorityVerdict
 } from '../models/priority-lr.js';
 import { findModel } from '../registry.js';
+import { suggestReplies, type ReplyInput, type SmartReplyVerdict } from '../models/smart-reply.js';
 import type { Summarize } from '../models/summarizer.js';
 import {
 	ownText,
@@ -68,6 +69,8 @@ export interface AIWorkerApi {
 	 * it is downloaded. Null for threads too short to need one.
 	 */
 	summarize(messages: SummaryMessage[]): Promise<SummaryVerdict | null>;
+	/** Three short replies to a message (AI-4); null for mail nobody replies to. */
+	smartReplies(input: ReplyInput): Promise<SmartReplyVerdict | null>;
 	/** Priority scores (AI-6) from the user's logistic regression model. */
 	scorePriority(userId: string, inputs: PriorityInput[]): Promise<PriorityVerdict[]>;
 	/** Learns from marking important / not important, or from opening a message, and saves. */
@@ -216,6 +219,7 @@ export function createWorkerApi(
 					'DistilBART wrote this summary on this device. Action items are sentences that ask for something.'
 			};
 		},
+		smartReplies: async (input) => suggestReplies(input),
 		async scorePriority(userId, inputs) {
 			const model = await priorityModel(userId);
 			return inputs.map((input) => scorePriority(model, input));

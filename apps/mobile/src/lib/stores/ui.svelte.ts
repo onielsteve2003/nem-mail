@@ -12,6 +12,8 @@ export interface ComposeRequest {
 	/** The message being replied to or forwarded. */
 	messageId: string | null;
 	draftId?: string;
+	/** Text to start a reply with, e.g. a tapped smart reply (AI-4). */
+	replyText?: string;
 }
 
 /** The rect compose grows from (a plain copy of a DOMRect). */

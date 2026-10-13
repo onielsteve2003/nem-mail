@@ -95,13 +95,18 @@ export function prefill(
 	mode: Exclude<ComposeMode, 'new'>,
 	message: Message,
 	selfEmail: string | undefined,
-	signature: string
+	signature: string,
+	/** Starts the reply with this text (a smart reply), above the signature. */
+	replyText = ''
 ): Prefill {
 	const recipients =
 		mode === 'forward' ? { to: [], cc: [] } : replyRecipients(mode, message, selfEmail);
 	return {
 		...recipients,
 		subject: mode === 'forward' ? forwardSubject(message.subject) : replySubject(message.subject),
-		bodyHtml: EMPTY_LINES + signatureHtml(signature) + quoteHtml(mode, message)
+		bodyHtml:
+			(replyText ? `<div>${textToHtml(replyText)}</div><div><br></div>` : EMPTY_LINES) +
+			signatureHtml(signature) +
+			quoteHtml(mode, message)
 	};
 }
