@@ -75,7 +75,7 @@ describe('connectWorker', () => {
 
 		const connection = connectWorker();
 		expect(Worker).toHaveBeenCalledOnce();
-		expect(Worker.mock.calls[0]![1]).toEqual({ type: 'module', name: 'nem-ai' });
+		expect(Worker).toHaveBeenCalledWith(expect.any(URL), { type: 'module', name: 'nem-ai' });
 		expect(await connection.api.backend()).toBe('remote');
 
 		connection.terminate();
