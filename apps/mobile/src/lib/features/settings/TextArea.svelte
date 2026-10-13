@@ -41,7 +41,7 @@
 		color: var(--nm-color-text);
 		/* 16px or more stops iOS Safari zooming in on focus. */
 		font: inherit;
-		font-size: max(1rem, var(--nm-text-body));
+		font-size: var(--nm-text-field);
 		resize: vertical;
 		outline: none;
 		transition: border-color var(--nm-duration-fast) var(--nm-ease-standard);

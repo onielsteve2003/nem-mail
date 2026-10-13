@@ -31,6 +31,8 @@ html {
 	text-size-adjust: 100%;
 	-webkit-tap-highlight-color: transparent;
 	scrollbar-color: var(--nm-color-border-strong) transparent;
+	/* The app never rubber-bands or pulls to refresh as a whole page; lists scroll on their own. */
+	overscroll-behavior: none;
 }
 
 body {
@@ -226,4 +228,27 @@ a {
 		transition-duration: 0.01ms !important;
 		scroll-behavior: auto !important;
 	}
+}
+
+/* Fields never drop under 16px, so iOS Safari does not zoom in on focus (components set it too). */
+input:not([type='checkbox'], [type='radio'], [type='range'], [type='file']),
+textarea,
+select {
+	font-size: var(--nm-text-field);
+}
+
+/*
+ * Installed from the home screen or as the native app (lib/utils/display-mode.ts): the app
+ * chrome acts like native UI, so a long press never selects labels or opens a link callout.
+ * Fields and mail content stay selectable.
+ */
+:root:is([data-display-mode='standalone'], [data-display-mode='native']) body {
+	-webkit-user-select: none;
+	user-select: none;
+	-webkit-touch-callout: none;
+}
+:root[data-display-mode] :is(input, textarea, [contenteditable='true'], .nm-selectable) {
+	-webkit-user-select: text;
+	user-select: text;
+	-webkit-touch-callout: default;
 }

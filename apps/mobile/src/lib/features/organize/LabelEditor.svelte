@@ -199,6 +199,7 @@
 		background: var(--nm-color-surface-1);
 		color: var(--nm-color-text);
 		font-family: inherit;
+		font-size: var(--nm-text-field);
 	}
 	.editor__select:focus-visible {
 		outline: 2px solid var(--nm-color-focus);

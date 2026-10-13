@@ -360,6 +360,7 @@
 		background: var(--nm-color-surface-1);
 		color: var(--nm-color-text);
 		font: inherit;
+		font-size: var(--nm-text-field);
 	}
 	.link__input:focus-visible {
 		outline: 2px solid var(--nm-color-focus);

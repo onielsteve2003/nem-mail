@@ -46,9 +46,12 @@
 			<Button variant="ghost" size="sm" onclick={() => (showImages = true)}>{SHOW_IMAGES}</Button>
 		</div>
 	{/if}
-	<div class={['html', { 'html--paper': safe.hasOwnColors }]} {@attach render}></div>
+	<div
+		class={['html', 'nm-selectable', { 'html--paper': safe.hasOwnColors }]}
+		{@attach render}
+	></div>
 {:else}
-	<div class="text">{text}</div>
+	<div class="text nm-selectable">{text}</div>
 {/if}
 
 <style>

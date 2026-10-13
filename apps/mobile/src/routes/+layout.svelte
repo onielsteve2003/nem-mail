@@ -23,6 +23,7 @@
 	import { ThemeStore, setThemeStore } from '#lib/stores/theme.svelte.js';
 	import { exitApp, listenBackButton } from '#lib/utils/back-button.js';
 	import { errorMessage } from '#lib/utils/errors.js';
+	import { displayMode } from '#lib/utils/display-mode.js';
 	import { guardRedirect } from '#lib/utils/guard.js';
 	import { watchKeyboard } from '#lib/utils/keyboard.js';
 	import { backAction, navDirection, type NavDirection } from '#lib/utils/navigation.js';
@@ -36,6 +37,8 @@
 	let { children }: LayoutProps = $props();
 
 	setupIonic();
+	// Installed and native modes get native-feeling touch behavior (global.css).
+	document.documentElement.dataset['displayMode'] = displayMode();
 
 	const theme = setThemeStore(new ThemeStore());
 	$effect(() => theme.watchSystem());

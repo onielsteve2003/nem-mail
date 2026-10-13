@@ -221,7 +221,7 @@
 		background: transparent;
 		color: var(--nm-color-text);
 		font: inherit;
-		font-size: var(--nm-text-body);
+		font-size: var(--nm-text-field);
 		outline: none;
 	}
 	.recipients:focus-within {

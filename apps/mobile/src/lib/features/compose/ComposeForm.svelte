@@ -514,6 +514,7 @@ ${ownBodyText(bodyHtml)}`;
 		background: transparent;
 		color: var(--nm-color-text);
 		font-family: inherit;
+		font-size: var(--nm-text-field);
 		outline: none;
 	}
 </style>

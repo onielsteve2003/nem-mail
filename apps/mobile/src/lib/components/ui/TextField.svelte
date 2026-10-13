@@ -97,7 +97,7 @@
 		color: var(--nm-color-text);
 		/* 16px or more stops iOS Safari zooming in on focus. */
 		font: inherit;
-		font-size: max(1rem, var(--nm-text-body));
+		font-size: var(--nm-text-field);
 		outline: none;
 	}
 	/* The container shows focus, so the global ring would double up on the bare input. */
