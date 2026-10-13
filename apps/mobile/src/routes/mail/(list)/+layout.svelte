@@ -7,13 +7,12 @@
 	import AiOrb from '#components/layout/AiOrb.svelte';
 	import Fab from '#components/layout/Fab.svelte';
 	import ReadingPane from '#components/layout/ReadingPane.svelte';
-	import AssistantSheet from '#features/ai/AssistantSheet.svelte';
 	import SearchBar from '#components/layout/SearchBar.svelte';
 	import { ListRefresh, setListRefresh } from '#features/mail-list/refresh.js';
-	import ThreadView from '#features/thread/ThreadView.svelte';
 	import { getSelectionStore } from '#lib/stores/selection.svelte.js';
 	import { getSessionStore } from '#lib/stores/session.svelte.js';
 	import { getUiStore } from '#lib/stores/ui.svelte.js';
+	import { lazy } from '#lib/utils/lazy.js';
 	import { TWO_PANE_QUERY, readingThreadId, withReadingThread } from '#lib/utils/reading-pane.js';
 	import { SCROLL_HIDE_INITIAL, nextScrollHide } from '#lib/utils/scroll-hide.js';
 	import type { LayoutProps } from './$types';
@@ -36,6 +35,19 @@
 	let isAtTop = $state(true);
 	let shell = $state<HTMLDivElement>();
 
+	// Off the first load (T12.7): the assistant is fetched when idle, the reading
+	// pane's thread view when a thread opens in two-pane mode.
+	const assistant = lazy(() => import('#features/ai/AssistantSheet.svelte'));
+	const threadView = lazy(() => import('#features/thread/ThreadView.svelte'));
+	let AssistantSheet = $state<typeof import('#features/ai/AssistantSheet.svelte').default>();
+	let ThreadView = $state<typeof import('#features/thread/ThreadView.svelte').default>();
+	const assistantLoaded = (m: typeof import('#features/ai/AssistantSheet.svelte')) =>
+		(AssistantSheet = m.default);
+	$effect(() => assistant.whenIdle(assistantLoaded));
+	$effect(() => {
+		if (ui.isSheetOpen(ASSISTANT_SHEET)) assistant.get().then(assistantLoaded, () => {});
+	});
+
 	// Pull to refresh: the visible list registers what a pull reloads.
 	const listRefresh = new ListRefresh();
 	setListRefresh(listRefresh);
@@ -51,6 +63,13 @@
 	// Two panes at >= 900px: the list plus a reading pane driven by ?thread=.
 	const twoPane = new MediaQuery(TWO_PANE_QUERY, false);
 	const threadId = $derived(readingThreadId(page.url));
+	$effect(() => {
+		if (twoPane.current && threadId && !ThreadView)
+			threadView.get().then(
+				(m) => (ThreadView = m.default),
+				() => {}
+			);
+	});
 	// Narrowing the window with a thread open shows that thread full screen.
 	$effect(() => {
 		if (twoPane.current || !threadId) return;
@@ -81,7 +100,7 @@
 </script>
 
 {#snippet openThread()}
-	{#if threadId}
+	{#if threadId && ThreadView}
 		<ThreadView
 			{threadId}
 			variant="close"
@@ -133,16 +152,18 @@
 	{/if}
 </div>
 <AccountSheet open={ui.isSheetOpen(ACCOUNT_SHEET)} onclose={() => ui.closeSheet(ACCOUNT_SHEET)} />
-<AssistantSheet
-	open={ui.isSheetOpen(ASSISTANT_SHEET)}
-	onclose={() => ui.closeSheet(ASSISTANT_SHEET)}
-	openThreadId={twoPane.current ? threadId : null}
-	threadHref={(id) =>
-		twoPane.current
-			? withReadingThread(page.url, id)
-			: resolve('/mail/thread/[threadId]', { threadId: id })}
-	onthinking={(value) => (isAssistantThinking = value)}
-/>
+{#if AssistantSheet}
+	<AssistantSheet
+		open={ui.isSheetOpen(ASSISTANT_SHEET)}
+		onclose={() => ui.closeSheet(ASSISTANT_SHEET)}
+		openThreadId={twoPane.current ? threadId : null}
+		threadHref={(id) =>
+			twoPane.current
+				? withReadingThread(page.url, id)
+				: resolve('/mail/thread/[threadId]', { threadId: id })}
+		onthinking={(value) => (isAssistantThinking = value)}
+	/>
+{/if}
 
 <style>
 	@media (min-width: 900px) {

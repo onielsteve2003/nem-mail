@@ -2,7 +2,7 @@
 	import { morph } from '#lib/motion/index.js';
 	import { COMPOSE_SHEET, getUiStore } from '#lib/stores/ui.svelte.js';
 	import { overlay } from '#lib/utils/overlay.js';
-	import ComposeForm from './ComposeForm.svelte';
+	import { lazy } from '#lib/utils/lazy.js';
 
 	const ui = getUiStore();
 	const id = $props.id();
@@ -10,6 +10,16 @@
 	const isOpen = $derived(ui.isSheetOpen(COMPOSE_SHEET));
 	// Kept for the exit, so compose shrinks back into the button it came from.
 	const origin = $derived(ui.composeOrigin);
+
+	// The form (editor, DOMPurify, recipients) stays out of the first load; it is
+	// fetched when idle, or at once if compose opens first.
+	const form = lazy(() => import('./ComposeForm.svelte'));
+	let ComposeForm = $state<typeof import('./ComposeForm.svelte').default>();
+	const loaded = (m: typeof import('./ComposeForm.svelte')) => (ComposeForm = m.default);
+	$effect(() => form.whenIdle(loaded));
+	$effect(() => {
+		if (isOpen && !ComposeForm) form.get().then(loaded, () => ui.closeCompose());
+	});
 </script>
 
 {#if isOpen}
@@ -24,11 +34,13 @@
 			transition:morph={{ origin }}
 			use:overlay={{ onescape: () => ui.closeCompose() }}
 		>
-			<ComposeForm
-				request={ui.composeRequest}
-				titleId="{id}-title"
-				onclose={() => ui.closeCompose()}
-			/>
+			{#if ComposeForm}
+				<ComposeForm
+					request={ui.composeRequest}
+					titleId="{id}-title"
+					onclose={() => ui.closeCompose()}
+				/>
+			{/if}
 		</div>
 	</div>
 {/if}

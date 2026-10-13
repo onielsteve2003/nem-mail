@@ -33,7 +33,7 @@ test('F4 read: open an unread thread, it is marked read, j moves to the next thr
 		await expect(page).toHaveURL(new RegExp(`${nextHref}$`));
 	}
 
-	await page.getByRole('button', { name: 'Back' }).click();
+	await page.getByRole('button', { name: 'Back', exact: true }).click();
 	await expect(page).toHaveURL(/\/mail\/inbox$/);
 	await expect(page.locator(`.row:has(.row__link[href$="${href}"])`)).not.toHaveClass(
 		/row--unread/
