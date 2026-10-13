@@ -18,6 +18,14 @@ import type { CategoryVerdict } from './models/category.js';
 import { hybridRank } from './models/hybrid.js';
 import type { ExtractionVerdict } from './models/extract.js';
 import type { ComposeVerdict } from './models/ngram.js';
+import {
+	FOLLOW_UP_DAYS,
+	FOLLOW_UP_MAX_DAYS,
+	followUpNudge,
+	unsubscribeSuggestions,
+	type FollowUpVerdict,
+	type UnsubscribeVerdict
+} from './models/nudges.js';
 import type { PrioritySignal, PriorityVerdict } from './models/priority-lr.js';
 import type { SmartReplyVerdict } from './models/smart-reply.js';
 import type { SpamVerdict } from './models/spam-nb.js';
@@ -42,7 +50,16 @@ const SENT_SAMPLE = 25;
 const CORPUS_PAGES = 5;
 /** The thread list for semantic search is reused this long, so new mail joins soon. */
 const CORPUS_TTL_MS = 60_000;
+/** Sent conversations checked for follow-up nudges. */
+const SENT_NUDGE_PAGE = 50;
+const DAY_MS = 86_400_000;
 const DOWNLOAD_FAILED = 'Download failed. Check your connection and try again.';
+
+/** Inbox rows from the assistant (AI-9, AI-12); a feature that is off gives none. */
+export interface InboxNudges {
+	followUps: FollowUpVerdict[];
+	unsubscribe: UnsubscribeVerdict[];
+}
 
 /** Where one optional model stands on this device. */
 export interface ModelState {
@@ -312,6 +329,35 @@ export class AIService {
 			scores,
 			allowNew
 		).flatMap((id) => byId[id] ?? []);
+	}
+
+	/**
+	 * Follow-up nudges for the user's unanswered questions and unsubscribe suggestions
+	 * for newsletters they rarely open, newest nudge first. Plain rules over a few dozen
+	 * threads, so they run here rather than in the worker. Throws when mail fails to load.
+	 */
+	async inboxNudges(user: AIUser, now = Date.now()): Promise<InboxNudges> {
+		const [followUps, unsubscribe] = await Promise.all([
+			this.isEnabled('followUp') ? this.#followUps(user, now) : [],
+			this.isEnabled('unsubscribe')
+				? this.#threadsFor(user.id).then((threads) =>
+						unsubscribeSuggestions(threads, user.email, now)
+					)
+				: []
+		]);
+		return { followUps, unsubscribe };
+	}
+
+	async #followUps(user: AIUser, now: number): Promise<FollowUpVerdict[]> {
+		const mail = this.mail;
+		if (!mail) return [];
+		const page = await mail.list({ mailbox: 'sent' }, { limit: SENT_NUDGE_PAGE });
+		const due = page.items.filter((thread) => {
+			const age = now - Date.parse(thread.lastMessageAt);
+			return age >= FOLLOW_UP_DAYS * DAY_MS && age <= (FOLLOW_UP_MAX_DAYS + 1) * DAY_MS;
+		});
+		const threads = await Promise.all(due.map((thread) => mail.get(thread.id)));
+		return threads.flatMap((thread) => followUpNudge(thread, user.email, now) ?? []);
 	}
 
 	#threadsFor(userId: string): Promise<ThreadSummary[]> {

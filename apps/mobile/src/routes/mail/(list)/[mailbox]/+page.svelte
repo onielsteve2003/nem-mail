@@ -9,6 +9,7 @@
 	import PurgeBanner from '#lib/features/mail-list/PurgeBanner.svelte';
 	import { CATEGORY_TITLES } from '#lib/features/mail-list/categories.js';
 	import MailList from '#lib/features/mail-list/MailList.svelte';
+	import NudgeRows from '#lib/features/mail-list/NudgeRows.svelte';
 	import type { ListSort } from '#lib/features/mail-list/priority.js';
 	import { getMailboxStore, listKey } from '#lib/stores/mailbox.svelte.js';
 	import type { PageProps } from './$types';
@@ -73,6 +74,7 @@
 					<SegmentedControl label={SORT_LABEL} options={SORTS} bind:value={sort} class="sort" />
 					{#if category === 'primary'}
 						<CategoryBundles {counts} onopen={(next) => (category = next)} />
+						<NudgeRows />
 					{/if}
 				{:else if purgeMailbox}
 					<PurgeBanner
