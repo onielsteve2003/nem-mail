@@ -224,9 +224,6 @@
 		font-size: var(--nm-text-field);
 		outline: none;
 	}
-	.recipients:focus-within {
-		box-shadow: inset 0 -2px 0 var(--nm-color-focus);
-	}
 	.recipients :global(.recipient--invalid) {
 		border-color: var(--nm-color-danger);
 		color: var(--nm-color-danger);

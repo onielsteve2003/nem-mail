@@ -67,7 +67,6 @@
 	}
 	.search:focus-within {
 		border-color: var(--nm-color-accent-text);
-		box-shadow: 0 0 0 1px var(--nm-color-accent-text);
 	}
 	.search--disabled {
 		opacity: 0.45;

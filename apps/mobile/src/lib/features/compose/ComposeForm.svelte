@@ -499,9 +499,6 @@ ${ownBodyText(bodyHtml)}`;
 		padding: var(--nm-space-1) var(--nm-space-4);
 		border-block-end: 1px solid var(--nm-color-border);
 	}
-	.form__subject:focus-within {
-		box-shadow: inset 0 -2px 0 var(--nm-color-focus);
-	}
 	.form__label {
 		color: var(--nm-color-text-muted);
 	}

@@ -48,7 +48,6 @@
 	}
 	textarea:focus-visible {
 		border-color: var(--nm-color-accent-text);
-		box-shadow: 0 0 0 1px var(--nm-color-accent-text);
 	}
 	textarea:disabled {
 		opacity: 0.45;

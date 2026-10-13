@@ -202,8 +202,7 @@
 		font-size: var(--nm-text-field);
 	}
 	.editor__select:focus-visible {
-		outline: 2px solid var(--nm-color-focus);
-		outline-offset: 2px;
+		border-color: var(--nm-color-accent-text);
 	}
 	.editor__select:disabled {
 		color: var(--nm-color-text-subtle);

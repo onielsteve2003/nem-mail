@@ -125,6 +125,19 @@ a {
 	border-radius: var(--nm-radius-xs);
 }
 
+/*
+ * Text fields match :focus-visible on every tap, so the ring would box them while typing.
+ * The caret shows where focus is; boxed fields tint their own border instead.
+ */
+:is(
+	input:not([type='checkbox'], [type='radio'], [type='range'], [type='file']),
+	textarea,
+	select,
+	[contenteditable='true']
+):focus-visible {
+	box-shadow: none;
+}
+
 ::selection {
 	background: var(--nm-color-selection);
 	color: var(--nm-color-text);

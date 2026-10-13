@@ -363,8 +363,7 @@
 		font-size: var(--nm-text-field);
 	}
 	.link__input:focus-visible {
-		outline: 2px solid var(--nm-color-focus);
-		outline-offset: 1px;
+		border-color: var(--nm-color-accent-text);
 	}
 	.link__error {
 		flex-basis: 100%;

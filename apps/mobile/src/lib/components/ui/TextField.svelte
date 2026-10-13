@@ -78,7 +78,6 @@
 	}
 	.field__control:focus-within {
 		border-color: var(--nm-color-accent-text);
-		box-shadow: 0 0 0 1px var(--nm-color-accent-text);
 	}
 	.field--invalid .field__control {
 		border-color: var(--nm-color-danger);
