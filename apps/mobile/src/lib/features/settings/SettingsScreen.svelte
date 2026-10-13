@@ -41,9 +41,12 @@
 </main>
 
 <style>
+	/* ion-app clips the page, so the screen scrolls itself (like the mail list shell). */
 	.screen {
-		min-block-size: var(--nm-viewport-height);
-		padding-block: var(--nm-safe-top) var(--nm-safe-bottom);
+		block-size: var(--nm-viewport-height);
+		overflow-y: auto;
+		overscroll-behavior-y: contain;
+		padding-block: var(--nm-safe-top) calc(var(--nm-safe-bottom) + var(--nm-space-6));
 		padding-inline: var(--nm-safe-left) var(--nm-safe-right);
 	}
 	.screen__head {
