@@ -9,6 +9,9 @@ import app.nemmail.api.support.TestcontainersConfiguration;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -166,11 +169,12 @@ class ApiInfrastructureTest {
   void rateLimitsEachClientIpWithA429Envelope() {
     // Tomcat trusts X-Forwarded-For from localhost, as it will from Render's proxy.
     String ip = "203.0.113.7";
-    for (int i = 0; i < 120; i++) {
-      assertThat(ping(ip).getStatusCode().value()).isEqualTo(200);
-    }
-    ResponseEntity<String> limited = ping(ip);
+    List<ResponseEntity<String>> responses = untilLimited(() -> ping(ip), 200);
+    ResponseEntity<String> limited = responses.getLast();
 
+    assertThat(responses.subList(0, 120)).allMatch(r -> r.getStatusCode().value() == 200);
+    // The bucket refills greedily (two tokens a second), so a slow runner gets a few more in.
+    assertThat(responses).hasSizeBetween(121, 141);
     assertThat(limited.getStatusCode().value()).isEqualTo(429);
     assertThat(limited.getHeaders().getFirst("Retry-After")).isNotBlank();
     assertThat(limited.getBody()).contains("\"code\":\"RATE_LIMITED\"");
@@ -180,11 +184,12 @@ class ApiInfrastructureTest {
   @Test
   void signInAndSignUpHaveAStricterLimitOfTheirOwn() {
     String ip = "203.0.113.20";
-    for (int i = 0; i < 10; i++) {
-      assertThat(signIn(ip).getStatusCode().value()).isEqualTo(401);
-    }
-    ResponseEntity<String> limited = signIn(ip);
+    List<ResponseEntity<String>> responses = untilLimited(() -> signIn(ip), 20);
+    ResponseEntity<String> limited = responses.getLast();
 
+    assertThat(responses.subList(0, 10)).allMatch(r -> r.getStatusCode().value() == 401);
+    // One token refills every six seconds.
+    assertThat(responses).hasSizeBetween(11, 13);
     assertThat(limited.getStatusCode().value()).isEqualTo(429);
     assertThat(limited.getHeaders().getFirst("Retry-After")).isNotBlank();
     assertThat(limited.getBody()).contains("\"code\":\"RATE_LIMITED\"");
@@ -202,6 +207,16 @@ class ApiInfrastructureTest {
         .isEqualTo(429);
     assertThat(ping(ip).getStatusCode().value()).isEqualTo(200);
     assertThat(signIn("203.0.113.21").getStatusCode().value()).isEqualTo(401);
+  }
+
+  /** Calls until the first 429 (or {@code max} calls), returning every response in order. */
+  private static List<ResponseEntity<String>> untilLimited(
+      Supplier<ResponseEntity<String>> call, int max) {
+    List<ResponseEntity<String>> responses = new ArrayList<>();
+    do {
+      responses.add(call.get());
+    } while (responses.getLast().getStatusCode().value() != 429 && responses.size() < max);
+    return responses;
   }
 
   private ResponseEntity<String> signIn(String ip) {
