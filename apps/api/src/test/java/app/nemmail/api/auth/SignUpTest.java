@@ -19,7 +19,7 @@ class SignUpTest {
   @Autowired private PasswordEncoder passwords;
 
   @Test
-  void createsTheAccountWithAnArgon2idHash() {
+  void createsTheAccountWithAnArgon2idHashAndSignsIn() {
     String email = TestData.email("Ada");
 
     MvcTestResult result =
@@ -31,12 +31,14 @@ class SignUpTest {
         .hasStatus(201)
         .hasHeader("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate")
         .bodyJson()
-        .hasPath("$.id")
-        .hasPath("$.createdAt")
-        .hasPath("$.avatarSeed")
-        .hasPathSatisfying("$.email", value -> value.assertThat().isEqualTo(email))
-        .hasPathSatisfying("$.name", value -> value.assertThat().isEqualTo("Ada Lovelace"))
-        .doesNotHavePath("$.passwordHash");
+        .hasPath("$.token")
+        .hasPath("$.expiresAt")
+        .hasPath("$.user.id")
+        .hasPath("$.user.createdAt")
+        .hasPath("$.user.avatarSeed")
+        .hasPathSatisfying("$.user.email", value -> value.assertThat().isEqualTo(email))
+        .hasPathSatisfying("$.user.name", value -> value.assertThat().isEqualTo("Ada Lovelace"))
+        .doesNotHavePath("$.user.passwordHash");
     User user = users.findByEmailIgnoreCase(email).orElseThrow();
     assertThat(user.getPasswordHash()).startsWith("$argon2id$");
     assertThat(passwords.matches("analytical-engine", user.getPasswordHash())).isTrue();

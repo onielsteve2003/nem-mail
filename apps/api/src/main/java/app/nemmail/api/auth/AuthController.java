@@ -2,25 +2,44 @@ package app.nemmail.api.auth;
 
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/auth")
 class AuthController {
 
   private final AuthService auth;
+  private final SessionService sessions;
 
-  AuthController(AuthService auth) {
+  AuthController(AuthService auth, SessionService sessions) {
     this.auth = auth;
+    this.sessions = sessions;
   }
 
-  @PostMapping("/signup")
+  @PostMapping("/auth/signup")
   @ResponseStatus(HttpStatus.CREATED)
-  UserResponse signUp(@Valid @RequestBody SignUpRequest body) {
-    return UserResponse.from(auth.signUp(body));
+  AuthResponse signUp(@Valid @RequestBody SignUpRequest body) {
+    return auth.signUp(body);
+  }
+
+  @PostMapping("/auth/signin")
+  AuthResponse signIn(@Valid @RequestBody SignInRequest body) {
+    return auth.signIn(body);
+  }
+
+  /** Ends this device's session only; other signed-in devices stay signed in. */
+  @PostMapping("/auth/signout")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  void signOut(@AuthenticationPrincipal CurrentUser current) {
+    sessions.revoke(current.sessionId());
+  }
+
+  @GetMapping("/me")
+  UserResponse me(@AuthenticationPrincipal CurrentUser current) {
+    return UserResponse.from(auth.get(current));
   }
 }

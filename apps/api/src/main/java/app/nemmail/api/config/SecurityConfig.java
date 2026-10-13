@@ -1,5 +1,7 @@
 package app.nemmail.api.config;
 
+import app.nemmail.api.auth.BearerTokenFilter;
+import app.nemmail.api.auth.SessionService;
 import app.nemmail.api.common.ApiErrorResponse;
 import app.nemmail.api.common.ErrorCode;
 import jakarta.servlet.http.HttpServletResponse;
@@ -15,18 +17,20 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * A stateless bearer-token API: no server sessions, cookies, CSRF, form or basic login. Only
- * sign-up, sign-in and health are open. CORS and the security headers are handled by the filters in
- * {@link WebConfig}, which run before this chain (preflights never reach it).
+ * A stateless bearer-token API: no server sessions, cookies, CSRF, form or basic login. A request
+ * is signed in by {@link BearerTokenFilter}; only sign-up, sign-in and health are open. CORS and
+ * the security headers are handled by the filters in {@link WebConfig}, which run before this chain
+ * (preflights never reach it).
  */
 @Configuration(proxyBeanMethods = false)
 class SecurityConfig {
 
   @Bean
-  SecurityFilterChain apiSecurity(HttpSecurity http, JsonMapper json) {
+  SecurityFilterChain apiSecurity(HttpSecurity http, SessionService sessions, JsonMapper json) {
     return http.csrf(AbstractHttpConfigurer::disable)
         .cors(AbstractHttpConfigurer::disable)
         .httpBasic(AbstractHttpConfigurer::disable)
@@ -37,6 +41,7 @@ class SecurityConfig {
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         // SecurityHeadersFilter sets the rest; keep only Cache-Control: no-store.
         .headers(headers -> headers.defaultsDisabled().cacheControl(Customizer.withDefaults()))
+        .addFilterBefore(new BearerTokenFilter(sessions), AnonymousAuthenticationFilter.class)
         .authorizeHttpRequests(
             auth ->
                 auth.requestMatchers(HttpMethod.POST, "/auth/signup", "/auth/signin")
