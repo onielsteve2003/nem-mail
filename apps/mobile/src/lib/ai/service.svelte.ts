@@ -13,6 +13,17 @@ import type {
 	MailRepository,
 	SettingsRepository
 } from '#lib/data/repositories.js';
+import {
+	ASSISTANT_ITEMS,
+	NEEDS_REPLY,
+	draftText,
+	itemTitle,
+	needsReplyIntro,
+	oneLine,
+	unreadIntro,
+	type AssistantAnswer,
+	type AssistantItem
+} from './assistant.js';
 import type { AIBackend } from './backend.js';
 import type { CategoryVerdict } from './models/category.js';
 import { hybridRank } from './models/hybrid.js';
@@ -41,6 +52,8 @@ export type AIToggles = Settings['ai'];
 export interface AIUser {
 	id: string;
 	email: string;
+	/** Signs assistant drafts. */
+	name?: string;
 }
 
 const YOU = 'You';
@@ -50,6 +63,16 @@ const SENT_SAMPLE = 25;
 const CORPUS_PAGES = 5;
 /** The thread list for semantic search is reused this long, so new mail joins soon. */
 const CORPUS_TTL_MS = 60_000;
+/** Inbox rows the assistant reads for "Summarize unread". */
+const UNREAD_PAGE = 100;
+/** Recent Primary conversations checked for "What needs a reply?". */
+const REPLY_CANDIDATES = 15;
+const REPLY_WINDOW_DAYS = 14;
+/** Without smart replies, a question mark is the fallback sign that someone waits. */
+const QUESTION_MARK = /\?(\s|$)/;
+const NO_DRAFT_REPLY = "Thanks for your message. I'll get back to you soon.";
+const ASSISTANT_RULES =
+	'Built on this device from your mail with rules and small models. Nothing leaves your device.';
 /** Sent conversations checked for follow-up nudges. */
 const SENT_NUDGE_PAGE = 50;
 const DAY_MS = 86_400_000;
@@ -346,6 +369,144 @@ export class AIService {
 				: []
 		]);
 		return { followUps, unsubscribe };
+	}
+
+	/**
+	 * "Summarize unread" (AI-11): counts by tab, then the most important unread
+	 * conversations (AI-6 when on, newest otherwise), each with its AI-3 summary or
+	 * the latest message's first sentence.
+	 */
+	async summarizeUnread(user: AIUser): Promise<AssistantAnswer> {
+		const mail = this.#requireMail();
+		const page = await mail.list({ mailbox: 'inbox' }, { limit: UNREAD_PAGE });
+		const unread = page.items.filter((thread) => thread.isUnread);
+		const top = await this.#mostImportant(user, unread);
+		const threads = await Promise.all(top.map((thread) => mail.get(thread.id)));
+		let source: AssistantAnswer['source'] = 'heuristic';
+		const items = await Promise.all(
+			threads.map(async (thread): Promise<AssistantItem> => {
+				const verdict = await this.summarize(thread, user.email).catch(() => null);
+				if (verdict?.source === 'model') source = 'model';
+				const latest = thread.messages.at(-1);
+				return {
+					threadId: thread.id,
+					title: itemTitle(thread, user.email),
+					detail: oneLine(verdict?.value.text ?? latest?.bodyText ?? thread.snippet)
+				};
+			})
+		);
+		return {
+			text: unreadIntro(unread),
+			items,
+			draft: null,
+			explanation: ASSISTANT_RULES,
+			source
+		};
+	}
+
+	/** "What needs a reply?" (AI-11): recent direct mail whose intent leaves it to the user. */
+	async needsReply(user: AIUser): Promise<AssistantAnswer> {
+		const waiting = await this.#waitingOnUser(user);
+		return {
+			text: needsReplyIntro(waiting.length),
+			items: waiting.slice(0, ASSISTANT_ITEMS).map((w) => w.item),
+			draft: null,
+			explanation: ASSISTANT_RULES,
+			source: 'heuristic'
+		};
+	}
+
+	/**
+	 * "Draft reply" (AI-11): a whole reply built from the top smart reply, for the open
+	 * conversation or else the first one that needs a reply.
+	 */
+	async draftReply(user: AIUser, threadId: string | null = null): Promise<AssistantAnswer> {
+		const mail = this.#requireMail();
+		const self = user.email.toLowerCase();
+		const thread = threadId
+			? await mail.get(threadId)
+			: (await this.#waitingOnUser(user))[0]?.thread;
+		const message = thread?.messages.findLast(
+			(m) => m.status === 'sent' && m.from.email.toLowerCase() !== self
+		);
+		if (!thread || !message) {
+			return {
+				text: threadId
+					? 'This conversation has no message from someone else to reply to.'
+					: 'Nothing needs a reply right now, so there is nothing to draft.',
+				items: [],
+				draft: null,
+				explanation: ASSISTANT_RULES,
+				source: 'heuristic'
+			};
+		}
+		const replies = await this.smartReplies(message, user.email);
+		const sender = message.from.name || message.from.email;
+		return {
+			text: `Here is a draft reply to ${sender} about “${thread.subject || '(no subject)'}”:`,
+			items: [],
+			draft: {
+				threadId: thread.id,
+				messageId: message.id,
+				text: draftText(
+					replies?.value[0] ?? NO_DRAFT_REPLY,
+					message.from.name ?? '',
+					user.name ?? ''
+				)
+			},
+			explanation: replies?.explanation ?? ASSISTANT_RULES,
+			source: 'heuristic'
+		};
+	}
+
+	/** Conversations waiting on the user, most important first. */
+	async #waitingOnUser(user: AIUser): Promise<{ thread: Thread; item: AssistantItem }[]> {
+		const mail = this.#requireMail();
+		const self = user.email.toLowerCase();
+		const since = Date.now() - REPLY_WINDOW_DAYS * DAY_MS;
+		const page = await mail.list({ mailbox: 'inbox', category: 'primary' }, { limit: 50 });
+		const recent = page.items.filter((t) => Date.parse(t.lastMessageAt) >= since);
+		const candidates = await this.#mostImportant(user, recent, REPLY_CANDIDATES);
+		const threads = await Promise.all(candidates.map((t) => mail.get(t.id)));
+		const waiting: { thread: Thread; item: AssistantItem }[] = [];
+		for (const thread of threads) {
+			const last = thread.messages.at(-1);
+			if (!last || last.status !== 'sent' || last.from.email.toLowerCase() === self) continue;
+			if (!last.to.some((r) => r.email.toLowerCase() === self)) continue;
+			const detail = await this.#waitingReason(last, user.email);
+			if (detail)
+				waiting.push({
+					thread,
+					item: { threadId: thread.id, title: itemTitle(thread, user.email), detail }
+				});
+		}
+		return waiting;
+	}
+
+	async #waitingReason(message: Message, selfEmail: string): Promise<string | null> {
+		if (!this.isEnabled('smartReply')) {
+			return QUESTION_MARK.test(message.bodyText) ? (NEEDS_REPLY.question ?? null) : null;
+		}
+		const verdict = await this.smartReplies(message, selfEmail);
+		return verdict?.intent ? (NEEDS_REPLY[verdict.intent] ?? null) : null;
+	}
+
+	/** The `limit` most important threads: AI-6 scores when on, else the list order (newest). */
+	async #mostImportant(
+		user: AIUser,
+		threads: readonly ThreadSummary[],
+		limit = ASSISTANT_ITEMS
+	): Promise<ThreadSummary[]> {
+		const scores = await this.scorePriority(user, threads).catch(() => null);
+		if (!scores) return threads.slice(0, limit);
+		return [...threads]
+			.sort((a, b) => (scores[b.id]?.value ?? 0) - (scores[a.id]?.value ?? 0))
+			.slice(0, limit);
+	}
+
+	#requireMail(): MailRepository {
+		if (!this.mail) throw new Error('The assistant needs the mail repository');
+		return this.mail;
 	}
 
 	async #followUps(user: AIUser, now: number): Promise<FollowUpVerdict[]> {

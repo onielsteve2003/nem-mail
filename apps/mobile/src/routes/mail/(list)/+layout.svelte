@@ -7,6 +7,7 @@
 	import AiOrb from '#components/layout/AiOrb.svelte';
 	import Fab from '#components/layout/Fab.svelte';
 	import ReadingPane from '#components/layout/ReadingPane.svelte';
+	import AssistantSheet from '#features/ai/AssistantSheet.svelte';
 	import SearchBar from '#components/layout/SearchBar.svelte';
 	import { ListRefresh, setListRefresh } from '#features/mail-list/refresh.js';
 	import ThreadView from '#features/thread/ThreadView.svelte';
@@ -19,7 +20,7 @@
 
 	// Sheet name the account switcher opens under.
 	const ACCOUNT_SHEET = 'account';
-	// Sheet name for the AI assistant (M10), which renders it.
+	// Sheet name for the AI assistant (AI-11).
 	const ASSISTANT_SHEET = 'assistant';
 	const PULL_TEXT = 'Pull to check for new mail';
 	// The compose button shows its label only this close to the top of the list.
@@ -31,6 +32,7 @@
 	const ui = getUiStore();
 	const selection = getSelectionStore();
 	let scrollHide = $state(SCROLL_HIDE_INITIAL);
+	let isAssistantThinking = $state(false);
 	let isAtTop = $state(true);
 	let shell = $state<HTMLDivElement>();
 
@@ -114,7 +116,7 @@
 			</div>
 		</ion-content>
 		<div class="dock">
-			<AiOrb onclick={() => ui.openSheet(ASSISTANT_SHEET)} />
+			<AiOrb onclick={() => ui.openSheet(ASSISTANT_SHEET)} isThinking={isAssistantThinking} />
 			<Fab
 				extended={isAtTop}
 				onclick={(event) =>
@@ -130,6 +132,16 @@
 	{/if}
 </div>
 <AccountSheet open={ui.isSheetOpen(ACCOUNT_SHEET)} onclose={() => ui.closeSheet(ACCOUNT_SHEET)} />
+<AssistantSheet
+	open={ui.isSheetOpen(ASSISTANT_SHEET)}
+	onclose={() => ui.closeSheet(ASSISTANT_SHEET)}
+	openThreadId={twoPane.current ? threadId : null}
+	threadHref={(id) =>
+		twoPane.current
+			? withReadingThread(page.url, id)
+			: resolve('/mail/thread/[threadId]', { threadId: id })}
+	onthinking={(value) => (isAssistantThinking = value)}
+/>
 
 <style>
 	@media (min-width: 900px) {
