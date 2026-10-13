@@ -16,6 +16,7 @@ import type {
 import type { AIBackend } from './backend.js';
 import type { CategoryVerdict } from './models/category.js';
 import { hybridRank } from './models/hybrid.js';
+import type { ExtractionVerdict } from './models/extract.js';
 import type { ComposeVerdict } from './models/ngram.js';
 import type { PrioritySignal, PriorityVerdict } from './models/priority-lr.js';
 import type { SmartReplyVerdict } from './models/smart-reply.js';
@@ -79,6 +80,8 @@ export class AIService {
 	summaries = $state<Record<string, { count: number; verdict: SummaryVerdict | null }>>({});
 	/** Smart replies by the id of the message they answer (AI-4). */
 	replies = $state<Record<string, SmartReplyVerdict | null>>({});
+	/** Smart extraction by message id (AI-10); null when a message has nothing to act on. */
+	extractions = $state<Record<string, ExtractionVerdict | null>>({});
 	/** Priority scores by thread id (AI-6). */
 	priority = $state<Record<string, PriorityVerdict>>({});
 
@@ -234,6 +237,23 @@ export class AIService {
 	}
 
 	/**
+	 * Codes, tracking numbers, dates, and meeting times in a message, for action chips
+	 * (AI-10). Null when smart extraction is off or the message has none.
+	 */
+	async extract(message: Message): Promise<ExtractionVerdict | null> {
+		if (!this.isEnabled('extraction')) return null;
+		if (message.id in this.extractions) return this.extractions[message.id] ?? null;
+		const { api } = await this.#worker();
+		const verdict = await api.extract({
+			subject: message.subject,
+			text: message.bodyText,
+			sentAt: message.sentAt
+		});
+		this.extractions[message.id] = verdict;
+		return verdict;
+	}
+
+	/**
 	 * Ghost text for the paragraph before the caret (AI-5). The first call for an account
 	 * with no saved model trains it on recent sent mail. Null when smart compose is off
 	 * or no continuation is likely enough.
@@ -362,6 +382,7 @@ export class AIService {
 		this.priority = {};
 		this.summaries = {};
 		this.replies = {};
+		this.extractions = {};
 		this.#frequencies = undefined;
 		this.#composeTrained = undefined;
 		this.#corpus = undefined;

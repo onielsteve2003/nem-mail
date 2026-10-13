@@ -45,6 +45,7 @@ import {
 	type ComposeVerdict,
 	type NgramModel
 } from '../models/ngram.js';
+import { extract, type ExtractInput, type ExtractionVerdict } from '../models/extract.js';
 import { findModel } from '../registry.js';
 import type { ClassifySentiment } from '../models/sentiment.js';
 import { checkTone, type ToneVerdict } from '../models/tone.js';
@@ -88,6 +89,8 @@ export interface AIWorkerApi {
 	summarize(messages: SummaryMessage[]): Promise<SummaryVerdict | null>;
 	/** Three short replies to a message (AI-4); null for mail nobody replies to. */
 	smartReplies(input: ReplyInput): Promise<SmartReplyVerdict | null>;
+	/** Codes, tracking numbers, dates, and meeting times in a message (AI-10); null when none. */
+	extract(input: ExtractInput): Promise<ExtractionVerdict | null>;
 	/** Ghost text for the paragraph before the caret (AI-5), or null when unsure. */
 	complete(userId: string, before: string): Promise<ComposeVerdict | null>;
 	/** True when this user's smart compose model was trained and saved before. */
@@ -293,6 +296,7 @@ export function createWorkerApi(
 			};
 		},
 		smartReplies: async (input) => suggestReplies(input),
+		extract: async (input) => extract(input),
 		async complete(userId, before) {
 			return completeText((await composeModel(userId)).model, before);
 		},

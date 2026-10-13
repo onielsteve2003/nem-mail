@@ -7,6 +7,7 @@
 	import ThreadActions from '#components/ui/ThreadActions.svelte';
 	import { getAIService } from '#lib/ai/service.svelte.js';
 	import { IMPORTANT_THRESHOLD } from '#lib/ai/models/priority-lr.js';
+	import type { ExtractionVerdict } from '#lib/ai/models/extract.js';
 	import type { SmartReplyVerdict } from '#lib/ai/models/smart-reply.js';
 	import type { SpamVerdict } from '#lib/ai/models/spam-nb.js';
 	import type { SummaryVerdict } from '#lib/ai/models/textrank.js';
@@ -17,6 +18,7 @@
 	import { toastStore } from '#lib/stores/toast.svelte.js';
 	import { getUiStore } from '#lib/stores/ui.svelte.js';
 	import { errorMessage, toAppError } from '#lib/utils/errors.js';
+	import ExtractionChips from './ExtractionChips.svelte';
 	import MessageList from './MessageList.svelte';
 	import SmartReplies from './SmartReplies.svelte';
 	import SpamBanner from './SpamBanner.svelte';
@@ -209,6 +211,34 @@
 		});
 	});
 
+	// AI-10: action chips for the latest message someone else sent (not in Spam: phishing bait).
+	const extractFrom = $derived.by(() => {
+		if (!thread || spamMessage || !ai.isEnabled('extraction')) return null;
+		const self = session.user?.email.toLowerCase();
+		return (
+			thread.messages.findLast((m) => m.status === 'sent' && m.from.email.toLowerCase() !== self) ??
+			null
+		);
+	});
+	let extraction = $state<{ id: string; verdict: ExtractionVerdict | null }>({
+		id: '',
+		verdict: null
+	});
+	$effect(() => {
+		const message = extractFrom;
+		if (!message) return;
+		untrack(() => {
+			extraction = { id: message.id, verdict: null };
+			ai.extract(message).then(
+				(verdict) => {
+					if (extraction.id === message.id) extraction.verdict = verdict;
+				},
+				// Chips are a shortcut: the message text still has everything.
+				(error: unknown) => console.error('Smart extraction failed', error)
+			);
+		});
+	});
+
 	function act(op: ThreadOp | ThreadOp[]): void {
 		if (!thread) return;
 		const ops = Array.isArray(op) ? op : [op];
@@ -358,6 +388,9 @@
 				onretry={() => summaryKey && summarize(summaryKey, thread)}
 				ondismiss={() => (dismissedSummary = summaryKey)}
 			/>
+		{/if}
+		{#if extractFrom && extraction.id === extractFrom.id && extraction.verdict}
+			<ExtractionChips verdict={extraction.verdict} subject={thread.subject} />
 		{/if}
 		{#key thread.id}
 			<MessageList

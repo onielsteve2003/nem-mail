@@ -31,6 +31,7 @@ export function connectWorker(): AIWorkerConnection {
 				remote.learnCategory(userId, messages, category),
 			summarize: (messages) => remote.summarize(messages),
 			smartReplies: (input) => remote.smartReplies(input),
+			extract: (input) => remote.extract(input),
 			complete: (userId, before) => remote.complete(userId, before),
 			checkTone: (text) => remote.checkTone(text),
 			semanticScores: (userId, query, docs) => remote.semanticScores(userId, query, docs),
