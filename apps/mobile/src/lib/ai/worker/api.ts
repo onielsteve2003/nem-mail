@@ -31,6 +31,13 @@ import {
 	type PriorityVerdict
 } from '../models/priority-lr.js';
 import { findModel } from '../registry.js';
+import type { Summarize } from '../models/summarizer.js';
+import {
+	ownText,
+	summarizeThread,
+	type SummaryMessage,
+	type SummaryVerdict
+} from '../models/textrank.js';
 import {
 	deleteModel,
 	downloadModel,
@@ -56,6 +63,11 @@ export interface AIWorkerApi {
 	classifyCategory(userId: string, messages: CategoryInput[]): Promise<CategoryVerdict[]>;
 	/** Learns from "Move to tab" and saves the model. */
 	learnCategory(userId: string, messages: CategoryInput[], category: Category): Promise<void>;
+	/**
+	 * A thread summary with action items (AI-3): TextRank, rewritten by DistilBART when
+	 * it is downloaded. Null for threads too short to need one.
+	 */
+	summarize(messages: SummaryMessage[]): Promise<SummaryVerdict | null>;
 	/** Priority scores (AI-6) from the user's logistic regression model. */
 	scorePriority(userId: string, inputs: PriorityInput[]): Promise<PriorityVerdict[]>;
 	/** Learns from marking important / not important, or from opening a message, and saves. */
@@ -80,6 +92,7 @@ function isNaiveBayes(value: unknown): value is NaiveBayesState {
 }
 
 const ZERO_SHOT_MODEL = 'mobilebert-mnli';
+const SUMMARY_MODEL = 'distilbart-cnn';
 
 /** Builds the worker API over the given storage, so tests can run it on the main thread. */
 export function createWorkerApi(
@@ -87,7 +100,8 @@ export function createWorkerApi(
 	ids: () => readonly string[],
 	probe: () => Promise<AIBackend> = () => detectBackend(),
 	store: ModelStore = idbModelStore(),
-	zeroShot?: () => Promise<ZeroShot>
+	zeroShot?: () => Promise<ZeroShot>,
+	abstractive?: () => Promise<Summarize>
 ): AIWorkerApi {
 	let backend: Promise<AIBackend> | undefined;
 	const models = new Map<string, Promise<NaiveBayesState>>();
@@ -128,6 +142,12 @@ export function createWorkerApi(
 		if (zeroShot) return zeroShot();
 		const { zeroShotClassifier } = await import('../models/zero-shot.js');
 		return zeroShotClassifier(model(ZERO_SHOT_MODEL));
+	}
+	async function summarizer(): Promise<Summarize | null> {
+		if (!(await isModelCached(model(SUMMARY_MODEL), env).catch(() => false))) return null;
+		if (abstractive) return abstractive();
+		const { abstractiveSummarizer } = await import('../models/summarizer.js');
+		return abstractiveSummarizer(model(SUMMARY_MODEL));
 	}
 	return {
 		backend: () => (backend ??= probe()),
@@ -178,6 +198,23 @@ export function createWorkerApi(
 			const category = await categoryModel(userId);
 			for (const message of messages) learnCategoryFeedback(category, message, target);
 			await store.put(`${userId}:category`, category);
+		},
+		async summarize(messages) {
+			const extractive = summarizeThread(messages);
+			if (!extractive) return null;
+			const summarize = await summarizer().catch(() => null);
+			if (!summarize) return extractive;
+			// The model reads every message's own words; quoted replies would repeat them.
+			const text = messages.map((m) => `${m.from}: ${ownText(m.text)}`).join('\n\n');
+			const written = await summarize(text).catch(() => '');
+			if (!written) return extractive;
+			return {
+				...extractive,
+				value: { ...extractive.value, text: written },
+				confidence: 0.8,
+				explanation:
+					'DistilBART wrote this summary on this device. Action items are sentences that ask for something.'
+			};
 		},
 		async scorePriority(userId, inputs) {
 			const model = await priorityModel(userId);

@@ -29,6 +29,7 @@ export function connectWorker(): AIWorkerConnection {
 			classifyCategory: (userId, messages) => remote.classifyCategory(userId, messages),
 			learnCategory: (userId, messages, category) =>
 				remote.learnCategory(userId, messages, category),
+			summarize: (messages) => remote.summarize(messages),
 			scorePriority: (userId, inputs) => remote.scorePriority(userId, inputs),
 			learnPriority: (userId, inputs, isImportant, signal) =>
 				remote.learnPriority(userId, inputs, isImportant, signal)

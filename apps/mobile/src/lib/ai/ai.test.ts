@@ -145,3 +145,35 @@ describe('category zero-shot upgrade', () => {
 		expect(zeroShot).toHaveBeenCalledOnce();
 	});
 });
+
+describe('thread summary', () => {
+	const memory = { get: async () => undefined, put: async () => {} };
+	const messages = [
+		{
+			from: 'Ada',
+			text: 'The launch moves to Thursday. The audit needs two more days of testing. Can you send the test results by Wednesday?'
+		}
+	];
+
+	it('uses TextRank, and DistilBART once it is downloaded', async () => {
+		const { env } = fakeEnv();
+		const summarize = vi.fn(async () => 'Launch slips to Thursday for the audit.');
+		const api = createWorkerApi(
+			env,
+			() => [],
+			async () => 'wasm',
+			memory,
+			undefined,
+			async () => summarize
+		);
+		const extractive = await api.summarize(messages);
+		expect(extractive?.explanation).toContain('TextRank');
+		expect(summarize).not.toHaveBeenCalled();
+
+		await api.download('distilbart-cnn');
+		const written = await api.summarize(messages);
+		expect(written?.value.text).toBe('Launch slips to Thursday for the audit.');
+		expect(written?.value.actionItems).toEqual(extractive?.value.actionItems);
+		expect(written?.explanation).toContain('DistilBART');
+	});
+});

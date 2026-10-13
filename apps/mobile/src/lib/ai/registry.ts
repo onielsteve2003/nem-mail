@@ -34,8 +34,8 @@ const ONNX_FILES = [
 ];
 
 /**
- * Every optional model, all quantized ONNX and under 100 MB (PRD constraints).
- * Later tasks add theirs here (e.g. the summarizer in T10.8).
+ * Every optional model, all quantized ONNX and under 100 MB (PRD constraints), except
+ * DistilBART: the owner approved it as an opt-in exception (2026-10-12), with its size shown.
  */
 export const MODELS: readonly ModelSpec[] = [
 	{
@@ -70,6 +70,24 @@ export const MODELS: readonly ModelSpec[] = [
 		sizeBytes: 25_000_000,
 		license: 'Apache-2.0',
 		files: ONNX_FILES
+	},
+	{
+		// DistilBART CNN 6-6, ~284 MB quantized (encoder + merged decoder), Apache-2.0.
+		id: 'distilbart-cnn',
+		repo: 'Xenova/distilbart-cnn-6-6',
+		name: 'DistilBART CNN 6-6',
+		purpose: 'Written summaries of long threads (TextRank works without it)',
+		features: ['summary'],
+		sizeBytes: 284_000_000,
+		license: 'Apache-2.0',
+		files: [
+			'config.json',
+			'generation_config.json',
+			'tokenizer.json',
+			'tokenizer_config.json',
+			'onnx/encoder_model_quantized.onnx',
+			'onnx/decoder_model_merged_quantized.onnx'
+		]
 	}
 ];
 

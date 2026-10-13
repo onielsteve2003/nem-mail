@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Label, Message, ThreadOp } from '@nem/shared';
+	import type { Label, Message, Thread, ThreadOp } from '@nem/shared';
 	import { untrack } from 'svelte';
 	import EmptyState from '#components/ui/EmptyState.svelte';
 	import ErrorState from '#components/ui/ErrorState.svelte';
@@ -8,6 +8,7 @@
 	import { getAIService } from '#lib/ai/service.svelte.js';
 	import { IMPORTANT_THRESHOLD } from '#lib/ai/models/priority-lr.js';
 	import type { SpamVerdict } from '#lib/ai/models/spam-nb.js';
+	import type { SummaryVerdict } from '#lib/ai/models/textrank.js';
 	import { getRepositories } from '#lib/data/provider.js';
 	import { getMailboxStore } from '#lib/stores/mailbox.svelte.js';
 	import { getSessionStore } from '#lib/stores/session.svelte.js';
@@ -17,6 +18,7 @@
 	import { errorMessage, toAppError } from '#lib/utils/errors.js';
 	import MessageList from './MessageList.svelte';
 	import SpamBanner from './SpamBanner.svelte';
+	import SummaryCard from './SummaryCard.svelte';
 	import ThreadHeader from './ThreadHeader.svelte';
 	import { leavesThread } from './actions.js';
 	import {
@@ -26,6 +28,7 @@
 		threadShortcut,
 		type ThreadShortcut
 	} from './thread-nav.js';
+	import { mayNeedSummary } from './summary.js';
 	import { threadViewState } from './view-state.js';
 
 	const LOADING = 'Loading conversation';
@@ -137,6 +140,46 @@
 		const message = spamMessage;
 		if (message) untrack(() => checkSpam(message));
 	});
+
+	// AI-3: a summary card on threads long enough to need one (Spam shows its banner instead).
+	const summaryKey = $derived(
+		thread && !spamMessage && ai.isEnabled('summary')
+			? `${thread.id}:${thread.messages.length}`
+			: null
+	);
+	let summary = $state<{ key: string; verdict: SummaryVerdict | null; error: boolean }>({
+		key: '',
+		verdict: null,
+		error: false
+	});
+	let dismissedSummary = $state<string | null>(null);
+	function summarize(key: string, current: Thread): void {
+		const self = session.user?.email ?? '';
+		summary = { key, verdict: null, error: false };
+		ai.summarize(current, self).then(
+			(verdict) => {
+				if (summary.key === key) summary.verdict = verdict;
+			},
+			() => {
+				if (summary.key === key) summary.error = true;
+			}
+		);
+	}
+	$effect(() => {
+		const key = summaryKey;
+		const current = thread;
+		if (key && current) untrack(() => summarize(key, current));
+	});
+	const isSummaryLoading = $derived(
+		summary.key !== summaryKey || (!summary.verdict && !summary.error)
+	);
+	// Loading shows only where a summary is likely, so short mail never flashes a card.
+	const showSummary = $derived(
+		!!thread &&
+			summaryKey !== null &&
+			dismissedSummary !== summaryKey &&
+			(isSummaryLoading ? mayNeedSummary(thread) : !!summary.verdict || summary.error)
+	);
 
 	function act(op: ThreadOp | ThreadOp[]): void {
 		if (!thread) return;
@@ -277,6 +320,15 @@
 				error={spamCheck.error ? errorMessage(spamCheck.error) : null}
 				onretry={() => spamMessage && checkSpam(spamMessage)}
 				onnotspam={() => act({ op: 'notSpam' })}
+			/>
+		{/if}
+		{#if showSummary && summaryKey}
+			<SummaryCard
+				verdict={isSummaryLoading ? null : summary.verdict}
+				isLoading={isSummaryLoading}
+				error={!isSummaryLoading && summary.error}
+				onretry={() => summaryKey && summarize(summaryKey, thread)}
+				ondismiss={() => (dismissedSummary = summaryKey)}
 			/>
 		{/if}
 		{#key thread.id}

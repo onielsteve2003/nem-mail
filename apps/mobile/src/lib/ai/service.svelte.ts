@@ -13,6 +13,7 @@ import type { AIBackend } from './backend.js';
 import type { CategoryVerdict } from './models/category.js';
 import type { PrioritySignal, PriorityVerdict } from './models/priority-lr.js';
 import type { SpamVerdict } from './models/spam-nb.js';
+import type { SummaryVerdict } from './models/textrank.js';
 import { priorityInput, senderFrequencies } from './priority-input.js';
 import { MODELS } from './registry.js';
 import type { AIWorkerConnection } from './worker/connect.js';
@@ -25,6 +26,7 @@ export interface AIUser {
 	email: string;
 }
 
+const YOU = 'You';
 const DOWNLOAD_FAILED = 'Download failed. Check your connection and try again.';
 
 /** Where one optional model stands on this device. */
@@ -59,6 +61,8 @@ export class AIService {
 	spam = $state<Record<string, SpamVerdict>>({});
 	/** Inbox tab verdicts by message id. */
 	categories = $state<Record<string, CategoryVerdict>>({});
+	/** Thread summaries by thread id, with the message count they cover (AI-3). */
+	summaries = $state<Record<string, { count: number; verdict: SummaryVerdict | null }>>({});
 	/** Priority scores by thread id (AI-6). */
 	priority = $state<Record<string, PriorityVerdict>>({});
 
@@ -172,6 +176,26 @@ export class AIService {
 	}
 
 	/**
+	 * Summarizes a thread with action items (AI-3). Null when the user turned summaries
+	 * off or the thread is too short to need one. A new message makes a new summary.
+	 */
+	async summarize(thread: Thread, selfEmail: string): Promise<SummaryVerdict | null> {
+		if (!this.isEnabled('summary')) return null;
+		const cached = this.summaries[thread.id];
+		if (cached?.count === thread.messages.length) return cached.verdict;
+		const self = selfEmail.toLowerCase();
+		const messages = thread.messages.map((message) => ({
+			from:
+				message.from.email.toLowerCase() === self ? YOU : message.from.name || message.from.email,
+			text: message.bodyText
+		}));
+		const { api } = await this.#worker();
+		const verdict = await api.summarize(messages);
+		this.summaries[thread.id] = { count: thread.messages.length, verdict };
+		return verdict;
+	}
+
+	/**
 	 * Scores threads for the priority inbox (AI-6) and remembers the scores by thread id.
 	 * Already-scored threads are skipped. Null when the user turned priority off.
 	 */
@@ -213,6 +237,7 @@ export class AIService {
 		this.spam = {};
 		this.categories = {};
 		this.priority = {};
+		this.summaries = {};
 		this.#frequencies = undefined;
 	}
 
