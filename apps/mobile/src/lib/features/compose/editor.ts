@@ -16,7 +16,7 @@ const FORMAT_COMMANDS: FormatCommand[] = [
 
 /** Runs one editing command on the current selection. */
 export function runCommand(
-	command: FormatCommand | 'createLink' | 'insertHTML',
+	command: FormatCommand | 'createLink' | 'insertHTML' | 'insertText',
 	value?: string
 ): void {
 	document.execCommand(command, false, value);

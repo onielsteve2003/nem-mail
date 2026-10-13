@@ -72,3 +72,15 @@ export function normalizeLink(input: string): string | null {
 	if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(url)) return `mailto:${url}`;
 	return `https://${url}`;
 }
+
+/**
+ * The words the user wrote, as plain text with a line per paragraph: quoted mail is
+ * dropped, so smart compose learns only from the user's own writing.
+ */
+export function ownBodyText(html: string): string {
+	const doc = new DOMParser().parseFromString(sanitizeComposeHtml(html), 'text/html');
+	doc.querySelectorAll('blockquote').forEach((quote) => quote.remove());
+	doc.querySelectorAll('br').forEach((br) => br.replaceWith('\n'));
+	doc.querySelectorAll('div, p, li').forEach((block) => block.append('\n'));
+	return doc.body.textContent ?? '';
+}

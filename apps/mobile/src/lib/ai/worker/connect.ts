@@ -31,6 +31,9 @@ export function connectWorker(): AIWorkerConnection {
 				remote.learnCategory(userId, messages, category),
 			summarize: (messages) => remote.summarize(messages),
 			smartReplies: (input) => remote.smartReplies(input),
+			complete: (userId, before) => remote.complete(userId, before),
+			hasComposeModel: (userId) => remote.hasComposeModel(userId),
+			learnCompose: (userId, texts) => remote.learnCompose(userId, texts),
 			scorePriority: (userId, inputs) => remote.scorePriority(userId, inputs),
 			learnPriority: (userId, inputs, isImportant, signal) =>
 				remote.learnPriority(userId, inputs, isImportant, signal)

@@ -8,6 +8,13 @@
 	import IconButton from '#components/ui/IconButton.svelte';
 	import { normalizeLink, sanitizeComposeHtml, textToHtml } from './body.js';
 	import { formatState, runCommand, type FormatCommand } from './editor.js';
+	import {
+		caretText,
+		ghostPlace,
+		isAcceptSwipe,
+		SUGGEST_DELAY_MS,
+		type GhostPlace
+	} from './ghost.js';
 
 	const COPY = {
 		body: 'Message body',
@@ -17,7 +24,10 @@
 		linkPlaceholder: 'example.com',
 		addLink: 'Add link',
 		cancel: 'Cancel',
-		badLink: 'Use a web or email address'
+		badLink: 'Use a web or email address',
+		accept: 'Tab',
+		suggestion: (text: string) =>
+			`AI suggestion: ${text}. Press Tab or swipe right to accept. It comes from a model on this device trained on your sent mail.`
 	};
 	const TOOLS = [
 		{ command: 'bold', icon: Bold, label: 'Bold' },
@@ -29,9 +39,11 @@
 	interface Props {
 		/** Sanitized HTML. Setting it from outside (signature, reply quote) replaces the content. */
 		value?: string;
+		/** Smart compose (AI-5): ghost text for the paragraph before the caret, or null. */
+		suggest?: (before: string) => Promise<string | null>;
 	}
 
-	let { value = $bindable('') }: Props = $props();
+	let { value = $bindable(''), suggest }: Props = $props();
 
 	const id = $props.id();
 	let editor: HTMLDivElement;
@@ -44,6 +56,11 @@
 	// What the editor last emitted, so only outside changes rewrite the DOM (and the caret).
 	let emitted: string | null = null;
 	let savedRange: Range | null = null;
+	let wrapper: HTMLDivElement;
+	let ghost = $state<(GhostPlace & { text: string }) | null>(null);
+	let suggestTimer: ReturnType<typeof setTimeout> | undefined;
+	let suggestRun = 0;
+	let touchStart: { x: number; y: number } | null = null;
 
 	$effect(() => {
 		if (value === emitted) return;
@@ -51,6 +68,7 @@
 		// eslint-disable-next-line svelte/no-dom-manipulating
 		editor.innerHTML = sanitizeComposeHtml(value);
 		emitted = value;
+		clearGhost();
 		isEmpty = !editor.textContent?.trim();
 	});
 
@@ -58,6 +76,37 @@
 		emitted = sanitizeComposeHtml(editor.innerHTML);
 		value = emitted;
 		isEmpty = !editor.textContent?.trim();
+		scheduleSuggestion();
+	}
+
+	function clearGhost() {
+		clearTimeout(suggestTimer);
+		suggestRun += 1;
+		ghost = null;
+	}
+
+	function scheduleSuggestion() {
+		clearGhost();
+		if (!suggest) return;
+		const run = suggestRun;
+		suggestTimer = setTimeout(async () => {
+			const context = caretText(editor);
+			if (!context?.before.trim()) return;
+			const text = await suggest(context.before).catch(() => null);
+			// Typing or moving the caret since then makes the answer stale.
+			if (run !== suggestRun || !text) return;
+			const place = ghostPlace(context.caret, wrapper, editor);
+			if (place) ghost = { ...place, text };
+		}, SUGGEST_DELAY_MS);
+	}
+
+	function acceptGhost() {
+		if (!ghost) return;
+		const { text } = ghost;
+		clearGhost();
+		editor.focus();
+		runCommand('insertText', text);
+		emit();
 	}
 
 	function format(command: FormatCommand) {
@@ -69,6 +118,21 @@
 
 	function refreshState() {
 		if (editor.contains(document.getSelection()?.anchorNode ?? null)) active = formatState();
+		// The caret moved (typing reschedules a new suggestion after this).
+		if (ghost) clearGhost();
+	}
+
+	function ontouchstart(event: TouchEvent) {
+		const touch = event.touches[0];
+		touchStart = ghost && touch ? { x: touch.clientX, y: touch.clientY } : null;
+	}
+
+	function ontouchend(event: TouchEvent) {
+		const touch = event.changedTouches[0];
+		if (!touchStart || !touch) return;
+		const accepted = isAcceptSwipe(touch.clientX - touchStart.x, touch.clientY - touchStart.y);
+		touchStart = null;
+		if (accepted) acceptGhost();
 	}
 
 	function openLink() {
@@ -124,6 +188,11 @@
 	}
 
 	function onkeydown(event: KeyboardEvent) {
+		if (ghost && event.key === 'Tab' && !event.shiftKey) {
+			event.preventDefault();
+			acceptGhost();
+			return;
+		}
 		if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
 			event.preventDefault();
 			openLink();
@@ -132,11 +201,14 @@
 
 	$effect(() => {
 		document.addEventListener('selectionchange', refreshState);
-		return () => document.removeEventListener('selectionchange', refreshState);
+		return () => {
+			document.removeEventListener('selectionchange', refreshState);
+			clearTimeout(suggestTimer);
+		};
 	});
 </script>
 
-<div class="body">
+<div class="body" bind:this={wrapper}>
 	<div
 		bind:this={editor}
 		class="body__editor nm-text-body-lg"
@@ -147,10 +219,25 @@
 		aria-label={COPY.body}
 		data-placeholder={COPY.placeholder}
 		data-empty={isEmpty || undefined}
+		aria-describedby={ghost ? `${id}-ghost` : undefined}
 		oninput={emit}
+		onblur={clearGhost}
 		{onpaste}
 		{onkeydown}
+		{ontouchstart}
+		{ontouchend}
 	></div>
+	{#if ghost}
+		<div
+			class="ghost nm-text-body-lg"
+			style:inset-block-start="{ghost.top}px"
+			style:text-indent="{ghost.indent}px"
+			aria-hidden="true"
+		>
+			{ghost.text}<span class="ghost__key nm-text-caption">{COPY.accept}</span>
+		</div>
+		<p id="{id}-ghost" class="nm-visually-hidden">{COPY.suggestion(ghost.text)}</p>
+	{/if}
 </div>
 
 {#if isLinking}
@@ -205,8 +292,27 @@
 
 <style>
 	.body {
+		position: relative;
 		flex: 1;
 		display: flex;
+	}
+	/* Drawn over the editor at the caret; the editor's own text is never touched. */
+	.ghost {
+		position: absolute;
+		inset-inline: var(--nm-space-4);
+		color: var(--nm-color-text-subtle);
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+		pointer-events: none;
+	}
+	.ghost__key {
+		display: inline-block;
+		margin-inline-start: var(--nm-space-2);
+		padding-inline: var(--nm-space-1);
+		border: 1px solid var(--nm-color-border-strong);
+		border-radius: var(--nm-radius-sm);
+		text-indent: 0;
+		vertical-align: middle;
 	}
 	.body__editor {
 		position: relative;

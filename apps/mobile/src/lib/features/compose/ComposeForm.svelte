@@ -11,6 +11,7 @@
 	import IconButton from '#components/ui/IconButton.svelte';
 	import { MAX_ATTACHMENT_BYTES } from '@nem/shared';
 	import { onDestroy, untrack } from 'svelte';
+	import { getAIService } from '#lib/ai/service.svelte.js';
 	import { getRepositories } from '#lib/data/provider.js';
 	import { getMailboxStore } from '#lib/stores/mailbox.svelte.js';
 	import { getSessionStore } from '#lib/stores/session.svelte.js';
@@ -25,7 +26,7 @@
 		uploadWithProgress,
 		type ComposeAttachment
 	} from './attachments.js';
-	import { initialBody } from './body.js';
+	import { initialBody, ownBodyText } from './body.js';
 	import BodyEditor from './BodyEditor.svelte';
 	import ComposeAttachments from './ComposeAttachments.svelte';
 	import { composeTitle } from './compose.js';
@@ -80,7 +81,14 @@
 	const threads = getThreadStore();
 	const ui = getUiStore();
 	const mailbox = getMailboxStore();
+	const ai = getAIService();
 	const id = $props.id();
+	/** Smart compose (AI-5); without it the editor shows no ghost text. */
+	const suggest = $derived.by(() => {
+		const user = session.user;
+		if (!user || !ai.isEnabled('smartCompose')) return undefined;
+		return async (before: string) => (await ai.complete(user, before))?.value ?? null;
+	});
 	const title = $derived(composeTitle(request));
 
 	let to = $state<Recipient[]>([]);
@@ -212,6 +220,8 @@
 				toasts: toastStore,
 				formatTime: (at) => scheduleTime(at, new Date()),
 				onsent: ({ threadId }) => {
+					const user = session.user;
+					if (user) void ai.learnCompose(user.id, ownBodyText(draft.bodyHtml)).catch(() => {});
 					mailbox.invalidate();
 					ui.draftsChanged();
 					void threads.load(threadId, { refresh: true });
@@ -410,7 +420,7 @@
 		/>
 	</div>
 	<ComposeAttachments items={attachments} onremove={removeAttachment} onretry={upload} {canRetry} />
-	<BodyEditor bind:value={bodyHtml} />
+	<BodyEditor bind:value={bodyHtml} {suggest} />
 </div>
 <ScheduleSheet bind:open={isScheduleOpen} onschedule={(at) => send(at)} />
 <ConfirmDialog

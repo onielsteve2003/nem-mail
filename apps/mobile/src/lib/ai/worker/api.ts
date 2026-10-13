@@ -30,6 +30,14 @@ import {
 	type PrioritySignal,
 	type PriorityVerdict
 } from '../models/priority-lr.js';
+import {
+	completeText,
+	isNgramModel,
+	learnNgram,
+	trainNgramModel,
+	type ComposeVerdict,
+	type NgramModel
+} from '../models/ngram.js';
 import { findModel } from '../registry.js';
 import { suggestReplies, type ReplyInput, type SmartReplyVerdict } from '../models/smart-reply.js';
 import type { Summarize } from '../models/summarizer.js';
@@ -71,6 +79,12 @@ export interface AIWorkerApi {
 	summarize(messages: SummaryMessage[]): Promise<SummaryVerdict | null>;
 	/** Three short replies to a message (AI-4); null for mail nobody replies to. */
 	smartReplies(input: ReplyInput): Promise<SmartReplyVerdict | null>;
+	/** Ghost text for the paragraph before the caret (AI-5), or null when unsure. */
+	complete(userId: string, before: string): Promise<ComposeVerdict | null>;
+	/** True when this user's smart compose model was trained and saved before. */
+	hasComposeModel(userId: string): Promise<boolean>;
+	/** Trains smart compose on sent mail text and saves the model. */
+	learnCompose(userId: string, texts: string[]): Promise<void>;
 	/** Priority scores (AI-6) from the user's logistic regression model. */
 	scorePriority(userId: string, inputs: PriorityInput[]): Promise<PriorityVerdict[]>;
 	/** Learns from marking important / not important, or from opening a message, and saves. */
@@ -109,6 +123,7 @@ export function createWorkerApi(
 	let backend: Promise<AIBackend> | undefined;
 	const models = new Map<string, Promise<NaiveBayesState>>();
 	let priority: { userId: string; model: Promise<LogisticModel> } | undefined;
+	const compose = new Map<string, Promise<{ model: NgramModel; isSaved: boolean }>>();
 	const model = (id: string) => {
 		const spec = findModel(id);
 		if (!spec) throw new Error(`Unknown model "${id}"`);
@@ -138,6 +153,21 @@ export function createWorkerApi(
 			priority = { userId, model };
 		}
 		return priority.model;
+	}
+	function composeModel(userId: string) {
+		let loaded = compose.get(userId);
+		if (!loaded) {
+			loaded = store
+				.get(`${userId}:ngram`)
+				.catch(() => undefined)
+				.then((saved) =>
+					isNgramModel(saved)
+						? { model: saved, isSaved: true }
+						: { model: trainNgramModel(), isSaved: false }
+				);
+			compose.set(userId, loaded);
+		}
+		return loaded;
 	}
 	// The zero-shot upgrade runs only when its model is downloaded (opt-in, AI settings).
 	async function upgrade(): Promise<ZeroShot | null> {
@@ -220,6 +250,16 @@ export function createWorkerApi(
 			};
 		},
 		smartReplies: async (input) => suggestReplies(input),
+		async complete(userId, before) {
+			return completeText((await composeModel(userId)).model, before);
+		},
+		hasComposeModel: async (userId) => (await composeModel(userId)).isSaved,
+		async learnCompose(userId, texts) {
+			const loaded = await composeModel(userId);
+			for (const text of texts) learnNgram(loaded.model, text);
+			await store.put(`${userId}:ngram`, loaded.model);
+			loaded.isSaved = true;
+		},
 		async scorePriority(userId, inputs) {
 			const model = await priorityModel(userId);
 			return inputs.map((input) => scorePriority(model, input));

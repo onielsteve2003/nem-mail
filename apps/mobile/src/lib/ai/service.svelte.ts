@@ -8,9 +8,14 @@ import {
 	type ThreadSummary
 } from '@nem/shared';
 import { createContext } from 'svelte';
-import type { ContactRepository, SettingsRepository } from '#lib/data/repositories.js';
+import type {
+	ContactRepository,
+	MailRepository,
+	SettingsRepository
+} from '#lib/data/repositories.js';
 import type { AIBackend } from './backend.js';
 import type { CategoryVerdict } from './models/category.js';
+import type { ComposeVerdict } from './models/ngram.js';
 import type { PrioritySignal, PriorityVerdict } from './models/priority-lr.js';
 import type { SmartReplyVerdict } from './models/smart-reply.js';
 import type { SpamVerdict } from './models/spam-nb.js';
@@ -28,6 +33,8 @@ export interface AIUser {
 }
 
 const YOU = 'You';
+/** How many sent conversations smart compose first learns from. */
+const SENT_SAMPLE = 25;
 const DOWNLOAD_FAILED = 'Download failed. Check your connection and try again.';
 
 /** Where one optional model stands on this device. */
@@ -71,11 +78,13 @@ export class AIService {
 
 	#connection: Promise<AIWorkerConnection> | undefined;
 	#frequencies: Promise<ReadonlyMap<string, number>> | undefined;
+	#composeTrained: { userId: string; done: Promise<void> } | undefined;
 
 	constructor(
 		private readonly settings: SettingsRepository | null = null,
 		private readonly connect: ConnectWorker = connectDefault,
-		private readonly contacts: ContactRepository | null = null
+		private readonly contacts: ContactRepository | null = null,
+		private readonly mail: MailRepository | null = null
 	) {}
 
 	/** True when the user has the feature on in Settings (all are on by default). */
@@ -218,6 +227,39 @@ export class AIService {
 	}
 
 	/**
+	 * Ghost text for the paragraph before the caret (AI-5). The first call for an account
+	 * with no saved model trains it on recent sent mail. Null when smart compose is off
+	 * or no continuation is likely enough.
+	 */
+	async complete(user: AIUser, before: string): Promise<ComposeVerdict | null> {
+		if (!this.isEnabled('smartCompose')) return null;
+		await this.#trainCompose(user);
+		const { api } = await this.#worker();
+		return api.complete(user.id, before);
+	}
+
+	/** Teaches smart compose from a message the user sent. */
+	async learnCompose(userId: string, text: string): Promise<void> {
+		if (!this.isEnabled('smartCompose') || !text.trim()) return;
+		const { api } = await this.#worker();
+		await api.learnCompose(userId, [text]);
+	}
+
+	#trainCompose(user: AIUser): Promise<void> {
+		if (this.#composeTrained?.userId !== user.id) {
+			const done = (async () => {
+				const { api } = await this.#worker();
+				if (await api.hasComposeModel(user.id)) return;
+				await api.learnCompose(user.id, await sentTexts(this.mail, user.email));
+			})().catch(() => {
+				// Suggestions still come from the seed corpus; the next session tries again.
+			});
+			this.#composeTrained = { userId: user.id, done };
+		}
+		return this.#composeTrained.done;
+	}
+
+	/**
 	 * Scores threads for the priority inbox (AI-6) and remembers the scores by thread id.
 	 * Already-scored threads are skipped. Null when the user turned priority off.
 	 */
@@ -262,6 +304,7 @@ export class AIService {
 		this.summaries = {};
 		this.replies = {};
 		this.#frequencies = undefined;
+		this.#composeTrained = undefined;
 	}
 
 	async #priorityInputs(user: AIUser, threads: readonly (ThreadSummary | Thread)[]) {
@@ -293,6 +336,19 @@ export class AIService {
 export function spamText(message: Message): string {
 	return `${message.subject}
 ${message.bodyText}`;
+}
+
+/** Body text of the user's own messages in their latest sent conversations. */
+async function sentTexts(mail: MailRepository | null, selfEmail: string): Promise<string[]> {
+	if (!mail) return [];
+	const self = selfEmail.toLowerCase();
+	const page = await mail.list({ mailbox: 'sent' }, { limit: SENT_SAMPLE });
+	const threads = await Promise.all(page.items.map((thread) => mail.get(thread.id)));
+	return threads.flatMap((thread) =>
+		thread.messages
+			.filter((message) => message.from.email.toLowerCase() === self)
+			.map((message) => message.bodyText)
+	);
 }
 
 function categoryInput(message: Message) {
