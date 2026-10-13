@@ -14,6 +14,7 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -115,6 +116,27 @@ class SessionTest {
     assertThat(status("c2hvcnQ", "/me", false)).isEqualTo(401);
     assertThat(status(Base64.getUrlEncoder().encodeToString(new byte[32]), "/me", false))
         .isEqualTo(401);
+  }
+
+  @Test
+  void theBearerSchemeIsCaseInsensitiveAndOtherSchemesAreIgnored() {
+    String token = tokenFor(ada);
+
+    assertThat(withAuthorization("bearer " + token)).isEqualTo(200);
+    assertThat(withAuthorization("BEARER  " + token)).isEqualTo(200);
+    assertThat(withAuthorization("Basic " + token)).isEqualTo(401);
+    assertThat(withAuthorization(token)).isEqualTo(401);
+  }
+
+  private int withAuthorization(String header) {
+    return api.http()
+        .get()
+        .uri("/me")
+        .header(HttpHeaders.AUTHORIZATION, header)
+        .retrieve()
+        .toBodilessEntity()
+        .getStatusCode()
+        .value();
   }
 
   private ResponseEntity<JsonNode> signIn(String email, String password) {

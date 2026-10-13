@@ -177,6 +177,43 @@ class ApiInfrastructureTest {
     assertThat(ping("203.0.113.8").getStatusCode().value()).isEqualTo(200);
   }
 
+  @Test
+  void signInAndSignUpHaveAStricterLimitOfTheirOwn() {
+    String ip = "203.0.113.20";
+    for (int i = 0; i < 10; i++) {
+      assertThat(signIn(ip).getStatusCode().value()).isEqualTo(401);
+    }
+    ResponseEntity<String> limited = signIn(ip);
+
+    assertThat(limited.getStatusCode().value()).isEqualTo(429);
+    assertThat(limited.getHeaders().getFirst("Retry-After")).isNotBlank();
+    assertThat(limited.getBody()).contains("\"code\":\"RATE_LIMITED\"");
+    // Sign-up shares the bucket; the rest of the API and other clients are untouched.
+    assertThat(
+            http.post()
+                .uri("/auth/signup")
+                .header("X-Forwarded-For", ip)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("{}")
+                .retrieve()
+                .toEntity(String.class)
+                .getStatusCode()
+                .value())
+        .isEqualTo(429);
+    assertThat(ping(ip).getStatusCode().value()).isEqualTo(200);
+    assertThat(signIn("203.0.113.21").getStatusCode().value()).isEqualTo(401);
+  }
+
+  private ResponseEntity<String> signIn(String ip) {
+    return http.post()
+        .uri("/auth/signin")
+        .header("X-Forwarded-For", ip)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body("{\"email\":\"nobody@nemmail.example\",\"password\":\"guess-guess\"}")
+        .retrieve()
+        .toEntity(String.class);
+  }
+
   private ResponseEntity<String> ping(String ip) {
     return http.get()
         .uri("/probe/ping")
