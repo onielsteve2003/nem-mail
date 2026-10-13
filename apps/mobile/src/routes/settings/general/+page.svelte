@@ -1,15 +1,14 @@
 <script lang="ts">
-	import { DEFAULT_SETTINGS, type Settings } from '@nem/shared';
+	import type { Settings } from '@nem/shared';
 	import { resolve } from '$app/paths';
 	import SectionHeader from '#components/ui/SectionHeader.svelte';
 	import SegmentedControl from '#components/ui/SegmentedControl.svelte';
 	import Toggle from '#components/ui/Toggle.svelte';
 	import { getRepositories } from '#lib/data/provider.js';
 	import { DENSITY_OPTIONS, REPLY_OPTIONS, THEME_OPTIONS } from '#features/settings/general.js';
+	import { SettingsEditor } from '#features/settings/editor.svelte.js';
 	import SettingsScreen from '#features/settings/SettingsScreen.svelte';
 	import { getThemeStore } from '#lib/stores/theme.svelte.js';
-	import { toastStore } from '#lib/stores/toast.svelte.js';
-	import { errorMessage } from '#lib/utils/errors.js';
 
 	const COPY = {
 		title: 'General',
@@ -24,39 +23,18 @@
 		archive: 'Archiving',
 		archiveHint: 'Ask before a conversation is archived',
 		send: 'Sending',
-		sendHint: 'Ask before a message is sent',
-		saveFailed: 'Could not save settings.'
+		sendHint: 'Ask before a message is sent'
 	};
 
-	const repos = getRepositories();
 	const theme = getThemeStore();
-
-	// The theme store is the source of truth for theme, so it paints before settings load.
-	let settings = $state<Settings>({
-		...structuredClone(DEFAULT_SETTINGS),
-		theme: theme.preference
-	});
-
-	repos.settings.get().then(
-		(saved) => (settings = { ...saved, theme: theme.preference }),
-		() => {
-			// Defaults stay on screen; the first change saves them.
-		}
+	const editor = new SettingsEditor(getRepositories().settings, (next) =>
+		theme.setPreference(next.theme)
 	);
+	const update = (patch: Partial<Settings>) => editor.update(patch);
+	const settings = $derived(editor.settings);
 
-	/** Applies a change on screen at once, then saves; a failed save rolls back. */
-	async function update(patch: Partial<Settings>): Promise<void> {
-		const before = settings;
-		settings = { ...settings, ...patch };
-		if (patch.theme) theme.setPreference(patch.theme);
-		try {
-			settings = await repos.settings.save($state.snapshot(settings));
-		} catch (error) {
-			settings = before;
-			if (patch.theme) theme.setPreference(before.theme);
-			toastStore.show({ message: errorMessage(error, COPY.saveFailed), tone: 'error' });
-		}
-	}
+	// The theme store is the source of truth for theme; it paints before settings load.
+	void editor.load({ theme: theme.preference });
 
 	function setConfirm(key: keyof Settings['confirm'], value: boolean): void {
 		void update({ confirm: { ...settings.confirm, [key]: value } });

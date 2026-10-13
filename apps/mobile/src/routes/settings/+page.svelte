@@ -1,6 +1,7 @@
 <script lang="ts">
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
+	import Hand from '@lucide/svelte/icons/hand';
 	import Tag from '@lucide/svelte/icons/tag';
 	import { resolve } from '$app/paths';
 	import Icon from '#components/ui/Icon.svelte';
@@ -15,6 +16,12 @@
 			subtitle: 'Theme, density, default reply, confirmations',
 			icon: SlidersHorizontal,
 			href: resolve('/settings/general')
+		},
+		{
+			title: 'Swipe actions',
+			subtitle: 'What swiping a conversation left or right does',
+			icon: Hand,
+			href: resolve('/settings/swipe')
 		},
 		{
 			title: 'Labels',
