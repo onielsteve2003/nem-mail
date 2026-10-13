@@ -4,6 +4,7 @@
 	import Hand from '@lucide/svelte/icons/hand';
 	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import Tag from '@lucide/svelte/icons/tag';
+	import UserRound from '@lucide/svelte/icons/user-round';
 	import { resolve } from '$app/paths';
 	import Icon from '#components/ui/Icon.svelte';
 	import ListItem from '#components/ui/ListItem.svelte';
@@ -29,6 +30,12 @@
 			subtitle: 'Turn features on or off, manage on-device models',
 			icon: Sparkles,
 			href: resolve('/settings/ai')
+		},
+		{
+			title: 'Account',
+			subtitle: 'Signature, vacation responder, notifications',
+			icon: UserRound,
+			href: resolve('/settings/account')
 		},
 		{
 			title: 'Labels',
