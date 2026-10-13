@@ -53,3 +53,16 @@ test('F6 search: type a query, see highlighted results, narrow with a chip, find
 	await expect(page.getByRole('heading', { name: 'Recent searches' })).toBeVisible();
 	await expect(page.getByRole('button', { name: word, exact: true })).toBeVisible();
 });
+
+test('F6 search: Semantic asks for the model before it ranks by meaning', async ({ page }) => {
+	await openInbox(page);
+	await page.goto('/search?q=the');
+	await expect(page.locator('.results .row').first()).toBeVisible({ timeout: 10_000 });
+
+	const semantic = page.getByRole('button', { name: 'Semantic' });
+	await semantic.click();
+	await expect(semantic).toHaveAttribute('aria-pressed', 'true');
+	// No model on a fresh device: the toggle explains and offers the download, keyword results stay.
+	await expect(page.getByRole('button', { name: 'Download model' })).toBeVisible();
+	await expect(page.locator('.results .row').first()).toBeVisible();
+});

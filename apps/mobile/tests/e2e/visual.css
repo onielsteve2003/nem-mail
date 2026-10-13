@@ -1,0 +1,9 @@
+/* AI output (nudges, row badges, summaries, quick actions, smart replies) lands in any order after the
+   rows, so visual snapshots leave it out; the flow specs cover it. */
+.nudges,
+.extraction,
+.row__ai,
+.summary-card,
+.smart-replies {
+	display: none !important;
+}
