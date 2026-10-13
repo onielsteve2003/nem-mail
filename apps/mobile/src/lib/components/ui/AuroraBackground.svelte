@@ -120,10 +120,14 @@
 		}
 	}
 
-	/* Reduced motion: a still composition at the first keyframe. */
+	/* Reduced motion and low power (utils/low-power.ts): a still composition at the first keyframe. */
 	@media (prefers-reduced-motion: reduce) {
 		.blob {
 			animation: none;
 		}
+	}
+	:global(:root[data-low-power='true']) .blob {
+		animation: none;
+		will-change: auto;
 	}
 </style>

@@ -62,4 +62,12 @@ describe('AuroraBackground', () => {
 
 		expect(reduced).toMatch(/\.blob \{\s*animation: none;/);
 	});
+
+	it('stops the animation in low-power mode', () => {
+		const source = readFileSync(join(import.meta.dirname, 'AuroraBackground.svelte'), 'utf8');
+
+		expect(source).toMatch(
+			/:global\(:root\[data-low-power='true'\]\) \.blob \{\s*animation: none;/
+		);
+	});
 });

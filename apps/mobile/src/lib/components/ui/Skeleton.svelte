@@ -55,6 +55,11 @@
 		transform: translateX(-100%);
 		animation: shimmer calc(var(--nm-duration-slower) * 3) var(--nm-ease-standard) infinite;
 	}
+	/* Low power: plain bones, no shimmer sweep. */
+	:global(:root[data-low-power='true']) .bone::after {
+		animation: none;
+		display: none;
+	}
 	.bone--text {
 		block-size: 0.75em;
 		border-radius: var(--nm-radius-xs);

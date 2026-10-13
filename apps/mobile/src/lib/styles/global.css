@@ -243,6 +243,19 @@ a {
 	}
 }
 
+/*
+ * Low power (utils/low-power.ts): glass loses its backdrop blur, which repaints on
+ * every scroll frame, and falls back to the solid raised surface. Components stop
+ * their own ambient loops under the same attribute.
+ */
+:root[data-low-power='true'] * {
+	-webkit-backdrop-filter: none !important;
+	backdrop-filter: none !important;
+}
+:root[data-low-power='true'] {
+	--nm-color-glass: var(--nm-color-surface-2);
+}
+
 /* Fields never drop under 16px, so iOS Safari does not zoom in on focus (components set it too). */
 input:not([type='checkbox'], [type='radio'], [type='range'], [type='file']),
 textarea,

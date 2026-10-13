@@ -53,6 +53,10 @@
 		box-shadow: var(--nm-glow-violet), var(--nm-glow-cyan);
 		animation: breathe 3.2s var(--nm-ease-standard) infinite alternate;
 	}
+	/* Low power: no ambient breathing (the thinking ring below still turns: it means work). */
+	:global(:root[data-low-power='true']) .orb::before {
+		animation: none;
+	}
 	/* Thinking: a conic aurora ring turning around the orb (transform only). */
 	.orb--thinking::after {
 		content: '';

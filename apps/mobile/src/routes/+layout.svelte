@@ -26,6 +26,7 @@
 	import { displayMode } from '#lib/utils/display-mode.js';
 	import { guardRedirect } from '#lib/utils/guard.js';
 	import { watchKeyboard } from '#lib/utils/keyboard.js';
+	import { watchLowPower } from '#lib/utils/low-power.js';
 	import { backAction, navDirection, type NavDirection } from '#lib/utils/navigation.js';
 	import { hideSplashScreen } from '#lib/utils/splash-screen.js';
 	import { syncStatusBar } from '#lib/utils/status-bar.js';
@@ -50,6 +51,8 @@
 		);
 	});
 	$effect(() => watchKeyboard(document.documentElement));
+	// Low battery, Data Saver or a low-memory device: ambient effects go still.
+	$effect(() => watchLowPower(document.documentElement));
 
 	// One data layer and one set of stores for the whole app (architecture §8).
 	const data = createRepositories(config, { search: location.search });
