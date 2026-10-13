@@ -1,9 +1,11 @@
 import { defineEnvVars } from '@sveltejs/kit/env';
+import pkg from '../package.json' with { type: 'json' };
 
 export const DATA_SOURCES = ['mock', 'api'] as const;
 export type DataSource = (typeof DATA_SOURCES)[number];
 
-const DEFAULT_APP_VERSION = '0.0.0-dev';
+// The release version from package.json, unless PUBLIC_APP_VERSION overrides it.
+const DEFAULT_APP_VERSION = pkg.version;
 
 /** Treats a missing or blank variable as unset, so an empty line in .env falls back to the default. */
 function blankToUndefined(value: string | undefined): string | undefined {

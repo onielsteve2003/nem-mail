@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { variables } from '../env.js';
+import pkg from '../../package.json' with { type: 'json' };
 
 vi.mock('$app/env/public', () => ({
 	PUBLIC_DATA_SOURCE: 'mock',
@@ -38,8 +39,8 @@ describe('env variables', () => {
 		expect(await parse('PUBLIC_API_URL', '/api/v1')).toHaveProperty('issues');
 	});
 
-	it('falls back to a dev version', async () => {
-		expect(await parse('PUBLIC_APP_VERSION', '')).toEqual({ value: '0.0.0-dev' });
+	it('falls back to the package.json version', async () => {
+		expect(await parse('PUBLIC_APP_VERSION', '')).toEqual({ value: pkg.version });
 		expect(await parse('PUBLIC_APP_VERSION', '1.0.0')).toEqual({ value: '1.0.0' });
 	});
 });

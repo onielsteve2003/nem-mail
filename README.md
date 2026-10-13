@@ -10,6 +10,8 @@ An AI-powered, Gmail-style mail app for phones, with its own visual identity cal
   <img src="docs/media/search.gif" width="250" alt="Typing a search and seeing suggestions and results" />
 </p>
 
+Full walkthrough video: [docs/media/walkthrough.webm](docs/media/walkthrough.webm) · Case study: [docs/case-study.md](docs/case-study.md)
+
 > Phase 1 (this release) is the full frontend against a realistic mock backend in IndexedDB. Phase 2 adds a Java + Spring Boot API with no UI changes, thanks to the repository layer.
 
 ## Features
@@ -135,6 +137,8 @@ npm run cap:android  # open the Android project in Android Studio
 ```
 
 Run it from Android Studio or with `npx cap run android`. On Android Chrome you can also use **Install app** from the browser menu.
+
+No Android tooling? The [Android build](.github/workflows/android.yml) workflow builds a debug APK on every change to the native project and launches it on an emulator. Download `nem-mail-debug-apk` from the latest run on the Actions tab and install it on a phone (allow installs from unknown sources).
 
 ## License
 
