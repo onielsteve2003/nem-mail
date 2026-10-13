@@ -4,6 +4,27 @@ spring:
   threads:
     virtual:
       enabled: true
+  # No defaults on purpose: production must set these, and startup fails fast if
+  # it does not. The local profile and the tests supply their own.
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    hikari:
+      # Neon free: few connections, and none held while idle so the compute can
+      # suspend. A longer connect timeout covers Neon waking from suspend.
+      maximum-pool-size: 5
+      minimum-idle: 0
+      idle-timeout: 60000 # ms (Hikari binds plain longs)
+      max-lifetime: 300000
+      connection-timeout: 15000
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Flyway owns the schema; Hibernate only checks the entities match it.
+      ddl-auto: validate
+  flyway:
+    locations: classpath:db/migration
 
 server:
   # Render injects PORT; 8080 locally.

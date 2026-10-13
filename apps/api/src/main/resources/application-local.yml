@@ -4,7 +4,7 @@ spring:
     # Same .env as docker compose; optional, so the defaults below still work without it.
     import: optional:file:.env[.properties]
   datasource:
-    url: jdbc:postgresql://localhost:${DB_PORT:5432}/${DB_NAME:nemmail}
+    url: jdbc:postgresql://localhost:${DB_PORT:5433}/${DB_NAME:nemmail}
     username: ${DB_USER:nemmail}
     password: ${DB_PASSWORD:nemmail}
   mail:
