@@ -19,19 +19,17 @@ import app.nemmail.api.mail.MessageRepository;
 import app.nemmail.api.mail.MessageStatus;
 import app.nemmail.api.search.Embedding;
 import app.nemmail.api.search.EmbeddingRepository;
+import app.nemmail.api.support.IntegrationTest;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.transaction.annotation.Transactional;
 
 /** Hibernate validates every entity at startup; this checks the mappings round-trip. */
-@SpringBootTest
-@Import(TestcontainersConfiguration.class)
+@IntegrationTest
 @Transactional
 class SchemaTest {
 

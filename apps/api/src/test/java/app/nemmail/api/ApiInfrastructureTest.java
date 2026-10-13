@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import app.nemmail.api.common.ApiException;
 import app.nemmail.api.common.ErrorCode;
+import app.nemmail.api.support.ApiClient;
+import app.nemmail.api.support.TestcontainersConfiguration;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -59,11 +61,7 @@ class ApiInfrastructureTest {
 
   @BeforeEach
   void setUp() {
-    http =
-        RestClient.builder()
-            .baseUrl("http://localhost:" + port + "/api/v1")
-            .defaultStatusHandler(status -> true, (request, response) -> {})
-            .build();
+    http = ApiClient.create(port);
   }
 
   @Test
