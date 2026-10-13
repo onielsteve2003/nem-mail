@@ -10,7 +10,12 @@ An AI-powered, Gmail-style mail app for phones, with its own visual identity cal
   <img src="docs/media/search.gif" width="250" alt="Typing a search and seeing suggestions and results" />
 </p>
 
-Full walkthrough video: [docs/media/walkthrough.webm](docs/media/walkthrough.webm) · Case study: [docs/case-study.md](docs/case-study.md)
+<details>
+<summary>Full 35-second walkthrough</summary>
+<p><img src="docs/media/walkthrough.gif" width="276" alt="Onboarding, inbox, a thread with a smart reply sent, the drawer, search and settings" /></p>
+</details>
+
+Case study: [docs/case-study.md](docs/case-study.md)
 
 > Phase 1 (this release) is the full frontend against a realistic mock backend in IndexedDB. Phase 2 adds a Java + Spring Boot API with no UI changes, thanks to the repository layer.
 

@@ -9,7 +9,9 @@
   <img src="media/portfolio/search-light-iphone.png" width="200" alt="Search results in the light theme" />
 </p>
 
-Walkthrough video (35 s, Pixel 7 size): [media/walkthrough.webm](media/walkthrough.webm)
+Walkthrough (35 s, Pixel 7 size):
+
+<img src="media/walkthrough.gif" width="276" alt="Onboarding, inbox, a thread with a smart reply sent, the drawer, search and settings" />
 
 ## The brief
 
