@@ -5,6 +5,7 @@ import { MockMailSimulator } from './mock/arrival.js';
 import { MockAuthRepository } from './mock/auth.js';
 import { MockContactRepository } from './mock/contacts.js';
 import { MockContext, readFailRate } from './mock/context.js';
+import { resetToSeed } from './mock/db.js';
 import { MockDraftRepository } from './mock/drafts.js';
 import { MockLabelRepository } from './mock/labels.js';
 import { MockMailRepository } from './mock/mail.js';
@@ -19,6 +20,8 @@ export interface DataLayer {
 	start(): () => void;
 	/** Checks for new mail now (pull to refresh). The mock delivers one simulated arrival. */
 	sync(): Promise<void>;
+	/** Puts the demo data back to the seed (Settings → About). The caller reloads the app. */
+	resetDemo(): Promise<void>;
 }
 
 export interface DataLayerOptions {
@@ -37,7 +40,11 @@ export function createRepositories(
 		return {
 			repos: createHttpRepositories(config.apiUrl),
 			start: () => () => {},
-			sync: async () => {}
+			sync: async () => {},
+			// The server resets the demo nightly (T20.x); there is no per-user reset.
+			resetDemo: async () => {
+				throw new Error('Reset demo data works only on demo data.');
+			}
 		};
 	}
 	const ctx = new MockContext({ failRate: readFailRate(options.search ?? ''), ...options.mock });
@@ -60,9 +67,16 @@ export function createRepositories(
 		},
 		async sync() {
 			await simulator.arrive();
+		},
+		async resetDemo() {
+			simulator.stop();
+			await resetToSeed(await ctx.db());
 		}
 	};
 }
 
 /** Shares the repositories with stores and routes; set once in the root layout (T4.1). */
 export const [getRepositories, setRepositories] = createContext<Repositories>();
+
+/** Shares the whole data layer, for the few screens that need more than repositories. */
+export const [getDataLayer, setDataLayer] = createContext<DataLayer>();

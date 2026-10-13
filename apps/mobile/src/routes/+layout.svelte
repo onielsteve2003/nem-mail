@@ -14,7 +14,7 @@
 	import Toaster from '#components/ui/Toaster.svelte';
 	import ComposeSheet from '#features/compose/ComposeSheet.svelte';
 	import { config } from '#lib/config.js';
-	import { createRepositories, setRepositories } from '#lib/data/provider.js';
+	import { createRepositories, setDataLayer, setRepositories } from '#lib/data/provider.js';
 	import { setupIonic } from '#lib/ionic.js';
 	import { prefersReducedMotion, slideStack } from '#lib/motion/index.js';
 	import { createAppStores, resetOnUserChange, setAppStores } from '#lib/stores/app.svelte.js';
@@ -40,6 +40,7 @@
 	// One data layer and one set of stores for the whole app (architecture §8).
 	const data = createRepositories(config, { search: location.search });
 	setRepositories(data.repos);
+	setDataLayer(data);
 	const stores = createAppStores(data.repos, data.sync);
 	setAppStores(stores);
 	void stores.session.restore();

@@ -2,6 +2,7 @@
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
 	import Hand from '@lucide/svelte/icons/hand';
+	import Info from '@lucide/svelte/icons/info';
 	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import Tag from '@lucide/svelte/icons/tag';
 	import UserRound from '@lucide/svelte/icons/user-round';
@@ -42,6 +43,12 @@
 			subtitle: 'Create, rename, recolor and delete',
 			icon: Tag,
 			href: resolve('/settings/labels')
+		},
+		{
+			title: 'About and help',
+			subtitle: 'Version, tips, tech stack, licenses, reset demo data',
+			icon: Info,
+			href: resolve('/settings/about')
 		}
 	];
 </script>

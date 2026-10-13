@@ -6,6 +6,7 @@ import {
 	openMockDb,
 	resetToSeed,
 	seedIfEmpty,
+	setMeta,
 	stripOwner,
 	type MockDb
 } from './db.js';
@@ -70,6 +71,24 @@ describe('mock IndexedDB', () => {
 		expect(await db.count('threads')).toBe(before);
 		expect(await db.get('threads', 'u2-t1')).toBeDefined();
 		expect(await db.count('blobs')).toBe(0);
+	});
+
+	it('resetToSeed keeps seeded accounts signed in and drops new ones', async () => {
+		const db = await freshDb();
+		await seedIfEmpty(db, { now: NOW });
+		const signedInAt = NOW.toISOString();
+		await setMeta(db, 'session', {
+			userId: 'new-user',
+			accounts: [
+				{ id: 'u2', signedInAt },
+				{ id: 'new-user', signedInAt }
+			]
+		});
+		await resetToSeed(db, { now: NOW });
+		expect(await getMeta(db, 'session')).toEqual({
+			userId: 'u2',
+			accounts: [{ id: 'u2', signedInAt }]
+		});
 	});
 
 	it('keeps data across reopening', async () => {

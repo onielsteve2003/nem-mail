@@ -107,9 +107,20 @@ export async function seedIfEmpty(db: MockDb, options: SeedOptions = {}): Promis
 	return true;
 }
 
-/** Wipes every store and writes a fresh seed (Settings → "Reset demo data"). */
+/**
+ * Wipes every store and writes a fresh seed (Settings → "Reset demo data"). Signed-in
+ * demo accounts stay signed in; accounts created since the last seed are gone.
+ */
 export async function resetToSeed(db: MockDb, options: SeedOptions = {}): Promise<void> {
-	await writeSeed(db, generateSeed(options));
+	const data = generateSeed(options);
+	const session = await getMeta(db, 'session');
+	await writeSeed(db, data);
+	if (!session) return;
+	const seeded = new Set(data.accounts.map((account) => account.user.id));
+	const accounts = session.accounts.filter((account) => seeded.has(account.id));
+	const userId =
+		session.userId && seeded.has(session.userId) ? session.userId : (accounts[0]?.id ?? null);
+	await setMeta(db, 'session', { userId, accounts });
 }
 
 /** Clears all stores and writes `data` in one transaction, so a failed seed leaves nothing half-written. */
