@@ -17,6 +17,7 @@ export const PACKAGE_CREDITS: readonly Credit[] = [
 	{ name: '@capacitor/android', license: 'MIT', use: 'Android app' },
 	{ name: '@capacitor/app', license: 'MIT', use: 'Back button and app state' },
 	{ name: '@capacitor/haptics', license: 'MIT', use: 'Haptic feedback' },
+	{ name: '@capacitor/ios', license: 'MIT', use: 'iOS app' },
 	{ name: '@capacitor/keyboard', license: 'MIT', use: 'On-screen keyboard events' },
 	{ name: '@capacitor/local-notifications', license: 'MIT', use: 'New-mail alerts' },
 	{ name: '@capacitor/share', license: 'MIT', use: 'System share sheet' },

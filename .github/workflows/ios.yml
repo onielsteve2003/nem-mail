@@ -1,0 +1,51 @@
+name: iOS build
+
+# A cloud Mac check that the Xcode project still compiles. It builds for the
+# simulator, so no Apple signing is needed. macOS minutes are free on public repos.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - apps/mobile/ios/**
+      - apps/mobile/capacitor.config.ts
+      - apps/mobile/package.json
+      - .github/workflows/ios.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Simulator build
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Build the web app and sync it into ios/
+        working-directory: apps/mobile
+        run: npm run build && npx cap sync ios
+
+      - name: Xcode build (simulator, unsigned)
+        working-directory: apps/mobile/ios/App
+        run: >
+          xcodebuild build
+          -project App.xcodeproj
+          -scheme App
+          -configuration Debug
+          -sdk iphonesimulator
+          -destination 'generic/platform=iOS Simulator'
+          CODE_SIGNING_ALLOWED=NO

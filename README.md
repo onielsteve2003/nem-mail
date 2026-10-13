@@ -50,16 +50,7 @@ npm run cap:android  # open the Android project in Android Studio
 
 **Android** works on Windows, macOS and Linux. Install [Android Studio](https://developer.android.com/studio), which includes the JDK and Android SDK. Then run the app from Android Studio or with `npx cap run android`.
 
-**iOS** needs a Mac with Xcode, so the `ios/` project is not in the repo yet. On a Mac, from `apps/mobile`:
-
-```bash
-npm install @capacitor/ios
-npx cap add ios
-npm run cap:sync
-npx cap open ios
-```
-
-A free Apple ID can sideload the app onto an iPhone for 7 days. Without a Mac, open the [web demo](https://nem-mail.vercel.app) in Safari, tap Share, then **Add to Home Screen**.
+**iOS** needs a Mac with Xcode. The `ios/` project is in the repo; on a Mac, from `apps/mobile`, run `npm run cap:sync` then `npx cap open ios`. A free Apple ID can sideload the app onto an iPhone for 7 days. Without a Mac, open the [web demo](https://nem-mail.vercel.app) in Safari, tap Share, then **Add to Home Screen**. Full steps and cloud Mac options: [docs/ios.md](docs/ios.md).
 
 ## License
 
