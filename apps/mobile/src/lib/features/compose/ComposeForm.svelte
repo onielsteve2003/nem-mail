@@ -11,6 +11,7 @@
 	import IconButton from '#components/ui/IconButton.svelte';
 	import { MAX_ATTACHMENT_BYTES } from '@nem/shared';
 	import { onDestroy, untrack } from 'svelte';
+	import type { ToneVerdict } from '#lib/ai/models/tone.js';
 	import { getAIService } from '#lib/ai/service.svelte.js';
 	import { getRepositories } from '#lib/data/provider.js';
 	import { getMailboxStore } from '#lib/stores/mailbox.svelte.js';
@@ -37,6 +38,8 @@
 	import ScheduleSheet from './ScheduleSheet.svelte';
 	import { fromAddresses, type Recipient } from './recipients.js';
 	import { sendDraft, sendProblem } from './send.js';
+	import { toneBeforeSend } from './tone.js';
+	import ToneSheet from './ToneSheet.svelte';
 
 	const COPY = {
 		close: 'Close compose',
@@ -116,6 +119,11 @@
 	let queue: Promise<unknown> = Promise.resolve();
 	let isDiscardOpen = $state(false);
 	let isScheduleOpen = $state(false);
+	// Tone check before sending (AI-8): the send waits here while the sheet is open.
+	let isCheckingTone = $state(false);
+	let isToneOpen = $state(false);
+	let tone = $state<ToneVerdict | null>(null);
+	let toneSendAt: Date | undefined;
 
 	const fields = (): DraftFields => ({
 		to,
@@ -198,6 +206,20 @@
 	/** Checks first, so the schedule sheet only opens for a message that could go out. */
 	function openSchedule() {
 		if (!problem()) isScheduleOpen = true;
+	}
+
+	/** Validates, then checks the tone; a harsh message opens the tone sheet instead of sending. */
+	async function requestSend(sendAt?: Date) {
+		if (isCheckingTone || problem()) return;
+		isCheckingTone = true;
+		const text = `${subject}
+${ownBodyText(bodyHtml)}`;
+		const verdict = await toneBeforeSend(() => ai.checkTone(text));
+		isCheckingTone = false;
+		if (!verdict) return send(sendAt);
+		tone = verdict;
+		toneSendAt = sendAt;
+		isToneOpen = true;
 	}
 
 	/**
@@ -385,8 +407,13 @@
 		onchange={(event) => addFiles(event.currentTarget.files)}
 	/>
 	<IconButton icon={Trash2} label={COPY.discard} onclick={() => (isDiscardOpen = true)} />
-	<IconButton icon={Clock} label={COPY.schedule} disabled={!isReady} onclick={openSchedule} />
-	<Button size="sm" disabled={!isReady} onclick={() => send()}>
+	<IconButton
+		icon={Clock}
+		label={COPY.schedule}
+		disabled={!isReady || isCheckingTone}
+		onclick={openSchedule}
+	/>
+	<Button size="sm" disabled={!isReady || isCheckingTone} onclick={() => requestSend()}>
 		{#snippet leading()}<Icon icon={Send} size="sm" />{/snippet}
 		{COPY.send}
 	</Button>
@@ -422,7 +449,13 @@
 	<ComposeAttachments items={attachments} onremove={removeAttachment} onretry={upload} {canRetry} />
 	<BodyEditor bind:value={bodyHtml} {suggest} />
 </div>
-<ScheduleSheet bind:open={isScheduleOpen} onschedule={(at) => send(at)} />
+<ScheduleSheet bind:open={isScheduleOpen} onschedule={(at) => requestSend(at)} />
+<ToneSheet
+	bind:open={isToneOpen}
+	verdict={tone}
+	onedit={() => (tone = null)}
+	onsend={() => void send(toneSendAt)}
+/>
 <ConfirmDialog
 	bind:open={isDiscardOpen}
 	title={COPY.discardTitle}

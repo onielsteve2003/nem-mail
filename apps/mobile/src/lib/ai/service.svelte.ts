@@ -20,6 +20,7 @@ import type { PrioritySignal, PriorityVerdict } from './models/priority-lr.js';
 import type { SmartReplyVerdict } from './models/smart-reply.js';
 import type { SpamVerdict } from './models/spam-nb.js';
 import type { SummaryVerdict } from './models/textrank.js';
+import type { ToneVerdict } from './models/tone.js';
 import { priorityInput, senderFrequencies } from './priority-input.js';
 import { MODELS } from './registry.js';
 import type { AIWorkerConnection } from './worker/connect.js';
@@ -243,6 +244,16 @@ export class AIService {
 		if (!this.isEnabled('smartCompose') || !text.trim()) return;
 		const { api } = await this.#worker();
 		await api.learnCompose(userId, [text]);
+	}
+
+	/**
+	 * Checks how a message the user is about to send may land (AI-8). Null when the tone
+	 * check is off or the message is empty.
+	 */
+	async checkTone(text: string): Promise<ToneVerdict | null> {
+		if (!this.isEnabled('toneCheck') || !text.trim()) return null;
+		const { api } = await this.#worker();
+		return api.checkTone(text);
 	}
 
 	#trainCompose(user: AIUser): Promise<void> {

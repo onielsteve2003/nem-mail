@@ -39,6 +39,8 @@ import {
 	type NgramModel
 } from '../models/ngram.js';
 import { findModel } from '../registry.js';
+import type { ClassifySentiment } from '../models/sentiment.js';
+import { checkTone, type ToneVerdict } from '../models/tone.js';
 import { suggestReplies, type ReplyInput, type SmartReplyVerdict } from '../models/smart-reply.js';
 import type { Summarize } from '../models/summarizer.js';
 import {
@@ -85,6 +87,11 @@ export interface AIWorkerApi {
 	hasComposeModel(userId: string): Promise<boolean>;
 	/** Trains smart compose on sent mail text and saves the model. */
 	learnCompose(userId: string, texts: string[]): Promise<void>;
+	/**
+	 * Tone check before sending (AI-8): the word list, plus DistilBERT SST-2 when it is
+	 * downloaded. Null for an empty message.
+	 */
+	checkTone(text: string): Promise<ToneVerdict | null>;
 	/** Priority scores (AI-6) from the user's logistic regression model. */
 	scorePriority(userId: string, inputs: PriorityInput[]): Promise<PriorityVerdict[]>;
 	/** Learns from marking important / not important, or from opening a message, and saves. */
@@ -110,6 +117,7 @@ function isNaiveBayes(value: unknown): value is NaiveBayesState {
 
 const ZERO_SHOT_MODEL = 'mobilebert-mnli';
 const SUMMARY_MODEL = 'distilbart-cnn';
+const SENTIMENT_MODEL = 'distilbert-sst2';
 
 /** Builds the worker API over the given storage, so tests can run it on the main thread. */
 export function createWorkerApi(
@@ -118,7 +126,8 @@ export function createWorkerApi(
 	probe: () => Promise<AIBackend> = () => detectBackend(),
 	store: ModelStore = idbModelStore(),
 	zeroShot?: () => Promise<ZeroShot>,
-	abstractive?: () => Promise<Summarize>
+	abstractive?: () => Promise<Summarize>,
+	sentiment?: () => Promise<ClassifySentiment>
 ): AIWorkerApi {
 	let backend: Promise<AIBackend> | undefined;
 	const models = new Map<string, Promise<NaiveBayesState>>();
@@ -181,6 +190,12 @@ export function createWorkerApi(
 		if (abstractive) return abstractive();
 		const { abstractiveSummarizer } = await import('../models/summarizer.js');
 		return abstractiveSummarizer(model(SUMMARY_MODEL));
+	}
+	async function sentimentModel(): Promise<ClassifySentiment | null> {
+		if (!(await isModelCached(model(SENTIMENT_MODEL), env).catch(() => false))) return null;
+		if (sentiment) return sentiment();
+		const { sentimentClassifier } = await import('../models/sentiment.js');
+		return sentimentClassifier(model(SENTIMENT_MODEL));
 	}
 	return {
 		backend: () => (backend ??= probe()),
@@ -252,6 +267,13 @@ export function createWorkerApi(
 		smartReplies: async (input) => suggestReplies(input),
 		async complete(userId, before) {
 			return completeText((await composeModel(userId)).model, before);
+		},
+		async checkTone(text) {
+			if (!text.trim()) return null;
+			const classify = await sentimentModel().catch(() => null);
+			// A model that fails to load or run leaves the word list check, never no check.
+			const read = classify ? await classify(text).catch(() => null) : null;
+			return checkTone(text, read);
 		},
 		hasComposeModel: async (userId) => (await composeModel(userId)).isSaved,
 		async learnCompose(userId, texts) {

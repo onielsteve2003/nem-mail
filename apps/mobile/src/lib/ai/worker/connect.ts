@@ -32,6 +32,7 @@ export function connectWorker(): AIWorkerConnection {
 			summarize: (messages) => remote.summarize(messages),
 			smartReplies: (input) => remote.smartReplies(input),
 			complete: (userId, before) => remote.complete(userId, before),
+			checkTone: (text) => remote.checkTone(text),
 			hasComposeModel: (userId) => remote.hasComposeModel(userId),
 			learnCompose: (userId, texts) => remote.learnCompose(userId, texts),
 			scorePriority: (userId, inputs) => remote.scorePriority(userId, inputs),
