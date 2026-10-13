@@ -10,3 +10,11 @@ spring:
   mail:
     host: localhost
     port: ${MAIL_PORT:1025}
+
+nem:
+  cors:
+    allowed-origins:
+      - http://localhost:5173 # vite dev
+      - http://localhost:4173 # vite preview
+      - capacitor://localhost
+      - https://localhost

@@ -35,6 +35,9 @@ spring:
 server:
   # Render injects PORT; 8080 locally.
   port: ${PORT:8080}
+  # Tomcat's RemoteIpValve: X-Forwarded-For counts only when an internal proxy
+  # (Render's) sent it, so clients cannot fake their IP for the rate limiter.
+  forward-headers-strategy: native
   servlet:
     context-path: /api/v1
   error:
@@ -50,3 +53,19 @@ management:
   endpoint:
     health:
       show-details: never
+
+logging:
+  structured:
+    # One JSON object per line (Elastic Common Schema) with the requestId from
+    # the MDC, so the host's log search can filter by request.
+    format:
+      console: ecs
+
+nem:
+  cors:
+    allowed-origins:
+      - https://nem-mail.vercel.app
+      - capacitor://localhost # iOS shell
+      - https://localhost # Android shell
+  rate-limit:
+    requests-per-minute: 120
