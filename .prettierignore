@@ -11,3 +11,4 @@ context/
 CLAUDE.md
 apps/api/build/
 apps/api/.gradle/
+packages/shared/fixtures/

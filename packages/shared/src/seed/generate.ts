@@ -22,6 +22,9 @@ import { createRng, type Rng } from './prng';
 
 export const DEFAULT_SEED = 'nem-mail-demo-2';
 
+/** Fixed clock for fixtures/seed.json; the API moves every timestamp up to its own now. */
+export const SEED_EXPORT_NOW = new Date('2026-01-01T00:00:00.000Z');
+
 export interface SeedOptions {
 	seed?: string;
 	/** Every timestamp is relative to this, so the demo always looks fresh. */

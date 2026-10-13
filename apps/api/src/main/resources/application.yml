@@ -20,6 +20,12 @@ spring:
       connection-timeout: 15000
   jpa:
     open-in-view: false
+    properties:
+      hibernate:
+        # Batch inserts (ids are assigned in Java, so Hibernate can batch); the
+        # seed would otherwise be thousands of round trips to Neon.
+        jdbc.batch_size: 50
+        order_inserts: true
     hibernate:
       # Flyway owns the schema; Hibernate only checks the entities match it.
       ddl-auto: validate

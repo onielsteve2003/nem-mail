@@ -47,6 +47,13 @@ spotless {
 	}
 }
 
+// The shared demo seed (npm run seed:export -w packages/shared) ships on the classpath.
+tasks.processResources {
+	from("../../packages/shared/fixtures/seed.json") {
+		into("seed")
+	}
+}
+
 // The plain jar is unused; the Dockerfile copies the single boot jar.
 tasks.named<Jar>("jar") {
 	enabled = false
