@@ -82,7 +82,7 @@ class SessionTest {
     String phone = tokenFor(ada);
     String laptop = tokenFor(ada);
 
-    assertThat(status(phone, "/auth/signout", true)).isEqualTo(204);
+    assertThat(status(phone, "/auth/signout", true)).isEqualTo(200);
     assertThat(status(phone, "/me", false)).isEqualTo(401);
     assertThat(status(laptop, "/me", false)).isEqualTo(200);
   }

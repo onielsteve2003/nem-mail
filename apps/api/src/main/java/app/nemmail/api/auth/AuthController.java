@@ -31,11 +31,14 @@ class AuthController {
     return auth.signIn(body);
   }
 
+  /** The {@code { ok: true }} body the shared contract (OkSchema) expects. */
+  record Ok(boolean ok) {}
+
   /** Ends this device's session only; other signed-in devices stay signed in. */
   @PostMapping("/auth/signout")
-  @ResponseStatus(HttpStatus.NO_CONTENT)
-  void signOut(@AuthenticationPrincipal CurrentUser current) {
+  Ok signOut(@AuthenticationPrincipal CurrentUser current) {
     sessions.revoke(current.sessionId());
+    return new Ok(true);
   }
 
   @GetMapping("/me")
