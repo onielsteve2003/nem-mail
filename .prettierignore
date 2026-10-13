@@ -9,3 +9,5 @@ android/
 ios/
 context/
 CLAUDE.md
+apps/api/build/
+apps/api/.gradle/

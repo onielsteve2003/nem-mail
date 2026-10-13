@@ -9,6 +9,7 @@ export default defineConfig(
 	{
 		ignores: [
 			'**/build/',
+			'apps/api/',
 			'**/dist/',
 			'**/.svelte-kit/',
 			'**/coverage/',

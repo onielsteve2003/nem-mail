@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: nem-mail-api
+  threads:
+    virtual:
+      enabled: true
+
+server:
+  # Render injects PORT; 8080 locally.
+  port: ${PORT:8080}
+  servlet:
+    context-path: /api/v1
+  error:
+    include-stacktrace: never
+
+management:
+  endpoints:
+    web:
+      # Actuator under the API root, so health is /api/v1/health.
+      base-path: /
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
