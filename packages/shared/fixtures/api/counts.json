@@ -1,21 +1,17 @@
 {
   "mailboxes" : {
-    "inbox" : 1,
-    "starred" : 1,
+    "inbox" : 0,
+    "starred" : 0,
     "snoozed" : 0,
     "important" : 0,
-    "sent" : 1,
+    "sent" : 0,
     "scheduled" : 0,
     "outbox" : 0,
     "drafts" : 1,
-    "all" : 1,
+    "all" : 0,
     "spam" : 0,
     "trash" : 0
   },
-  "categories" : {
-    "updates" : 1
-  },
-  "labels" : {
-    "e07d186b-5b6a-4a20-a521-c5bc8a4f0b24" : 1
-  }
+  "categories" : { },
+  "labels" : { }
 }

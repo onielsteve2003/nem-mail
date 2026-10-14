@@ -154,6 +154,36 @@ public class ThreadOpsService {
   }
 
   /**
+   * Delete forever (FR-6.4): the user's entries of each thread in Spam or Trash are marked deleted,
+   * so the thread leaves every list for this user only. Threads elsewhere are skipped.
+   */
+  @Transactional
+  public List<UUID> deleteForever(UUID userId, List<UUID> threadIds, Instant now) {
+    Map<UUID, List<MailboxEntry>> byThread = load(userId, threadIds);
+    List<UUID> deleted =
+        byThread.entrySet().stream()
+            .filter(thread -> binned(thread.getValue()))
+            .map(Map.Entry::getKey)
+            .toList();
+    deleted.forEach(id -> byThread.get(id).forEach(entry -> entry.setDeletedAt(now)));
+    return deleted;
+  }
+
+  /** Empties Spam or Trash: every thread filed there is deleted forever. */
+  @Transactional
+  public List<UUID> empty(UUID userId, Mailbox bin, Instant now) {
+    if (bin != Mailbox.SPAM && bin != Mailbox.TRASH) {
+      throw Wire.invalid("mailbox", "Only spam or trash can be emptied.");
+    }
+    List<UUID> threadIds =
+        entries.findByUserIdAndMailboxAndDeletedAtIsNull(userId, bin).stream()
+            .map(MailboxEntry::getThreadId)
+            .distinct()
+            .toList();
+    return deleteForever(userId, threadIds, now);
+  }
+
+  /**
    * Wakes every snooze due by {@code now}, for all users (FR-6.3): the snooze is cleared and a
    * thread back in the inbox is unread again; one trashed or spammed meanwhile wakes quietly.
    * Returns how many threads came back to an inbox.
@@ -218,8 +248,13 @@ public class ThreadOpsService {
   /** As the inbox list sees it: some entry in the inbox and none in spam or trash. */
   private static boolean inInbox(List<MailboxEntry> threadEntries) {
     return threadEntries.stream().anyMatch(e -> e.getMailbox() == Mailbox.INBOX)
-        && threadEntries.stream()
-            .noneMatch(e -> e.getMailbox() == Mailbox.SPAM || e.getMailbox() == Mailbox.TRASH);
+        && !binned(threadEntries);
+  }
+
+  /** In Spam or Trash, where the lists show it only there. */
+  private static boolean binned(List<MailboxEntry> threadEntries) {
+    return threadEntries.stream()
+        .anyMatch(e -> e.getMailbox() == Mailbox.SPAM || e.getMailbox() == Mailbox.TRASH);
   }
 
   private static void leaveInbox(MailboxEntry entry) {

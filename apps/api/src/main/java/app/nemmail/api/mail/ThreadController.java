@@ -5,12 +5,15 @@ import app.nemmail.api.common.PageResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -52,6 +55,23 @@ class ThreadController {
   @GetMapping("/threads/{id}")
   ThreadResponse get(@AuthenticationPrincipal CurrentUser current, @PathVariable UUID id) {
     return threads.get(current.userId(), id);
+  }
+
+  /** Delete forever; only threads in Spam or Trash are deleted, others are skipped. */
+  @PostMapping("/threads/delete")
+  BulkThreadRequest.Response delete(
+      @AuthenticationPrincipal CurrentUser current,
+      @Valid @RequestBody BulkThreadRequest.Delete body) {
+    return new BulkThreadRequest.Response(
+        ops.deleteForever(current.userId(), body.ids(), Instant.now()));
+  }
+
+  /** Empties Spam or Trash ({@code :mailbox} is a BinMailbox). */
+  @DeleteMapping("/mailboxes/{mailbox}")
+  BulkThreadRequest.Response empty(
+      @AuthenticationPrincipal CurrentUser current, @PathVariable String mailbox) {
+    return new BulkThreadRequest.Response(
+        ops.empty(current.userId(), Wire.parse(Mailbox.class, mailbox, "mailbox"), Instant.now()));
   }
 
   /** Bulk actions: each op maps to its own transactional service method. */

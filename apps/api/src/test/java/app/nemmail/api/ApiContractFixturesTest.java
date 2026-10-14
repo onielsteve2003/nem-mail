@@ -134,6 +134,25 @@ class ApiContractFixturesTest {
     JsonNode full = keep("getThread", ada.get().uri("/threads/" + thread), 200);
     assertThat(full.get("messages")).hasSize(2);
 
+    // Delete forever (Ada trashes the thread first) and empty (Grace spams her copy).
+    ada.patch()
+        .uri("/threads")
+        .body(Map.of("ids", List.of(thread), "op", Map.of("op", "trash")))
+        .retrieve()
+        .toBodilessEntity();
+    keep(
+        "deleteThreads",
+        ada.post().uri("/threads/delete").body(Map.of("ids", List.of(thread))),
+        200);
+    RestClient grace = api.as(signIn(graceEmail));
+    grace
+        .patch()
+        .uri("/threads")
+        .body(Map.of("ids", List.of(thread), "op", Map.of("op", "spam")))
+        .retrieve()
+        .toBodilessEntity();
+    keep("emptyMailbox", grace.delete().uri("/mailboxes/spam"), 200);
+
     // Contacts, settings, counts
     keep("listContacts", ada.get().uri("/contacts?q=&limit=8"), 200);
     keep("getSettings", ada.get().uri("/settings"), 200);
@@ -162,6 +181,17 @@ class ApiContractFixturesTest {
     assertThat(response.getBody()).as(name).isNotNull();
     fixtures.put(name, response.getBody());
     return response.getBody();
+  }
+
+  private String signIn(String email) {
+    return api.http()
+        .post()
+        .uri("/auth/signin")
+        .body(Map.of("email", email, "password", PASSWORD))
+        .retrieve()
+        .body(JsonNode.class)
+        .get("token")
+        .asString();
   }
 
   private void signUp(String name, String email) {

@@ -145,6 +145,45 @@ class ThreadOpsTest {
   }
 
   @Test
+  void deleteForeverAndEmptyOnlyTouchSpamAndTrash() {
+    assertThat(deleteForever(List.of(thread)).get("updatedIds")).isEmpty();
+    assertThat(ids("inbox")).containsExactly(thread);
+
+    op(Map.of("op", "trash"));
+    assertThat(deleteForever(List.of(thread, UUID.randomUUID().toString())).get("updatedIds"))
+        .hasSize(1);
+    assertThat(ids("trash")).isEmpty();
+    assertThat(ids("sent")).isEmpty();
+    assertThat(
+            api.as(token)
+                .get()
+                .uri("/threads/" + thread)
+                .retrieve()
+                .toBodilessEntity()
+                .getStatusCode()
+                .value())
+        .isEqualTo(404);
+
+    String spam = data.received(ada, "spam@example.com", "Prize", at).getThreadId().toString();
+    patch(List.of(spam), Map.of("op", "spam"));
+    JsonNode emptied = empty("spam").getBody();
+    assertThat(emptied.get("updatedIds").get(0).asString()).isEqualTo(spam);
+    assertThat(ids("spam")).isEmpty();
+    assertThat(empty("inbox").getStatusCode().value()).isEqualTo(422);
+    assertThat(empty("archive").getStatusCode().value()).isEqualTo(422);
+    assertThat(
+            api.as(token)
+                .post()
+                .uri("/threads/delete")
+                .body(Map.of("ids", List.of()))
+                .retrieve()
+                .toBodilessEntity()
+                .getStatusCode()
+                .value())
+        .isEqualTo(422);
+  }
+
+  @Test
   void labelsAndTabs() {
     String work = data.label(ada, "Work", LabelColor.LIME).getId().toString();
     String foreign = data.label(data.user("Grace"), "Hers", LabelColor.CORAL).getId().toString();
@@ -188,6 +227,19 @@ class ThreadOpsTest {
         .body(Map.of("ids", ids, "op", op))
         .retrieve()
         .toEntity(JsonNode.class);
+  }
+
+  private JsonNode deleteForever(List<String> ids) {
+    return api.as(token)
+        .post()
+        .uri("/threads/delete")
+        .body(Map.of("ids", ids))
+        .retrieve()
+        .body(JsonNode.class);
+  }
+
+  private ResponseEntity<JsonNode> empty(String mailbox) {
+    return api.as(token).delete().uri("/mailboxes/" + mailbox).retrieve().toEntity(JsonNode.class);
   }
 
   private int status(List<String> ids, Map<String, Object> op) {

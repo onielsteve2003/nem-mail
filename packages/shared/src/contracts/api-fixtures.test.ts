@@ -13,8 +13,6 @@ const read = (file: string): unknown => JSON.parse(readFileSync(new URL(file, DI
 
 /** Endpoints later backend tasks add (M17 search, attachments and events; M18 AI) or not yet served. */
 const NOT_YET_SERVED: readonly EndpointName[] = [
-	'deleteThreads',
-	'emptyMailbox',
 	'search',
 	'uploadAttachment',
 	'getAttachment',

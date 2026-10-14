@@ -13,4 +13,7 @@ public record BulkThreadRequest(
 
   /** BulkThreadResponseSchema: the threads that were found and changed. */
   public record Response(List<UUID> updatedIds) {}
+
+  /** {@code POST /threads/delete} (DeleteThreadsRequestSchema): delete forever. */
+  public record Delete(@NotEmpty @Size(max = 500) List<@NotNull UUID> ids) {}
 }
