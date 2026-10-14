@@ -102,6 +102,7 @@ public class DeliveryService {
         inbox.add(userId);
       }
     }
+    Set<UUID> received = Set.copyOf(inbox);
     collectContacts(message, to);
     if (!outside.isEmpty() && !sentOverSmtp(message, to)) {
       bounce(message, outside, now);
@@ -110,6 +111,9 @@ public class DeliveryService {
     Set<UUID> touched = new LinkedHashSet<>(members);
     touched.add(message.getFromUserId());
     events.publishEvent(new MailEvents.NewMail(message.getThreadId(), inbox, touched));
+    if (!received.isEmpty()) {
+      events.publishEvent(new MailEvents.MessageDelivered(messageId, received));
+    }
     return true;
   }
 

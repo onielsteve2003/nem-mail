@@ -15,7 +15,9 @@ import org.springframework.context.annotation.Import;
  * only this annotation shares one Spring context and one container.
  *
  * <p>The per-IP rate limits are raised so a suite of requests from localhost never trips it; {@code
- * ApiInfrastructureTest} checks the real limits in its own context.
+ * ApiInfrastructureTest} checks the real limits in its own context. The AI ingest pipeline is off,
+ * so its async filing (a short mail from a stranger can land in Spam) never races other tests;
+ * {@code IngestPipelineTest} runs it directly.
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
@@ -24,7 +26,8 @@ import org.springframework.context.annotation.Import;
     properties = {
       "nem.rate-limit.requests-per-minute=100000",
       "nem.rate-limit.auth-requests-per-minute=100000",
-      "nem.demo.reset-key=test-reset-key"
+      "nem.demo.reset-key=test-reset-key",
+      "nem.ai.ingest.enabled=false"
     })
 @AutoConfigureMockMvc
 @Import({TestcontainersConfiguration.class, ApiClient.class, TestData.class})

@@ -232,7 +232,7 @@ class EventStreamTest {
     draft.put("cc", List.of());
     draft.put("bcc", List.of());
     draft.put("subject", "Looms");
-    draft.put("bodyHtml", "<p>Punched cards!</p>");
+    draft.put("bodyHtml", "<p>Thanks for the punched cards, see you at the meeting.</p>");
     draft.put("attachments", List.of());
     draft.put("scheduledAt", null);
     draft.put("updatedAt", Instant.now().toString());

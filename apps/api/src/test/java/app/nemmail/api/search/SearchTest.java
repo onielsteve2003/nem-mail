@@ -150,7 +150,10 @@ class SearchTest {
     draft.put("cc", List.of());
     draft.put("bcc", List.of(Map.of("email", eve.getEmail())));
     draft.put("subject", "Engine");
-    draft.put("bodyHtml", "<p>Gears.</p>");
+    // Ordinary mail: the ingest pipeline would file a near-empty one from a stranger as spam.
+    draft.put(
+        "bodyHtml",
+        "<p>Thanks for your help with the engine gears, see you at the meeting on Monday.</p>");
     draft.put("attachments", List.of());
     draft.put("scheduledAt", null);
     draft.put("updatedAt", Instant.now().toString());

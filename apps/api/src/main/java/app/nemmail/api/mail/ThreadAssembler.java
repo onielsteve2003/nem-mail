@@ -147,7 +147,12 @@ class ThreadAssembler {
         threadMessages.stream()
             .flatMap(m -> loaded.attachments().getOrDefault(m.getId(), List.of()).stream())
             .map(a -> new AttachmentPreview(a.getFilename(), a.getMime()))
-            .toList());
+            .toList(),
+        threadMessages.reversed().stream()
+            .map(Message::getAi)
+            .filter(Objects::nonNull)
+            .findFirst()
+            .orElse(null));
   }
 
   /** The summary plus every message the user has, oldest first. */

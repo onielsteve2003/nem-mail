@@ -1,13 +1,14 @@
 package app.nemmail.api.mail;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonRawValue;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
 /**
  * One row of the mail list (ThreadSummarySchema in @nem/shared), folded from the user's entries in
- * the thread. AI insights are filled on ingest (T18), so {@code ai} is left out for now.
+ * the thread. {@code ai} is the newest message's ingest results (stored JSON), left out when none.
  */
 public record ThreadSummaryResponse(
     UUID id,
@@ -25,7 +26,8 @@ public record ThreadSummaryResponse(
     boolean isImportant,
     boolean isMuted,
     Instant snoozedUntil,
-    List<AttachmentPreview> attachments) {
+    List<AttachmentPreview> attachments,
+    @JsonInclude(JsonInclude.Include.NON_NULL) @JsonRawValue String ai) {
 
   /** The same row with another snippet, such as a search excerpt. */
   public ThreadSummaryResponse withSnippet(String text) {
@@ -45,7 +47,8 @@ public record ThreadSummaryResponse(
         isImportant,
         isMuted,
         snoozedUntil,
-        attachments);
+        attachments,
+        ai);
   }
 
   /** A header address; the name is left out when unknown, as AddressSchema expects. */

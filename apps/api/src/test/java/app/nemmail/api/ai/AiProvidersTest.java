@@ -52,7 +52,10 @@ class AiProvidersTest {
     AiProperties.Ollama noOllama =
         new AiProperties.Ollama("", "qwen2.5:0.5b", Duration.ofSeconds(1));
     AiProperties off =
-        new AiProperties(new AiProperties.Embeddings(false, "x", Duration.ofSeconds(1)), noOllama);
+        new AiProperties(
+            new AiProperties.Ingest(true),
+            new AiProperties.Embeddings(false, "x", Duration.ofSeconds(1)),
+            noOllama);
     assertThat(config.embedder(off)).isSameAs(Embedder.NONE);
     assertThat(config.localLlm(off)).isSameAs(LocalLlm.NONE);
     assertThat(Embedder.NONE.embed(List.of("hello"))).isEmpty();
@@ -60,7 +63,10 @@ class AiProvidersTest {
 
     // Tests run without -PwithEmbeddings, so turning embeddings on still falls back.
     AiProperties on =
-        new AiProperties(new AiProperties.Embeddings(true, "x", Duration.ofSeconds(1)), noOllama);
+        new AiProperties(
+            new AiProperties.Ingest(true),
+            new AiProperties.Embeddings(true, "x", Duration.ofSeconds(1)),
+            noOllama);
     assertThat(config.embedder(on)).isSameAs(Embedder.NONE);
   }
 

@@ -90,6 +90,8 @@ nem:
     # POST /admin/demo/reset off.
     reset-key: ${DEMO_RESET_KEY:}
   ai:
+    ingest:
+      enabled: true
     embeddings:
       # Off: needs a -PwithEmbeddings build and ~150 MB more memory than Render
       # free has to spare. The app computes MiniLM embeddings on the device.
