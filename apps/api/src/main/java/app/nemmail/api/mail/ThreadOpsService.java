@@ -13,6 +13,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,12 +32,17 @@ public class ThreadOpsService {
   private final MailboxEntryRepository entries;
   private final MessageRepository messages;
   private final LabelRepository labels;
+  private final ApplicationEventPublisher events;
 
   ThreadOpsService(
-      MailboxEntryRepository entries, MessageRepository messages, LabelRepository labels) {
+      MailboxEntryRepository entries,
+      MessageRepository messages,
+      LabelRepository labels,
+      ApplicationEventPublisher events) {
     this.entries = entries;
     this.messages = messages;
     this.labels = labels;
+    this.events = events;
   }
 
   @Transactional
@@ -207,6 +213,7 @@ public class ThreadOpsService {
               .toList();
       unsnooze(user.getKey(), threadIds);
       markUnread(user.getKey(), back);
+      events.publishEvent(new MailEvents.SnoozeWoke(user.getKey(), back));
       woke += back.size();
     }
     return woke;

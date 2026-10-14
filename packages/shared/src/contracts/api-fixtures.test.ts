@@ -11,17 +11,16 @@ const DIR = new URL('../../fixtures/api/', import.meta.url);
 const files = readdirSync(DIR).filter((name) => name.endsWith('.json'));
 const read = (file: string): unknown => JSON.parse(readFileSync(new URL(file, DIR), 'utf8'));
 
-/** Endpoints later backend tasks add (M17 events; M18 AI) or not yet served. */
+/** Endpoints later backend tasks add (M18 AI) or not yet served. */
 const NOT_YET_SERVED: readonly EndpointName[] = [
 	'aiSummary',
 	'aiReplies',
 	'aiAssistant',
-	'aiFeedback',
-	'events'
+	'aiFeedback'
 ];
 
-/** Served, but the response is file bytes, not JSON (AttachmentTest covers it). */
-const NOT_JSON: readonly EndpointName[] = ['getAttachment'];
+/** Served, but not as JSON: file bytes and the SSE stream (AttachmentTest, EventStreamTest). */
+const NOT_JSON: readonly EndpointName[] = ['getAttachment', 'events'];
 
 describe('API contract fixtures', () => {
 	const endpoints = files.filter((file) => !file.startsWith('error.'));

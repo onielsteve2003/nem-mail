@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -46,6 +47,7 @@ public class DeliveryService {
   private final MailboxEntryRepository entries;
   private final ContactRepository contacts;
   private final ObjectProvider<JavaMailSender> smtp;
+  private final ApplicationEventPublisher events;
 
   DeliveryService(
       MailThreadRepository threads,
@@ -53,7 +55,9 @@ public class DeliveryService {
       MessageRecipientRepository recipients,
       MailboxEntryRepository entries,
       ContactRepository contacts,
-      ObjectProvider<JavaMailSender> smtp) {
+      ObjectProvider<JavaMailSender> smtp,
+      ApplicationEventPublisher events) {
+    this.events = events;
     this.threads = threads;
     this.messages = messages;
     this.recipients = recipients;
@@ -92,16 +96,28 @@ public class DeliveryService {
         members.add(recipient.getUserId());
       }
     }
-    members.forEach(userId -> deliverTo(userId, message));
+    Set<UUID> inbox = new LinkedHashSet<>();
+    for (UUID userId : members) {
+      if (deliverTo(userId, message)) {
+        inbox.add(userId);
+      }
+    }
     collectContacts(message, to);
     if (!outside.isEmpty() && !sentOverSmtp(message, to)) {
       bounce(message, outside, now);
+      inbox.add(message.getFromUserId());
     }
+    Set<UUID> touched = new LinkedHashSet<>(members);
+    touched.add(message.getFromUserId());
+    events.publishEvent(new MailEvents.NewMail(message.getThreadId(), inbox, touched));
     return true;
   }
 
-  /** An inbox copy; a thread the recipient muted skips the inbox (FR-6.6) and keeps its tab. */
-  private void deliverTo(UUID userId, Message message) {
+  /**
+   * An inbox copy; a thread the recipient muted skips the inbox (FR-6.6) and keeps its tab. Returns
+   * whether it went to the inbox.
+   */
+  private boolean deliverTo(UUID userId, Message message) {
     List<MailboxEntry> earlier = entries.findByUserIdAndThreadId(userId, message.getThreadId());
     boolean muted = earlier.stream().anyMatch(MailboxEntry::isMuted);
     Category category =
@@ -121,6 +137,7 @@ public class DeliveryService {
             message.getSentAt());
     entry.setMuted(muted);
     entries.save(entry);
+    return !muted;
   }
 
   /**

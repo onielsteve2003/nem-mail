@@ -4,6 +4,7 @@ import app.nemmail.api.auth.BearerTokenFilter;
 import app.nemmail.api.auth.SessionService;
 import app.nemmail.api.common.ApiErrorResponse;
 import app.nemmail.api.common.ErrorCode;
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import org.springframework.context.annotation.Bean;
@@ -50,6 +51,10 @@ class SecurityConfig {
                     .requestMatchers(HttpMethod.POST, "/admin/demo/reset")
                     .permitAll()
                     .requestMatchers("/health", "/error")
+                    .permitAll()
+                    // The re-dispatch that ends an SSE stream; its request was authorized already,
+                    // and BearerTokenFilter does not run again for it.
+                    .dispatcherTypeMatchers(DispatcherType.ASYNC)
                     .permitAll()
                     .anyRequest()
                     .authenticated())
