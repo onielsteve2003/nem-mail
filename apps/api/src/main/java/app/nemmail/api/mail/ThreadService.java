@@ -1,5 +1,7 @@
 package app.nemmail.api.mail;
 
+import app.nemmail.api.common.ApiException;
+import app.nemmail.api.common.ErrorCode;
 import app.nemmail.api.common.PageResponse;
 import java.time.Instant;
 import java.util.List;
@@ -40,5 +42,15 @@ public class ThreadService {
       next = new ThreadCursor(last.lastMessageAt(), last.threadId()).encode();
     }
     return new PageResponse<>(items, next);
+  }
+
+  /** One thread with its messages; 404 when the user has no message in it. */
+  @Transactional(readOnly = true)
+  public ThreadResponse get(UUID userId, UUID threadId) {
+    return assembler.load(userId, List.of(threadId)).stream()
+        .findFirst()
+        .map(loaded -> assembler.thread(userId, loaded))
+        .orElseThrow(
+            () -> new ApiException(ErrorCode.NOT_FOUND, "This conversation was not found."));
   }
 }

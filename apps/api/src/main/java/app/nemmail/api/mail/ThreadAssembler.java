@@ -1,7 +1,10 @@
 package app.nemmail.api.mail;
 
+import app.nemmail.api.mail.ThreadResponse.AttachmentResponse;
+import app.nemmail.api.mail.ThreadResponse.MessageResponse;
 import app.nemmail.api.mail.ThreadSummaryResponse.Address;
 import app.nemmail.api.mail.ThreadSummaryResponse.AttachmentPreview;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -147,8 +150,51 @@ class ThreadAssembler {
             .toList());
   }
 
+  /** The summary plus every message the user has, oldest first. */
+  ThreadResponse thread(UUID userId, Loaded loaded) {
+    List<MessageResponse> threadMessages = new ArrayList<>();
+    for (int i = 0; i < loaded.messages().size(); i++) {
+      Message message = loaded.messages().get(i);
+      List<MessageRecipient> to = loaded.recipients().getOrDefault(message.getId(), List.of());
+      // Bcc is the sender's secret; other recipients must not learn it.
+      boolean mine = userId.equals(message.getFromUserId());
+      threadMessages.add(
+          new MessageResponse(
+              message.getId(),
+              message.getThreadId(),
+              sender(message),
+              addresses(to, RecipientKind.TO),
+              addresses(to, RecipientKind.CC),
+              mine ? addresses(to, RecipientKind.BCC) : List.of(),
+              message.getSubject(),
+              message.getBodyHtml(),
+              message.getBodyText(),
+              message.getSnippet(),
+              message.getSentAt(),
+              message.getSendAt(),
+              Wire.name(message.getStatus()),
+              message.getInReplyTo(),
+              loaded.attachments().getOrDefault(message.getId(), List.of()).stream()
+                  .map(
+                      a ->
+                          new AttachmentResponse(
+                              a.getId(), a.getFilename(), a.getMime(), a.getSize()))
+                  .toList(),
+              loaded.entries().get(i).isRead(),
+              message.getAi()));
+    }
+    return new ThreadResponse(summary(loaded), threadMessages);
+  }
+
   static Address sender(Message message) {
     return new Address(message.getFromEmail(), message.getFromName());
+  }
+
+  private static List<Address> addresses(List<MessageRecipient> recipients, RecipientKind kind) {
+    return recipients.stream()
+        .filter(r -> r.getKind() == kind)
+        .map(r -> new Address(r.getEmail(), r.getName()))
+        .toList();
   }
 
   /** First occurrence of each address, ignoring case, as toSummary does. */

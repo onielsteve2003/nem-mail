@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Min;
 import java.util.UUID;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -39,5 +40,11 @@ class ThreadController {
                 Wire.parse(MailboxView.class, mailbox, "mailbox"),
                 Wire.parse(Category.class, category, "category"));
     return threads.list(current.userId(), filter, cursor, limit);
+  }
+
+  /** Another user's thread is a 404, the same as a missing one, so ids cannot be probed. */
+  @GetMapping("/threads/{id}")
+  ThreadResponse get(@AuthenticationPrincipal CurrentUser current, @PathVariable UUID id) {
+    return threads.get(current.userId(), id);
   }
 }
