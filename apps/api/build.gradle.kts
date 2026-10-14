@@ -66,6 +66,13 @@ tasks.processResources {
 	}
 }
 
+// QueryParserTest runs the search parser cases the TS parser runs too.
+tasks.processTestResources {
+	from("../../packages/shared/fixtures/search-queries.json") {
+		into("shared")
+	}
+}
+
 // The plain jar is unused; the Dockerfile copies the single boot jar.
 tasks.named<Jar>("jar") {
 	enabled = false

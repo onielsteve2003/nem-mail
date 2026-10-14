@@ -64,8 +64,13 @@ public class TestData {
 
   /** A one-message thread from {@code fromEmail}, delivered to the owner's inbox. */
   public MailboxEntry received(User owner, String fromEmail, String subject, Instant at) {
+    return received(owner, fromEmail, subject, "About " + subject + ".", at);
+  }
+
+  /** The same with a given plain-text body. */
+  public MailboxEntry received(
+      User owner, String fromEmail, String subject, String body, Instant at) {
     MailThread thread = threads.save(new MailThread(UUID.randomUUID(), subject, at));
-    String body = "About " + subject + ".";
     Message message =
         messages.save(
             new Message(

@@ -11,9 +11,8 @@ const DIR = new URL('../../fixtures/api/', import.meta.url);
 const files = readdirSync(DIR).filter((name) => name.endsWith('.json'));
 const read = (file: string): unknown => JSON.parse(readFileSync(new URL(file, DIR), 'utf8'));
 
-/** Endpoints later backend tasks add (M17 search, attachments and events; M18 AI) or not yet served. */
+/** Endpoints later backend tasks add (M17 attachments and events; M18 AI) or not yet served. */
 const NOT_YET_SERVED: readonly EndpointName[] = [
-	'search',
 	'uploadAttachment',
 	'getAttachment',
 	'aiSummary',

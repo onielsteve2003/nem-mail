@@ -1,5 +1,17 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { formatQuery, parseQuery, parseQueryDate, queryTerms } from './query-parser';
+import {
+	formatQuery,
+	parseQuery,
+	parseQueryDate,
+	queryTerms,
+	type SearchClause
+} from './query-parser';
+
+/** Cases the Java port (QueryParserTest in apps/api) runs too, so both parsers agree. */
+const SHARED_CASES = JSON.parse(
+	readFileSync(new URL('../../fixtures/search-queries.json', import.meta.url), 'utf8')
+) as { query: string; clauses: SearchClause[] }[];
 
 describe('parseQuery', () => {
 	it('splits words, lowercases them and ignores extra spaces', () => {
@@ -81,5 +93,11 @@ describe('queryTerms', () => {
 			'big plans',
 			'launch'
 		]);
+	});
+});
+
+describe('shared parser cases', () => {
+	it.each(SHARED_CASES)('parses $query', ({ query, clauses }) => {
+		expect(parseQuery(query).clauses).toEqual(clauses);
 	});
 });

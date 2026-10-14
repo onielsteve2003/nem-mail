@@ -27,6 +27,27 @@ public record ThreadSummaryResponse(
     Instant snoozedUntil,
     List<AttachmentPreview> attachments) {
 
+  /** The same row with another snippet, such as a search excerpt. */
+  public ThreadSummaryResponse withSnippet(String text) {
+    return new ThreadSummaryResponse(
+        id,
+        subject,
+        text,
+        participants,
+        recipients,
+        messageCount,
+        lastMessageAt,
+        mailboxes,
+        category,
+        labelIds,
+        isUnread,
+        isStarred,
+        isImportant,
+        isMuted,
+        snoozedUntil,
+        attachments);
+  }
+
   /** A header address; the name is left out when unknown, as AddressSchema expects. */
   public record Address(String email, @JsonInclude(JsonInclude.Include.NON_NULL) String name) {}
 

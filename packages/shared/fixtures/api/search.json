@@ -1,0 +1,32 @@
+{
+  "items" : [ {
+    "id" : "2068e031-6ce8-424d-b7f3-511aa75a70f4",
+    "subject" : "Compiler notes",
+    "snippet" : "Shall we compare notes on Friday?",
+    "participants" : [ {
+      "email" : "ada-1@nemmail.example",
+      "name" : "Ada Lovelace"
+    }, {
+      "email" : "mailer-daemon@nemmail.app",
+      "name" : "Mail Delivery Subsystem"
+    } ],
+    "recipients" : [ {
+      "email" : "grace-2@nemmail.example",
+      "name" : "Grace Hopper"
+    }, {
+      "email" : "bob@outside.example"
+    } ],
+    "messageCount" : 2,
+    "lastMessageAt" : "2026-10-14T09:13:43.314Z",
+    "mailboxes" : [ "inbox", "sent" ],
+    "category" : "updates",
+    "labelIds" : [ "a016efcc-9164-4c30-aa56-bd5152002237" ],
+    "isUnread" : true,
+    "isStarred" : true,
+    "isImportant" : false,
+    "isMuted" : false,
+    "snoozedUntil" : null,
+    "attachments" : [ ]
+  } ],
+  "nextCursor" : null
+}

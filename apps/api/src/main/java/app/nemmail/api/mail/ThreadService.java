@@ -44,6 +44,12 @@ public class ThreadService {
     return new PageResponse<>(items, next);
   }
 
+  /** List rows for {@code threadIds}, in that order; threads the user cannot see are skipped. */
+  @Transactional(readOnly = true)
+  public List<ThreadSummaryResponse> summaries(UUID userId, List<UUID> threadIds) {
+    return assembler.load(userId, threadIds).stream().map(assembler::summary).toList();
+  }
+
   /** One thread with its messages; 404 when the user has no message in it. */
   @Transactional(readOnly = true)
   public ThreadResponse get(UUID userId, UUID threadId) {

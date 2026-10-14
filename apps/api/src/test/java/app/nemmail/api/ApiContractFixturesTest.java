@@ -133,6 +133,8 @@ class ApiContractFixturesTest {
     assertThat(page.get("items").get(0).get("id").asString()).isEqualTo(thread);
     JsonNode full = keep("getThread", ada.get().uri("/threads/" + thread), 200);
     assertThat(full.get("messages")).hasSize(2);
+    JsonNode found = keep("search", ada.get().uri("/search?q=compiler is:starred"), 200);
+    assertThat(found.get("items").get(0).get("id").asString()).isEqualTo(thread);
 
     // Delete forever (Ada trashes the thread first) and empty (Grace spams her copy).
     ada.patch()

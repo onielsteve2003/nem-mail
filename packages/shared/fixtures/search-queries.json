@@ -1,0 +1,363 @@
+[
+  {
+    "query": "  Budget   Review ",
+    "clauses": [
+      {
+        "kind": "text",
+        "value": "budget",
+        "phrase": false,
+        "negated": false
+      },
+      {
+        "kind": "text",
+        "value": "review",
+        "phrase": false,
+        "negated": false
+      }
+    ]
+  },
+  {
+    "query": "   ",
+    "clauses": []
+  },
+  {
+    "query": "",
+    "clauses": []
+  },
+  {
+    "query": "\"quarterly  plan\" x \"open end",
+    "clauses": [
+      {
+        "kind": "text",
+        "value": "quarterly plan",
+        "phrase": true,
+        "negated": false
+      },
+      {
+        "kind": "text",
+        "value": "x",
+        "phrase": false,
+        "negated": false
+      },
+      {
+        "kind": "text",
+        "value": "open end",
+        "phrase": true,
+        "negated": false
+      }
+    ]
+  },
+  {
+    "query": "from:Ada@Example.com to:grace subject:\"big plans\" has:attachment is:unread is:starred label:Work before:2026/3/7 after:2025-12-31",
+    "clauses": [
+      {
+        "kind": "from",
+        "value": "ada@example.com",
+        "negated": false
+      },
+      {
+        "kind": "to",
+        "value": "grace",
+        "negated": false
+      },
+      {
+        "kind": "subject",
+        "value": "big plans",
+        "negated": false
+      },
+      {
+        "kind": "has",
+        "value": "attachment",
+        "negated": false
+      },
+      {
+        "kind": "is",
+        "value": "unread",
+        "negated": false
+      },
+      {
+        "kind": "is",
+        "value": "starred",
+        "negated": false
+      },
+      {
+        "kind": "label",
+        "value": "work",
+        "negated": false
+      },
+      {
+        "kind": "before",
+        "value": "2026-03-07",
+        "negated": false
+      },
+      {
+        "kind": "after",
+        "value": "2025-12-31",
+        "negated": false
+      }
+    ]
+  },
+  {
+    "query": "-spam -\"daily digest\" -from:bot is:read -",
+    "clauses": [
+      {
+        "kind": "text",
+        "value": "spam",
+        "phrase": false,
+        "negated": true
+      },
+      {
+        "kind": "text",
+        "value": "daily digest",
+        "phrase": true,
+        "negated": true
+      },
+      {
+        "kind": "from",
+        "value": "bot",
+        "negated": true
+      },
+      {
+        "kind": "is",
+        "value": "read",
+        "negated": false
+      },
+      {
+        "kind": "text",
+        "value": "-",
+        "phrase": false,
+        "negated": false
+      }
+    ]
+  },
+  {
+    "query": "foo:bar has:pdf is:maybe before:2026-02-30 from:",
+    "clauses": [
+      {
+        "kind": "text",
+        "value": "foo:bar",
+        "phrase": false,
+        "negated": false
+      },
+      {
+        "kind": "text",
+        "value": "has:pdf",
+        "phrase": false,
+        "negated": false
+      },
+      {
+        "kind": "text",
+        "value": "is:maybe",
+        "phrase": false,
+        "negated": false
+      },
+      {
+        "kind": "text",
+        "value": "before:2026-02-30",
+        "phrase": false,
+        "negated": false
+      },
+      {
+        "kind": "text",
+        "value": "from:",
+        "phrase": false,
+        "negated": false
+      }
+    ]
+  },
+  {
+    "query": "FROM:Ada IS:Unread Has:Attachment",
+    "clauses": [
+      {
+        "kind": "from",
+        "value": "ada",
+        "negated": false
+      },
+      {
+        "kind": "is",
+        "value": "unread",
+        "negated": false
+      },
+      {
+        "kind": "has",
+        "value": "attachment",
+        "negated": false
+      }
+    ]
+  },
+  {
+    "query": "label:\"Work/Projects\" label:big-plans",
+    "clauses": [
+      {
+        "kind": "label",
+        "value": "work/projects",
+        "negated": false
+      },
+      {
+        "kind": "label",
+        "value": "big-plans",
+        "negated": false
+      }
+    ]
+  },
+  {
+    "query": "before:2024-02-29 after:2025-02-29 after:0050-01-01 before:9999/12/31",
+    "clauses": [
+      {
+        "kind": "before",
+        "value": "2024-02-29",
+        "negated": false
+      },
+      {
+        "kind": "text",
+        "value": "after:2025-02-29",
+        "phrase": false,
+        "negated": false
+      },
+      {
+        "kind": "text",
+        "value": "after:0050-01-01",
+        "phrase": false,
+        "negated": false
+      },
+      {
+        "kind": "before",
+        "value": "9999-12-31",
+        "negated": false
+      }
+    ]
+  },
+  {
+    "query": "subject:\"\" \"\" -\"\" from:\"grace hopper\"",
+    "clauses": [
+      {
+        "kind": "from",
+        "value": "grace hopper",
+        "negated": false
+      }
+    ]
+  },
+  {
+    "query": "café Ünïcode naïve",
+    "clauses": [
+      {
+        "kind": "text",
+        "value": "café",
+        "phrase": false,
+        "negated": false
+      },
+      {
+        "kind": "text",
+        "value": "ünïcode",
+        "phrase": false,
+        "negated": false
+      },
+      {
+        "kind": "text",
+        "value": "naïve",
+        "phrase": false,
+        "negated": false
+      }
+    ]
+  },
+  {
+    "query": "word\"inside quote",
+    "clauses": [
+      {
+        "kind": "text",
+        "value": "word\"inside",
+        "phrase": false,
+        "negated": false
+      },
+      {
+        "kind": "text",
+        "value": "quote",
+        "phrase": false,
+        "negated": false
+      }
+    ]
+  },
+  {
+    "query": "--double -\"\" a-b x:y:z",
+    "clauses": [
+      {
+        "kind": "text",
+        "value": "-double",
+        "phrase": false,
+        "negated": true
+      },
+      {
+        "kind": "text",
+        "value": "a-b",
+        "phrase": false,
+        "negated": false
+      },
+      {
+        "kind": "text",
+        "value": "x:y:z",
+        "phrase": false,
+        "negated": false
+      }
+    ]
+  },
+  {
+    "query": "tab\tseparated\nnewline",
+    "clauses": [
+      {
+        "kind": "text",
+        "value": "tab",
+        "phrase": false,
+        "negated": false
+      },
+      {
+        "kind": "text",
+        "value": "separated",
+        "phrase": false,
+        "negated": false
+      },
+      {
+        "kind": "text",
+        "value": "newline",
+        "phrase": false,
+        "negated": false
+      }
+    ]
+  },
+  {
+    "query": "\"  spaced   phrase  \" \"single\"",
+    "clauses": [
+      {
+        "kind": "text",
+        "value": "spaced phrase",
+        "phrase": true,
+        "negated": false
+      },
+      {
+        "kind": "text",
+        "value": "single",
+        "phrase": true,
+        "negated": false
+      }
+    ]
+  },
+  {
+    "query": "to:\"Ada Lovelace\" -label:spam is:STARRED",
+    "clauses": [
+      {
+        "kind": "to",
+        "value": "ada lovelace",
+        "negated": false
+      },
+      {
+        "kind": "label",
+        "value": "spam",
+        "negated": true
+      },
+      {
+        "kind": "is",
+        "value": "starred",
+        "negated": false
+      }
+    ]
+  }
+]
