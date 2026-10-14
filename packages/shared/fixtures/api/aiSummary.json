@@ -1,0 +1,9 @@
+{
+  "value" : {
+    "text" : "Shall we compare notes on Friday? Your message to bob@outside.example couldn't be delivered.",
+    "actionItems" : [ ]
+  },
+  "confidence" : 0.3,
+  "explanation" : "TextRank picked the 2 most central of 3 sentences, on the server. Action items are sentences that ask for something.",
+  "source" : "model"
+}

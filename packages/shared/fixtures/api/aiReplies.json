@@ -1,0 +1,6 @@
+{
+  "value" : [ ],
+  "confidence" : 1.0,
+  "explanation" : "No replies for this one: it comes from a no-reply sender or bulk mail.",
+  "source" : "heuristic"
+}

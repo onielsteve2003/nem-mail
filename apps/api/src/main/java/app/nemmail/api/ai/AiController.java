@@ -1,5 +1,7 @@
 package app.nemmail.api.ai;
 
+import app.nemmail.api.ai.model.AiInsight;
+import app.nemmail.api.ai.model.TextRank;
 import app.nemmail.api.auth.CurrentUser;
 import app.nemmail.api.common.ApiException;
 import app.nemmail.api.common.ApiExceptionHandler.FieldProblem;
@@ -19,9 +21,25 @@ import org.springframework.web.bind.annotation.RestController;
 class AiController {
 
   private final ModelTrainer trainer;
+  private final ThreadAi threadAi;
 
-  AiController(ModelTrainer trainer) {
+  AiController(ModelTrainer trainer, ThreadAi threadAi) {
     this.trainer = trainer;
+    this.threadAi = threadAi;
+  }
+
+  /** AI-3: an extractive summary with action items, cached until the thread changes. */
+  @PostMapping("/ai/summary")
+  AiInsight<TextRank.Summary> summary(
+      @AuthenticationPrincipal CurrentUser current, @Valid @RequestBody ThreadRefRequest body) {
+    return threadAi.summary(current.userId(), body.threadId());
+  }
+
+  /** AI-4: up to three short replies to the latest message from someone else. */
+  @PostMapping("/ai/replies")
+  AiInsight<List<String>> replies(
+      @AuthenticationPrincipal CurrentUser current, @Valid @RequestBody ThreadRefRequest body) {
+    return threadAi.replies(current.userId(), body.threadId());
   }
 
   /**

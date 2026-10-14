@@ -154,6 +154,8 @@ class ApiContractFixturesTest {
     JsonNode found = keep("search", ada.get().uri("/search?q=compiler is:starred"), 200);
     assertThat(found.get("items").get(0).get("id").asString()).isEqualTo(thread);
 
+    keep("aiSummary", ada.post().uri("/ai/summary").body(Map.of("threadId", thread)), 200);
+    keep("aiReplies", ada.post().uri("/ai/replies").body(Map.of("threadId", thread)), 200);
     keep(
         "aiFeedback",
         ada.post().uri("/ai/feedback").body(Map.of("type", "open", "threadId", thread)),
