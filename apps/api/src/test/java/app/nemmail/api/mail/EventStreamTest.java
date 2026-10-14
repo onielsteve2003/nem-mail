@@ -41,6 +41,7 @@ class EventStreamTest {
   @Autowired private ThreadOpsService ops;
   @Autowired private MailboxEntryRepository entries;
   @Autowired private JsonMapper json;
+  @Autowired private EventStream stream;
 
   @Value("${local.server.port}")
   private int port;
@@ -123,6 +124,36 @@ class EventStreamTest {
   }
 
   @Test
+  void keepsEachUsersEventsToThemAndSendsHeartbeats() throws Exception {
+    BlockingQueue<Event> adas = stream(adaToken, null);
+    next(adas);
+    BlockingQueue<String> comments = new LinkedBlockingQueue<>();
+    BlockingQueue<Event> graces = stream(graceToken, "not-a-number", comments);
+    assertThat(next(graces).data().get("type").asString()).isEqualTo("counts");
+
+    JsonNode sent =
+        api.as(adaToken)
+            .post()
+            .uri("/send")
+            .body(Map.of("draft", draft()))
+            .retrieve()
+            .body(JsonNode.class);
+    delivery.deliver(
+        UUID.fromString(sent.get("messageId").asString()),
+        Instant.parse(sent.get("sendAt").asString()));
+
+    assertThat(next(graces).data().get("type").asString()).isEqualTo("mail.new");
+    // The sender only gets new counts (Sent), never a mail.new for their own message.
+    Event adasCounts = next(adas);
+    assertThat(adasCounts.data().get("type").asString()).isEqualTo("counts");
+    assertThat(adas.poll(500, TimeUnit.MILLISECONDS)).isNull();
+
+    comments.clear();
+    stream.heartbeat();
+    assertThat(comments.poll(10, TimeUnit.SECONDS)).isEqualTo("heartbeat");
+  }
+
+  @Test
   void needsABearerToken() throws Exception {
     HttpResponse<Void> response =
         http.send(
@@ -133,6 +164,12 @@ class EventStreamTest {
 
   /** Reads the stream on a virtual thread, queueing each complete message. */
   private BlockingQueue<Event> stream(String token, String lastEventId) throws Exception {
+    return stream(token, lastEventId, new LinkedBlockingQueue<>());
+  }
+
+  /** The same, also queueing each comment line's text (such as heartbeats). */
+  private BlockingQueue<Event> stream(
+      String token, String lastEventId, BlockingQueue<String> comments) throws Exception {
     HttpRequest.Builder request =
         HttpRequest.newBuilder(URI.create(base() + "/events/stream"))
             .header("Authorization", "Bearer " + token)
@@ -156,7 +193,9 @@ class EventStreamTest {
               try {
                 lines.forEach(
                     line -> {
-                      if (line.startsWith("id:")) {
+                      if (line.startsWith(":")) {
+                        comments.add(line.substring(1).strip());
+                      } else if (line.startsWith("id:")) {
                         id[0] = line.substring(3).strip();
                       } else if (line.startsWith("data:")) {
                         payload.append(line.substring(5));

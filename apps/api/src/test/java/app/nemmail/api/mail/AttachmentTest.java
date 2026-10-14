@@ -114,6 +114,9 @@ class AttachmentTest {
     assertThat(graces.get("attachments").get(0).get("filename").asString()).isEqualTo("plans.txt");
     assertThat(download(graceToken, id).getBody()).isEqualTo(TEXT);
     assertThat(download(eveToken, id).getStatusCode().value()).isEqualTo(404);
+    assertThat(searchIds(graceToken, "has:attachment"))
+        .containsExactly(sent.get("threadId").asString());
+    assertThat(searchIds(eveToken, "has:attachment")).isEmpty();
 
     // Undo a second send: the draft comes back with the file, still Ada's.
     JsonNode other = upload(adaToken, "more.txt", "text/plain", TEXT).getBody();
@@ -129,6 +132,49 @@ class AttachmentTest {
     assertThat(download(adaToken, other.get("id").asString()).getBody()).isEqualTo(TEXT);
   }
 
+  @Test
+  void needsABearerTokenAndAFilePart() {
+    String id = upload(adaToken, "plans.txt", "text/plain", TEXT).getBody().get("id").asString();
+    assertThat(
+            api.http()
+                .get()
+                .uri("/attachments/" + id)
+                .retrieve()
+                .toEntity(byte[].class)
+                .getStatusCode()
+                .value())
+        .isEqualTo(401);
+    assertThat(upload(null, "plans.txt", "text/plain", TEXT).getStatusCode().value())
+        .isEqualTo(401);
+    assertThat(download(adaToken, "not-a-uuid").getStatusCode().value()).isEqualTo(400);
+
+    MultiValueMap<String, Object> noFile = new LinkedMultiValueMap<>();
+    noFile.add("other", "x");
+    int status =
+        api.as(adaToken)
+            .post()
+            .uri("/attachments")
+            .contentType(MediaType.MULTIPART_FORM_DATA)
+            .body(noFile)
+            .retrieve()
+            .toEntity(JsonNode.class)
+            .getStatusCode()
+            .value();
+    assertThat(status).isBetween(400, 422);
+  }
+
+  private List<String> searchIds(String token, String q) {
+    List<String> out = new java.util.ArrayList<>();
+    api.as(token)
+        .get()
+        .uri("/search?q={q}", q)
+        .retrieve()
+        .body(JsonNode.class)
+        .get("items")
+        .forEach(item -> out.add(item.get("id").asString()));
+    return out;
+  }
+
   private ResponseEntity<JsonNode> upload(
       String token, String filename, String mime, byte[] bytes) {
     HttpHeaders part = new HttpHeaders();
@@ -137,7 +183,7 @@ class AttachmentTest {
         ContentDisposition.formData().name("file").filename(filename).build());
     MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
     body.add("file", new HttpEntity<>(bytes, part));
-    return api.as(token)
+    return (token == null ? api.http() : api.as(token))
         .post()
         .uri("/attachments")
         .contentType(MediaType.MULTIPART_FORM_DATA)
