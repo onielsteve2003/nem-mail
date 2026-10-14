@@ -32,6 +32,17 @@ dependencies {
 	implementation("org.flywaydb:flyway-database-postgresql")
 	implementation("org.hibernate.orm:hibernate-vector")
 	runtimeOnly("org.postgresql:postgresql")
+	// Server embeddings (MiniLM on ONNX Runtime, Apache-2.0/MIT). The runtime jar alone is 137 MB,
+	// so it ships only in a build with -PwithEmbeddings; otherwise the app embeds on the device.
+	val djl = "0.38.0"
+	if (project.hasProperty("withEmbeddings")) {
+		implementation("ai.djl:api:$djl")
+		implementation("ai.djl.huggingface:tokenizers:$djl")
+		runtimeOnly("ai.djl.onnxruntime:onnxruntime-engine:$djl")
+	} else {
+		compileOnly("ai.djl:api:$djl")
+		compileOnly("ai.djl.huggingface:tokenizers:$djl")
+	}
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
 	testImplementation("org.springframework.boot:spring-boot-testcontainers")
 	testImplementation("org.testcontainers:testcontainers-junit-jupiter")
@@ -59,17 +70,25 @@ spotless {
 	}
 }
 
-// The shared demo seed (npm run seed:export -w packages/shared) ships on the classpath.
+// The shared demo seed (npm run seed:export -w packages/shared) and the AI seed corpora
+// (exported by apps/mobile fixtures.test.ts) ship on the classpath.
 tasks.processResources {
 	from("../../packages/shared/fixtures/seed.json") {
 		into("seed")
 	}
+	from("../../packages/shared/fixtures/ai/corpora.json") {
+		into("ai")
+	}
 }
 
-// QueryParserTest runs the search parser cases the TS parser runs too.
+// QueryParserTest runs the search parser cases the TS parser runs too;
 tasks.processTestResources {
 	from("../../packages/shared/fixtures/search-queries.json") {
 		into("shared")
+	}
+	// ModelFixturesTest: what the TS models answer, for the Java ports to match.
+	from("../../packages/shared/fixtures/ai/models.json") {
+		into("shared/ai")
 	}
 }
 

@@ -1,0 +1,968 @@
+{
+	"tokenize": [
+		{
+			"input": {
+				"text": "Café “Crème” — don’t PANIC!  It’s 9 o’clock.",
+				"removeStopwords": false,
+				"minLength": 1
+			},
+			"tokens": [
+				"cafe",
+				"creme",
+				"don't",
+				"panic",
+				"it's",
+				"9",
+				"o'clock"
+			]
+		},
+		{
+			"input": {
+				"text": "The quick brown fox, and the lazy dog: a test",
+				"removeStopwords": true,
+				"minLength": 2
+			},
+			"tokens": [
+				"quick",
+				"brown",
+				"fox",
+				"lazy",
+				"dog",
+				"test"
+			]
+		},
+		{
+			"input": {
+				"text": "naïve  résumé\tñandú 42x",
+				"removeStopwords": false,
+				"minLength": 1
+			},
+			"tokens": [
+				"naive",
+				"resume",
+				"nandu",
+				"42x"
+			]
+		}
+	],
+	"spam": {
+		"cases": [
+			{
+				"input": {
+					"fromName": "North Bank",
+					"fromEmail": "security@n0rthbank.example",
+					"subject": "Urgent: verify your account",
+					"bodyText": "Your account will be suspended. Verify your password within 24 hours.",
+					"bodyHtml": "<p>Sign in at <a href=\"http://203.0.113.9/login\">www.northbank.example</a></p>"
+				},
+				"verdict": {
+					"value": {
+						"isSpam": true,
+						"isPhishing": true
+					},
+					"confidence": 1,
+					"explanation": "A link shows one address but opens another (northbank.example → 203.0.113.9). A link points to a bare IP address. The sender's domain (n0rthbank.example) swaps letters for numbers. It asks you to confirm a password or account details. It uses urgent, threatening wording. It uses words common in spam: “urgent”, “verify”, “within”.",
+					"source": "model"
+				}
+			},
+			{
+				"input": {
+					"fromName": "Prize Desk",
+					"fromEmail": "winner@prizes.example",
+					"subject": "CONGRATULATIONS winner!!!",
+					"bodyText": "You won $5,000 cash. Claim your free prize now at https://prizes.example/claim",
+					"bodyHtml": null
+				},
+				"verdict": {
+					"value": {
+						"isSpam": true,
+						"isPhishing": false
+					},
+					"confidence": 1,
+					"explanation": "It uses words common in spam: “claim”, “winner”, “cash”.",
+					"source": "model"
+				}
+			},
+			{
+				"input": {
+					"fromName": "Ada Lovelace",
+					"fromEmail": "ada@example.com",
+					"subject": "Notes for Thursday",
+					"bodyText": "Could you review the draft before our meeting? Thanks, Ada",
+					"bodyHtml": null
+				},
+				"verdict": {
+					"value": {
+						"isSpam": false,
+						"isPhishing": false
+					},
+					"confidence": 1,
+					"explanation": "It reads like normal mail (“review”, “thanks”, “notes”).",
+					"source": "model"
+				}
+			},
+			{
+				"input": {
+					"fromName": "Café Crème",
+					"fromEmail": "hello@cafe.example",
+					"subject": "“Weekly” update",
+					"bodyText": "Our new menu starts Monday. See you soon!",
+					"bodyHtml": "<a href=\"https://cafe.example/menu\">cafe.example/menu</a>"
+				},
+				"verdict": {
+					"value": {
+						"isSpam": false,
+						"isPhishing": false
+					},
+					"confidence": 0.93,
+					"explanation": "It reads like normal mail (“new”, “weekly”, “see”).",
+					"source": "model"
+				}
+			}
+		],
+		"evalProbabilities": [
+			0.999869778762419,
+			0.9217675218258532,
+			0.9945628932288525,
+			0.9621505912230638,
+			0.9909708835615043,
+			0.9970928333200892,
+			0.9947822554219713,
+			0.9996569044352137,
+			0.9442803644657154,
+			0.8265798389711022,
+			0.9807102426560728,
+			0.9816014331462287,
+			0.2048287775698067,
+			0.03930322253656918,
+			0.15392831835098744,
+			0.39561650660912756,
+			0.11882114216932722,
+			0.1682366762411204,
+			0.010791907624179751,
+			0.020045538396516436,
+			0.08338155006716207,
+			0.06779981144931131,
+			0.017155964845994597,
+			0.051726622398363044
+		],
+		"feedback": {
+			"text": "Team lunch on Friday, pizza for everyone",
+			"before": 0.05717686526263446,
+			"after": 0.9983806071216992
+		}
+	},
+	"category": {
+		"cases": [
+			{
+				"input": {
+					"fromEmail": "rob@example.com",
+					"subject": "Dinner Friday?",
+					"bodyText": "I booked a table for four at 8. Can you make it?"
+				},
+				"verdict": {
+					"value": "primary",
+					"confidence": 0.69,
+					"explanation": "Words like “dinner”, “booked” are typical of Primary.",
+					"source": "model"
+				}
+			},
+			{
+				"input": {
+					"fromEmail": "nora@work.example",
+					"subject": "Slides for tomorrow",
+					"bodyText": "Could you review the slides before the meeting?"
+				},
+				"verdict": {
+					"value": "primary",
+					"confidence": 0.47,
+					"explanation": "Words like “review” are typical of Primary.",
+					"source": "model"
+				}
+			},
+			{
+				"input": {
+					"fromEmail": "pat@example.org",
+					"subject": "Happy birthday!",
+					"bodyText": "Hope you have a lovely day with the family."
+				},
+				"verdict": {
+					"value": "primary",
+					"confidence": 0.22,
+					"explanation": "It reads most like your Primary mail.",
+					"source": "model"
+				}
+			},
+			{
+				"input": {
+					"fromEmail": "eve@example.net",
+					"subject": "Re: the report",
+					"bodyText": "Thanks, I will send the final version tonight."
+				},
+				"verdict": {
+					"value": "primary",
+					"confidence": 0.56,
+					"explanation": "Words like “re”, “thanks” are typical of Primary.",
+					"source": "model"
+				}
+			},
+			{
+				"input": {
+					"fromEmail": "max@example.com",
+					"subject": "Help with the move",
+					"bodyText": "Could you help me carry the boxes on Saturday?"
+				},
+				"verdict": {
+					"value": "primary",
+					"confidence": 0.34,
+					"explanation": "Words like “move” are typical of Primary.",
+					"source": "model"
+				}
+			},
+			{
+				"input": {
+					"fromEmail": "deals@gadgets.example",
+					"subject": "Weekend sale: 25% off",
+					"bodyText": "Save on laptops and tablets this weekend only. Shop now."
+				},
+				"verdict": {
+					"value": "promotions",
+					"confidence": 1,
+					"explanation": "It advertises a sale, discount or coupon.",
+					"source": "model"
+				}
+			},
+			{
+				"input": {
+					"fromEmail": "offers@beauty.example",
+					"subject": "Your coupon inside",
+					"bodyText": "Use code GLOW15 for 15% off your next order."
+				},
+				"verdict": {
+					"value": "promotions",
+					"confidence": 0.98,
+					"explanation": "It advertises a sale, discount or coupon.",
+					"source": "model"
+				}
+			},
+			{
+				"input": {
+					"fromEmail": "news@shoes.example",
+					"subject": "New running shoes just dropped",
+					"bodyText": "Shop the new collection with free shipping."
+				},
+				"verdict": {
+					"value": "promotions",
+					"confidence": 0.98,
+					"explanation": "Words like “shop”, “free”, “collection” are typical of Promotions.",
+					"source": "model"
+				}
+			},
+			{
+				"input": {
+					"fromEmail": "promo@pizza.example",
+					"subject": "Two for one tonight",
+					"bodyText": "Order any large pizza and get a second free. Limited time."
+				},
+				"verdict": {
+					"value": "promotions",
+					"confidence": 1,
+					"explanation": "Words like “free”, “two”, “one” are typical of Promotions.",
+					"source": "model"
+				}
+			},
+			{
+				"input": {
+					"fromEmail": "store@toys.example",
+					"subject": "Holiday gift guide",
+					"bodyText": "Our top picks and deals for the holidays. Shop early."
+				},
+				"verdict": {
+					"value": "promotions",
+					"confidence": 0.95,
+					"explanation": "It advertises a sale, discount or coupon.",
+					"source": "model"
+				}
+			},
+			{
+				"input": {
+					"fromEmail": "notify@friendly.example",
+					"subject": "Jo commented on your post",
+					"bodyText": "Jo commented on your post. See the conversation."
+				},
+				"verdict": {
+					"value": "social",
+					"confidence": 1,
+					"explanation": "It is a notification about people you follow or know online.",
+					"source": "model"
+				}
+			},
+			{
+				"input": {
+					"fromEmail": "no-reply@pixgram.example",
+					"subject": "New follower",
+					"bodyText": "Ken started following you."
+				},
+				"verdict": {
+					"value": "social",
+					"confidence": 0.9,
+					"explanation": "It is a notification about people you follow or know online.",
+					"source": "model"
+				}
+			},
+			{
+				"input": {
+					"fromEmail": "invitations@linkup.example",
+					"subject": "Invitation to connect",
+					"bodyText": "Rae wants to connect with you. Accept the invitation."
+				},
+				"verdict": {
+					"value": "social",
+					"confidence": 0.99,
+					"explanation": "It is a notification about people you follow or know online.",
+					"source": "model"
+				}
+			},
+			{
+				"input": {
+					"fromEmail": "notify@chirp.example",
+					"subject": "You were mentioned",
+					"bodyText": "Bea mentioned you in a post."
+				},
+				"verdict": {
+					"value": "social",
+					"confidence": 0.97,
+					"explanation": "It is a notification about people you follow or know online.",
+					"source": "model"
+				}
+			},
+			{
+				"input": {
+					"fromEmail": "events@friendly.example",
+					"subject": "Party invitation",
+					"bodyText": "Ola invited you to a birthday party. Going?"
+				},
+				"verdict": {
+					"value": "social",
+					"confidence": 0.98,
+					"explanation": "Words like “invitation”, “invited”, “party” are typical of Social.",
+					"source": "model"
+				}
+			},
+			{
+				"input": {
+					"fromEmail": "orders@books.example",
+					"subject": "Order confirmed",
+					"bodyText": "Your order #9921 is confirmed and will ship soon."
+				},
+				"verdict": {
+					"value": "updates",
+					"confidence": 0.96,
+					"explanation": "It is a receipt, order, account or appointment notice.",
+					"source": "model"
+				}
+			},
+			{
+				"input": {
+					"fromEmail": "no-reply@bank.example",
+					"subject": "Payment received",
+					"bodyText": "We received your payment. Your balance is up to date."
+				},
+				"verdict": {
+					"value": "updates",
+					"confidence": 0.9,
+					"explanation": "It is a receipt, order, account or appointment notice.",
+					"source": "model"
+				}
+			},
+			{
+				"input": {
+					"fromEmail": "security@mail.example",
+					"subject": "Security alert",
+					"bodyText": "A new device signed in to your account."
+				},
+				"verdict": {
+					"value": "updates",
+					"confidence": 0.44,
+					"explanation": "Words like “account” are typical of Updates.",
+					"source": "model"
+				}
+			},
+			{
+				"input": {
+					"fromEmail": "no-reply@delivery.example",
+					"subject": "Out for delivery",
+					"bodyText": "Your package is out for delivery today. Track it."
+				},
+				"verdict": {
+					"value": "updates",
+					"confidence": 0.9,
+					"explanation": "It is a receipt, order, account or appointment notice.",
+					"source": "model"
+				}
+			},
+			{
+				"input": {
+					"fromEmail": "billing@phone.example",
+					"subject": "Your bill is ready",
+					"bodyText": "Your monthly bill is ready to view."
+				},
+				"verdict": {
+					"value": "updates",
+					"confidence": 0.97,
+					"explanation": "It is a receipt, order, account or appointment notice.",
+					"source": "model"
+				}
+			},
+			{
+				"input": {
+					"fromEmail": "list@chess.example",
+					"subject": "[chess-club] Tournament pairings",
+					"bodyText": "Pairings for round 2 are posted. Reply to the list."
+				},
+				"verdict": {
+					"value": "forums",
+					"confidence": 0.99,
+					"explanation": "It comes from a mailing list or discussion group.",
+					"source": "model"
+				}
+			},
+			{
+				"input": {
+					"fromEmail": "forum@cooking.example",
+					"subject": "New reply in \"sourdough tips\"",
+					"bodyText": "A member replied to a topic you follow."
+				},
+				"verdict": {
+					"value": "forums",
+					"confidence": 0.95,
+					"explanation": "It comes from a mailing list or discussion group.",
+					"source": "model"
+				}
+			},
+			{
+				"input": {
+					"fromEmail": "digest@community.example",
+					"subject": "Weekly digest: 8 new topics",
+					"bodyText": "This week in the community: 8 new topics."
+				},
+				"verdict": {
+					"value": "forums",
+					"confidence": 0.93,
+					"explanation": "It comes from a mailing list or discussion group.",
+					"source": "model"
+				}
+			},
+			{
+				"input": {
+					"fromEmail": "list@hiking.example",
+					"subject": "[hiking] Trail closures",
+					"bodyText": "The north trail is closed this weekend. Post to the group."
+				},
+				"verdict": {
+					"value": "forums",
+					"confidence": 0.96,
+					"explanation": "It comes from a mailing list or discussion group.",
+					"source": "model"
+				}
+			},
+			{
+				"input": {
+					"fromEmail": "q-and-a@stacks.example",
+					"subject": "Your question got an answer",
+					"bodyText": "Someone answered your question about CSS grid."
+				},
+				"verdict": {
+					"value": "forums",
+					"confidence": 0.98,
+					"explanation": "Words like “answer”, “someone”, “answered” are typical of Forums.",
+					"source": "model"
+				}
+			}
+		]
+	},
+	"priority": {
+		"model": {
+			"weights": [
+				1.3805798568416243,
+				0.8566183808743997,
+				0.5664979453325197,
+				0.4598122638508602,
+				0.7842344361606027,
+				0.42835322942262194,
+				0.5236699856677989,
+				-2.9842199304089863,
+				0.6615163349116822,
+				-0.5075705031917414
+			],
+			"bias": -0.7699214757173107
+		},
+		"cases": [
+			{
+				"input": {
+					"fromEmail": "grace@example.org",
+					"subject": "Contract to sign today",
+					"text": "Can you approve this before EOD?",
+					"isDirect": true,
+					"recipientCount": 2,
+					"messageCount": 3,
+					"category": "primary",
+					"hasAttachments": true,
+					"senderFrequency": 12
+				},
+				"verdict": {
+					"value": 0.99,
+					"confidence": 0.99,
+					"explanation": "Important because you have written to this sender and it mentions a deadline or urgency.",
+					"source": "model"
+				}
+			},
+			{
+				"input": {
+					"fromEmail": "newsletter@shop.example",
+					"subject": "This week in deals",
+					"text": "Big savings inside. Unsubscribe any time.",
+					"isDirect": false,
+					"recipientCount": 1,
+					"messageCount": 1,
+					"category": "promotions",
+					"hasAttachments": false,
+					"senderFrequency": 0
+				},
+				"verdict": {
+					"value": 0.04,
+					"confidence": 0.96,
+					"explanation": "Not marked important because it looks like bulk mail.",
+					"source": "model"
+				}
+			},
+			{
+				"input": {
+					"fromEmail": "alerts@bank.example",
+					"subject": "Statement ready",
+					"text": "Your monthly statement is ready.",
+					"isDirect": true,
+					"recipientCount": 1,
+					"messageCount": 1,
+					"category": "updates",
+					"hasAttachments": false,
+					"senderFrequency": 1
+				},
+				"verdict": {
+					"value": 0.79,
+					"confidence": 0.79,
+					"explanation": "Important because you have written to this sender and it was sent to you directly.",
+					"source": "model"
+				}
+			},
+			{
+				"input": {
+					"fromEmail": "team@example.com",
+					"subject": "Lunch",
+					"text": "Pizza on Friday",
+					"isDirect": false,
+					"recipientCount": 8,
+					"messageCount": 1,
+					"category": null,
+					"hasAttachments": false,
+					"senderFrequency": 0
+				},
+				"verdict": {
+					"value": 0.32,
+					"confidence": 0.68,
+					"explanation": "Not marked important: nothing in it stood out, like a familiar sender or a request.",
+					"source": "model"
+				}
+			}
+		],
+		"feedback": {
+			"input": {
+				"fromEmail": "team@example.com",
+				"subject": "Lunch",
+				"text": "Pizza on Friday",
+				"isDirect": false,
+				"recipientCount": 8,
+				"messageCount": 1,
+				"category": null,
+				"hasAttachments": false,
+				"senderFrequency": 0
+			},
+			"weights": [
+				1.3805798568416243,
+				0.8566183808743997,
+				0.5664979453325197,
+				0.4598122638508602,
+				0.7842344361606027,
+				0.42835322942262194,
+				0.5236699856677989,
+				-2.9842199304089863,
+				0.6615163349116822,
+				-0.5075705031917414
+			],
+			"bias": 0.9190500032229492,
+			"verdict": {
+				"value": 0.71,
+				"confidence": 0.71,
+				"explanation": "Important because .",
+				"source": "model"
+			}
+		}
+	},
+	"compose": {
+		"cases": [
+			{
+				"before": "Thank you for ",
+				"verdict": {
+					"value": "your email.",
+					"confidence": 0.5,
+					"explanation": "Predicted from phrases you often write in sent mail. Press Tab to accept.",
+					"source": "model"
+				}
+			},
+			{
+				"before": "Thanks for the",
+				"verdict": null
+			},
+			{
+				"before": "Let me know if you",
+				"verdict": null
+			},
+			{
+				"before": "I hope you",
+				"verdict": null
+			},
+			{
+				"before": "Looking forw",
+				"verdict": {
+					"value": "ard to hearing from you",
+					"confidence": 0.67,
+					"explanation": "Predicted from phrases you often write in sent mail. Press Tab to accept.",
+					"source": "model"
+				}
+			},
+			{
+				"before": "Sorry for the late reply. ",
+				"verdict": null
+			},
+			{
+				"before": "Hi Ada,\nI just wanted to ",
+				"verdict": {
+					"value": "follow up on my last",
+					"confidence": 0.5,
+					"explanation": "Predicted from phrases you often write in sent mail. Press Tab to accept.",
+					"source": "model"
+				}
+			},
+			{
+				"before": "Please find attached the",
+				"verdict": null
+			},
+			{
+				"before": "xyz",
+				"verdict": null
+			},
+			{
+				"before": "See you on Mon",
+				"verdict": {
+					"value": "day.",
+					"confidence": 1,
+					"explanation": "Predicted from phrases you often write in sent mail. Press Tab to accept.",
+					"source": "model"
+				}
+			}
+		],
+		"learned": {
+			"text": "Cheers for the coffee yesterday.\nCheers for the coffee and cake.",
+			"cases": [
+				{
+					"before": "Cheers for",
+					"verdict": null
+				},
+				{
+					"before": "Cheers for the coffee ",
+					"verdict": {
+						"value": "yesterday.",
+						"confidence": 0.5,
+						"explanation": "Predicted from phrases you often write in sent mail. Press Tab to accept.",
+						"source": "model"
+					}
+				}
+			]
+		}
+	},
+	"summary": {
+		"cases": [
+			{
+				"messages": [
+					{
+						"from": "Ada",
+						"text": "Hi Grace,\nThe launch moved to next Tuesday because the payment review is not finished. The review team needs two more days to test the payment flow. Can you update the launch checklist by Friday?\nThanks, Ada"
+					},
+					{
+						"from": "Grace",
+						"text": "Sure. The payment flow tests found one bug in refunds. I will fix the refund bug tomorrow and rerun the payment tests. Please let me know if the launch date changes again.\n\nOn Mon, Ada wrote:\n> The launch moved to next Tuesday."
+					}
+				],
+				"sentences": [
+					"The launch moved to next Tuesday because the payment review is not finished.",
+					"The review team needs two more days to test the payment flow.",
+					"Can you update the launch checklist by Friday?",
+					"The payment flow tests found one bug in refunds.",
+					"I will fix the refund bug tomorrow and rerun the payment tests.",
+					"Please let me know if the launch date changes again."
+				],
+				"scores": [
+					0.21925450932459695,
+					0.1662413347324156,
+					0.11752691292179583,
+					0.2160500819254594,
+					0.17293836130035942,
+					0.1079887997953728
+				],
+				"verdict": {
+					"value": {
+						"text": "The launch moved to next Tuesday because the payment review is not finished. The payment flow tests found one bug in refunds.",
+						"actionItems": [
+							"Grace: Please let me know if the launch date changes again.",
+							"Ada: Can you update the launch checklist by Friday?"
+						]
+					},
+					"confidence": 0.6,
+					"explanation": "TextRank picked the 2 most central of 6 sentences, on this device. Action items are sentences that ask for something.",
+					"source": "model"
+				}
+			},
+			{
+				"messages": [
+					{
+						"from": "Bo",
+						"text": "Short note. Nothing much here."
+					}
+				],
+				"sentences": [
+					"Nothing much here."
+				],
+				"scores": [
+					0.15000000000000002
+				],
+				"verdict": null
+			}
+		]
+	},
+	"smartReply": {
+		"cases": [
+			{
+				"input": {
+					"fromName": "Grace Hopper",
+					"fromEmail": "grace@example.org",
+					"subject": "Quick sync?",
+					"text": "Would Tuesday at 3pm work for you? We can meet in room 4."
+				},
+				"verdict": {
+					"value": [
+						"Sounds good, see you then!",
+						"Could we find another time?",
+						"Sorry, I can't make it."
+					],
+					"intent": "meeting",
+					"confidence": 0.8,
+					"explanation": "It reads as a meeting request, so the replies accept, ask for another time, or decline (from “meet”, “sync”, “would tuesday at 3pm work for you”).",
+					"source": "heuristic"
+				}
+			},
+			{
+				"input": {
+					"fromName": "Alan",
+					"fromEmail": "alan@example.com",
+					"subject": "Dinner Saturday",
+					"text": "We are having a dinner party, would you like to come? Join us at 7."
+				},
+				"verdict": {
+					"value": [
+						"I'd love to come, thanks Alan!",
+						"Maybe, I’ll let you know soon.",
+						"Sorry, I can't make it this time."
+					],
+					"intent": "invitation",
+					"confidence": 0.79,
+					"explanation": "It reads as an invitation, so the replies accept, maybe, or decline (from “party”, “dinner”, “join”).",
+					"source": "heuristic"
+				}
+			},
+			{
+				"input": {
+					"fromName": "Ada",
+					"fromEmail": "ada@example.com",
+					"subject": "Thank you!",
+					"text": "Thanks so much for your help with the launch. Really appreciate it."
+				},
+				"verdict": {
+					"value": [
+						"You're welcome, Ada!",
+						"Happy to help!",
+						"Anytime!"
+					],
+					"intent": "thanks",
+					"confidence": 0.9,
+					"explanation": "It reads as a thank-you, so the replies acknowledge it (from “thanks”, “thank”, “appreciate”).",
+					"source": "heuristic"
+				}
+			},
+			{
+				"input": {
+					"fromName": "",
+					"fromEmail": "boss@example.com",
+					"subject": "Budget",
+					"text": "Please send the budget and review the plan. Can you share it today?"
+				},
+				"verdict": {
+					"value": [
+						"Sure, I’ll take care of it.",
+						"I’ll get back to you by tomorrow.",
+						"Could you share more details?"
+					],
+					"intent": "request",
+					"confidence": 0.83,
+					"explanation": "It reads as a request, so the replies agree, set a time, or ask for details (from “please”, “send”, “review”).",
+					"source": "heuristic"
+				}
+			},
+			{
+				"input": {
+					"fromName": "Shop",
+					"fromEmail": "no-reply@shop.example",
+					"subject": "Your order",
+					"text": "Your order shipped."
+				},
+				"verdict": null
+			},
+			{
+				"input": {
+					"fromName": "Bo",
+					"fromEmail": "bo@example.com",
+					"subject": "Hello",
+					"text": "Nice weather here."
+				},
+				"verdict": {
+					"value": [
+						"Thanks, Bo!",
+						"Got it, thanks!",
+						"I’ll get back to you soon."
+					],
+					"intent": null,
+					"confidence": 0.4,
+					"explanation": "Nothing specific stood out, so these are general replies.",
+					"source": "heuristic"
+				}
+			}
+		]
+	},
+	"extract": {
+		"cases": [
+			{
+				"input": {
+					"subject": "Your login code",
+					"text": "Your verification code is 482913. It expires in 10 minutes.",
+					"sentAt": "2026-03-04T12:00:00.000Z"
+				},
+				"verdict": {
+					"value": [
+						{
+							"kind": "otp",
+							"text": "482913",
+							"value": "482913"
+						}
+					],
+					"confidence": 0.9,
+					"explanation": "Found a one-time code by pattern matching on this device.",
+					"source": "heuristic"
+				}
+			},
+			{
+				"input": {
+					"subject": "Shipped",
+					"text": "Tracking number: 1Z999AA10123456784. Arrives tomorrow.",
+					"sentAt": "2026-03-06T12:00:00.000Z"
+				},
+				"verdict": {
+					"value": [
+						{
+							"kind": "tracking",
+							"text": "1Z999AA10123456784",
+							"value": "1Z999AA10123456784"
+						},
+						{
+							"kind": "date",
+							"text": "tomorrow",
+							"value": "2026-03-07"
+						}
+					],
+					"confidence": 0.85,
+					"explanation": "Found a tracking number and a date by pattern matching on this device.",
+					"source": "heuristic"
+				}
+			},
+			{
+				"input": {
+					"subject": "Team sync",
+					"text": "Can we meet on Friday at 3pm? Otherwise March 20th, 10:30 works. The report is due 2026-04-01.",
+					"sentAt": "2026-03-06T12:00:00.000Z"
+				},
+				"verdict": {
+					"value": [
+						{
+							"kind": "meeting",
+							"text": "Friday at 3pm",
+							"value": "2026-03-13T15:00"
+						},
+						{
+							"kind": "meeting",
+							"text": "March 20th, 10:30",
+							"value": "2026-03-20T10:30"
+						},
+						{
+							"kind": "date",
+							"text": "2026-04-01",
+							"value": "2026-04-01"
+						}
+					],
+					"confidence": 0.8,
+					"explanation": "Found a meeting time and a date by pattern matching on this device.",
+					"source": "heuristic"
+				}
+			},
+			{
+				"input": {
+					"subject": "Dates",
+					"text": "Book 5 Jan for the trip and the 31st of February is not real. Lunch next monday at 12pm.",
+					"sentAt": "2026-12-15T12:00:00.000Z"
+				},
+				"verdict": {
+					"value": [
+						{
+							"kind": "date",
+							"text": "5 Jan",
+							"value": "2027-01-05"
+						},
+						{
+							"kind": "meeting",
+							"text": "next monday at 12pm.",
+							"value": "2026-12-21T12:00"
+						}
+					],
+					"confidence": 0.8,
+					"explanation": "Found a date and a meeting time by pattern matching on this device.",
+					"source": "heuristic"
+				}
+			},
+			{
+				"input": {
+					"subject": "Hello",
+					"text": "Nothing to see, 3 people came.",
+					"sentAt": "2026-03-06T12:00:00.000Z"
+				},
+				"verdict": null
+			}
+		]
+	}
+}

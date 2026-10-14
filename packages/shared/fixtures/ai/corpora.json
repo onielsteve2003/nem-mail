@@ -1,0 +1,942 @@
+{
+	"categories": [
+		"primary",
+		"promotions",
+		"social",
+		"updates",
+		"forums"
+	],
+	"spamTraining": [
+		{
+			"text": "CONGRATULATIONS! You have won a free iPhone. Claim your prize now before it expires.",
+			"isSpam": true
+		},
+		{
+			"text": "You were selected as our lucky winner! Click here to claim your cash reward today.",
+			"isSpam": true
+		},
+		{
+			"text": "Urgent: your account will be suspended. Verify your password immediately.",
+			"isSpam": true
+		},
+		{
+			"text": "We detected unusual activity. Confirm your login details or your account will be closed.",
+			"isSpam": true
+		},
+		{
+			"text": "Turn $100 into $10,000 this week. Guaranteed returns with zero risk.",
+			"isSpam": true
+		},
+		{
+			"text": "Limited spots left! Earn passive income from home with our crypto bot.",
+			"isSpam": true
+		},
+		{
+			"text": "Delivery failed: pay $1.99 to reschedule your parcel. Pay now.",
+			"isSpam": true
+		},
+		{
+			"text": "Your package is on hold. A small customs fee is required to release it.",
+			"isSpam": true
+		},
+		{
+			"text": "Dear beneficiary, a sum of 4.5 million dollars has been approved for transfer to you.",
+			"isSpam": true
+		},
+		{
+			"text": "I am a prince and need your help to move funds. You will receive 30 percent.",
+			"isSpam": true
+		},
+		{
+			"text": "Cheap meds online, no prescription needed. Lowest prices guaranteed.",
+			"isSpam": true
+		},
+		{
+			"text": "Lose 20 pounds in 10 days with this miracle pill. Doctors hate it.",
+			"isSpam": true
+		},
+		{
+			"text": "Hot singles in your area want to meet you tonight. Click to chat.",
+			"isSpam": true
+		},
+		{
+			"text": "Your computer is infected! Call our support line now to remove the virus.",
+			"isSpam": true
+		},
+		{
+			"text": "Final notice: unpaid invoice attached. Open the attachment to avoid legal action.",
+			"isSpam": true
+		},
+		{
+			"text": "You have an unclaimed tax refund. Enter your bank details to receive it.",
+			"isSpam": true
+		},
+		{
+			"text": "Act fast! This exclusive offer expires in 24 hours. 100% free, no catch.",
+			"isSpam": true
+		},
+		{
+			"text": "Get rich quick with this one simple trick. Thousands of dollars every week.",
+			"isSpam": true
+		},
+		{
+			"text": "Your Netflix subscription failed. Update your card details to avoid suspension.",
+			"isSpam": true
+		},
+		{
+			"text": "Work from home and earn $5000 per week. No experience required. Apply now.",
+			"isSpam": true
+		},
+		{
+			"text": "Exclusive investment opportunity. Double your money in 7 days, risk free.",
+			"isSpam": true
+		},
+		{
+			"text": "You have been chosen for a free gift card worth $500. Claim within 48 hours.",
+			"isSpam": true
+		},
+		{
+			"text": "Re-enter your password to keep your mailbox active. Storage limit exceeded.",
+			"isSpam": true
+		},
+		{
+			"text": "Winner winner! Spin the wheel to collect your bonus cash prize.",
+			"isSpam": true
+		},
+		{
+			"text": "Buy followers and likes now. Instant delivery, cheapest price on the market.",
+			"isSpam": true
+		},
+		{
+			"text": "Your bank account has been locked. Click the secure link to unlock it now.",
+			"isSpam": true
+		},
+		{
+			"text": "Congratulations, your email address won the international lottery draw.",
+			"isSpam": true
+		},
+		{
+			"text": "Payment received of $899 for a laptop. If you did not order it, call us urgently.",
+			"isSpam": true
+		},
+		{
+			"text": "Act now to refinance at zero percent. Pre-approved, no credit check.",
+			"isSpam": true
+		},
+		{
+			"text": "Unlock your free trial of premium casino credits. Bet now and win big.",
+			"isSpam": true
+		},
+		{
+			"text": "Verify your identity within 24 hours or your wallet will be frozen.",
+			"isSpam": true
+		},
+		{
+			"text": "Claim the inheritance left to you by a distant relative. Reply with your details.",
+			"isSpam": true
+		},
+		{
+			"text": "Amazing deal on replica watches and designer bags at 90% off.",
+			"isSpam": true
+		},
+		{
+			"text": "Your PayPal account is limited. Confirm your card number to restore access.",
+			"isSpam": true
+		},
+		{
+			"text": "Earn bitcoin daily with no effort. Guaranteed profit, join the program now.",
+			"isSpam": true
+		},
+		{
+			"text": "Urgent wire transfer needed. The CEO asked me to buy gift cards today.",
+			"isSpam": true
+		},
+		{
+			"text": "You qualify for a government grant of $9,000. Pay the processing fee to receive it.",
+			"isSpam": true
+		},
+		{
+			"text": "Click here to stop being charged. Your subscription renews today for $499.",
+			"isSpam": true
+		},
+		{
+			"text": "Free money! No strings attached. Cash prize waiting in your account.",
+			"isSpam": true
+		},
+		{
+			"text": "Shocking secret to erase debt overnight. Banks do not want you to know.",
+			"isSpam": true
+		},
+		{
+			"text": "Hi, are we still on for lunch on Thursday? I can meet near the office at noon.",
+			"isSpam": false
+		},
+		{
+			"text": "Attached are the slides for tomorrow. Let me know if anything needs to change.",
+			"isSpam": false
+		},
+		{
+			"text": "Thanks for your help with the move. The boxes are all unpacked now.",
+			"isSpam": false
+		},
+		{
+			"text": "The design review is moved to Friday at 3pm. Same meeting room.",
+			"isSpam": false
+		},
+		{
+			"text": "Can you send me the latest draft of the report before the weekly sync?",
+			"isSpam": false
+		},
+		{
+			"text": "Mum says dinner is at 7 on Sunday. Bring the kids if they are free.",
+			"isSpam": false
+		},
+		{
+			"text": "Your order has shipped. Track the delivery in your account.",
+			"isSpam": false
+		},
+		{
+			"text": "Your receipt for the coffee subscription. Thanks for your purchase.",
+			"isSpam": false
+		},
+		{
+			"text": "30% off headphones this week only. Free delivery on orders over $50.",
+			"isSpam": false
+		},
+		{
+			"text": "New arrivals in the spring collection. Shop the sale while it lasts.",
+			"isSpam": false
+		},
+		{
+			"text": "Weekly digest: 5 new posts in the runners club forum.",
+			"isSpam": false
+		},
+		{
+			"text": "Someone commented on your photo. See the conversation.",
+			"isSpam": false
+		},
+		{
+			"text": "Your flight to Lisbon is confirmed. Check in opens 24 hours before departure.",
+			"isSpam": false
+		},
+		{
+			"text": "The pull request was merged. CI passed on all checks.",
+			"isSpam": false
+		},
+		{
+			"text": "Reminder: dentist appointment on Tuesday at 9:30.",
+			"isSpam": false
+		},
+		{
+			"text": "Invoice for October consulting work is attached. Payment due in 30 days.",
+			"isSpam": false
+		},
+		{
+			"text": "The team offsite agenda is ready. Please review the travel plan.",
+			"isSpam": false
+		},
+		{
+			"text": "Happy birthday! Hope you have a lovely day with the family.",
+			"isSpam": false
+		},
+		{
+			"text": "Your monthly statement is ready to view in online banking.",
+			"isSpam": false
+		},
+		{
+			"text": "Security alert: a new sign-in to your account from Chrome on Windows. If this was you, no action is needed.",
+			"isSpam": false
+		},
+		{
+			"text": "Here are the notes from the client call. Next steps are listed at the bottom.",
+			"isSpam": false
+		},
+		{
+			"text": "Could you review the budget numbers? I think the Q3 forecast is off.",
+			"isSpam": false
+		},
+		{
+			"text": "Library notice: the book you reserved is ready for pickup.",
+			"isSpam": false
+		},
+		{
+			"text": "The school trip form needs a signature by Friday.",
+			"isSpam": false
+		},
+		{
+			"text": "Newsletter: ten recipes for quick weeknight dinners.",
+			"isSpam": false
+		},
+		{
+			"text": "Your password was changed successfully. Contact support if you did not do this.",
+			"isSpam": false
+		},
+		{
+			"text": "Let us catch up next week. Coffee on Wednesday morning?",
+			"isSpam": false
+		},
+		{
+			"text": "Thanks for applying. We would like to schedule an interview next week.",
+			"isSpam": false
+		},
+		{
+			"text": "Photos from the wedding are in the shared album.",
+			"isSpam": false
+		},
+		{
+			"text": "Your parcel was delivered to the front door at 2:14pm.",
+			"isSpam": false
+		},
+		{
+			"text": "The build failed on main. Looks like a flaky test in the search module.",
+			"isSpam": false
+		},
+		{
+			"text": "Member rewards: you have 340 points. Redeem them in the app.",
+			"isSpam": false
+		},
+		{
+			"text": "Rent reminder from the landlord: due on the first of the month as usual.",
+			"isSpam": false
+		},
+		{
+			"text": "New comment in the project thread about the release timeline.",
+			"isSpam": false
+		},
+		{
+			"text": "Join us for the community garden meetup on Saturday morning.",
+			"isSpam": false
+		},
+		{
+			"text": "Your subscription renews next month. You can manage it in settings.",
+			"isSpam": false
+		},
+		{
+			"text": "Quick question about the contract wording in section 4.",
+			"isSpam": false
+		},
+		{
+			"text": "The weekend weather looks great for a hike. Want to join?",
+			"isSpam": false
+		},
+		{
+			"text": "Course update: week 3 lessons and the quiz are now available.",
+			"isSpam": false
+		},
+		{
+			"text": "Webinar recording and slides are now available to attendees.",
+			"isSpam": false
+		}
+	],
+	"spamEval": [
+		{
+			"text": "Congratulations! You are our lucky winner. Claim your free prize today.",
+			"isSpam": true
+		},
+		{
+			"text": "Your account will be suspended unless you verify your password now.",
+			"isSpam": true
+		},
+		{
+			"text": "Guaranteed profit with our crypto trading bot. Double your money fast.",
+			"isSpam": true
+		},
+		{
+			"text": "Pay a small fee to release your parcel held at customs.",
+			"isSpam": true
+		},
+		{
+			"text": "Earn $3000 a week from home, no experience needed. Apply now.",
+			"isSpam": true
+		},
+		{
+			"text": "You have won the lottery. Send your bank details to receive the cash.",
+			"isSpam": true
+		},
+		{
+			"text": "Confirm your card details to avoid suspension of your subscription.",
+			"isSpam": true
+		},
+		{
+			"text": "Exclusive offer: free gift card, claim within 24 hours.",
+			"isSpam": true
+		},
+		{
+			"text": "Miracle pill melts fat overnight. Order now at a cheap price.",
+			"isSpam": true
+		},
+		{
+			"text": "Urgent: the director needs you to buy gift cards and send the codes.",
+			"isSpam": true
+		},
+		{
+			"text": "Your mailbox storage is full. Re-enter your login to keep receiving mail.",
+			"isSpam": true
+		},
+		{
+			"text": "Risk free investment returns. Join now, limited spots.",
+			"isSpam": true
+		},
+		{
+			"text": "Are you free for a call tomorrow afternoon about the project plan?",
+			"isSpam": false
+		},
+		{
+			"text": "The meeting notes are attached. Thanks everyone for joining.",
+			"isSpam": false
+		},
+		{
+			"text": "Your order has been delivered. Rate your purchase.",
+			"isSpam": false
+		},
+		{
+			"text": "Big summer sale: 20% off outdoor gear this weekend.",
+			"isSpam": false
+		},
+		{
+			"text": "Dinner on Friday? I booked a table for four at 8.",
+			"isSpam": false
+		},
+		{
+			"text": "Your appointment is confirmed for Monday at 10am.",
+			"isSpam": false
+		},
+		{
+			"text": "Weekly forum digest: new topics about trail running shoes.",
+			"isSpam": false
+		},
+		{
+			"text": "Please review the pull request when you have a moment.",
+			"isSpam": false
+		},
+		{
+			"text": "The kids loved the museum. Photos are in the album.",
+			"isSpam": false
+		},
+		{
+			"text": "Here is the invoice for last month. Let me know if you have questions.",
+			"isSpam": false
+		},
+		{
+			"text": "Reminder: team standup moves to 9:45 starting next week.",
+			"isSpam": false
+		},
+		{
+			"text": "Your statement for September is available in online banking.",
+			"isSpam": false
+		}
+	],
+	"categoryTraining": [
+		{
+			"from": "ada@example.com",
+			"subject": "Lunch Thursday?",
+			"body": "Are we still on for lunch? I can meet at noon.",
+			"category": "primary"
+		},
+		{
+			"from": "grace@example.org",
+			"subject": "Draft for review",
+			"body": "Attached the draft. Could you take a look before Friday?",
+			"category": "primary"
+		},
+		{
+			"from": "mum@family.example",
+			"subject": "Sunday dinner",
+			"body": "Dinner at 7 on Sunday. Bring the kids if they are free.",
+			"category": "primary"
+		},
+		{
+			"from": "tom@example.net",
+			"subject": "Quick question",
+			"body": "Do you have the contract wording from last week?",
+			"category": "primary"
+		},
+		{
+			"from": "lena@example.com",
+			"subject": "Re: trip plans",
+			"body": "I booked the train. Can you sort the hotel?",
+			"category": "primary"
+		},
+		{
+			"from": "sam@work.example",
+			"subject": "Notes from the call",
+			"body": "Sharing my notes. Let me know if I missed anything.",
+			"category": "primary"
+		},
+		{
+			"from": "olu@example.org",
+			"subject": "Thanks!",
+			"body": "Thanks so much for helping with the move yesterday.",
+			"category": "primary"
+		},
+		{
+			"from": "kim@example.com",
+			"subject": "Interview next week",
+			"body": "We would like to invite you for an interview on Tuesday.",
+			"category": "primary"
+		},
+		{
+			"from": "dan@example.net",
+			"subject": "Can you call me?",
+			"body": "Call me when you get a minute, it is about the budget.",
+			"category": "primary"
+		},
+		{
+			"from": "ana@example.com",
+			"subject": "Photos from the weekend",
+			"body": "Here are the photos I promised. The hike was great.",
+			"category": "primary"
+		},
+		{
+			"from": "joe@work.example",
+			"subject": "Budget numbers",
+			"body": "I think the Q3 forecast is off. Can we review it together?",
+			"category": "primary"
+		},
+		{
+			"from": "mia@example.org",
+			"subject": "Coffee?",
+			"body": "Want to grab coffee on Wednesday morning?",
+			"category": "primary"
+		},
+		{
+			"from": "deals@lumen.example",
+			"subject": "30% off headphones this week",
+			"body": "Our best headphones are on sale until Sunday. Shop now.",
+			"category": "promotions"
+		},
+		{
+			"from": "offers@shoply.example",
+			"subject": "Flash sale ends tonight",
+			"body": "Save up to 50% on everything. Use code FLASH50 at checkout.",
+			"category": "promotions"
+		},
+		{
+			"from": "news@outdoors.example",
+			"subject": "New arrivals for spring",
+			"body": "Discover the new collection. Free shipping on orders over $50.",
+			"category": "promotions"
+		},
+		{
+			"from": "hello@coffee.example",
+			"subject": "A treat for you",
+			"body": "Get a free pastry with any coffee this weekend. Show this coupon.",
+			"category": "promotions"
+		},
+		{
+			"from": "marketing@travel.example",
+			"subject": "Last-minute getaways",
+			"body": "Book now and save on hotels. Limited time deals.",
+			"category": "promotions"
+		},
+		{
+			"from": "store@books.example",
+			"subject": "Buy two, get one free",
+			"body": "Our biggest book sale of the year. Shop the bestsellers.",
+			"category": "promotions"
+		},
+		{
+			"from": "promo@fit.example",
+			"subject": "Your exclusive member discount",
+			"body": "Members save 20% on gym gear. Offer ends Friday.",
+			"category": "promotions"
+		},
+		{
+			"from": "deals@home.example",
+			"subject": "Black Friday early access",
+			"body": "Early access to doorbuster deals. Shop before everyone else.",
+			"category": "promotions"
+		},
+		{
+			"from": "shop@style.example",
+			"subject": "Picked for you",
+			"body": "New styles we think you will love. Shop the look.",
+			"category": "promotions"
+		},
+		{
+			"from": "offers@food.example",
+			"subject": "Free delivery this week",
+			"body": "Order your groceries with free delivery. Use promo code FREE.",
+			"category": "promotions"
+		},
+		{
+			"from": "notify@friendly.example",
+			"subject": "Maya commented on your photo",
+			"body": "Maya commented: \"Love this!\" See the conversation.",
+			"category": "social"
+		},
+		{
+			"from": "no-reply@pixgram.example",
+			"subject": "You have 3 new followers",
+			"body": "Jon, Ali and 1 other started following you.",
+			"category": "social"
+		},
+		{
+			"from": "invitations@linkup.example",
+			"subject": "Sara wants to connect",
+			"body": "Sara invited you to connect. Accept the invitation.",
+			"category": "social"
+		},
+		{
+			"from": "notify@friendly.example",
+			"subject": "Tom tagged you in a post",
+			"body": "Tom tagged you in a photo from the party.",
+			"category": "social"
+		},
+		{
+			"from": "events@friendly.example",
+			"subject": "Event invitation: board games night",
+			"body": "Lee invited you to an event on Friday. Going?",
+			"category": "social"
+		},
+		{
+			"from": "no-reply@chirp.example",
+			"subject": "Ali mentioned you",
+			"body": "Ali mentioned you in a reply. See what they said.",
+			"category": "social"
+		},
+		{
+			"from": "notify@linkup.example",
+			"subject": "Congratulate Dan on his new job",
+			"body": "Dan started a new position. Say congrats.",
+			"category": "social"
+		},
+		{
+			"from": "no-reply@pixgram.example",
+			"subject": "Your post is getting likes",
+			"body": "Your photo has 25 likes and 4 comments.",
+			"category": "social"
+		},
+		{
+			"from": "friends@friendly.example",
+			"subject": "Friend request from Nia",
+			"body": "Nia sent you a friend request. Confirm or delete.",
+			"category": "social"
+		},
+		{
+			"from": "notify@clips.example",
+			"subject": "New video from a channel you follow",
+			"body": "A creator you follow posted a new video.",
+			"category": "social"
+		},
+		{
+			"from": "orders@shoply.example",
+			"subject": "Your order has shipped",
+			"body": "Your order #4821 is on its way. Track your package.",
+			"category": "updates"
+		},
+		{
+			"from": "receipts@coffee.example",
+			"subject": "Your receipt",
+			"body": "Thanks for your purchase. Total paid $12.40. Receipt attached.",
+			"category": "updates"
+		},
+		{
+			"from": "no-reply@bank.example",
+			"subject": "Your statement is ready",
+			"body": "Your monthly statement is ready to view in online banking.",
+			"category": "updates"
+		},
+		{
+			"from": "security@account.example",
+			"subject": "New sign-in to your account",
+			"body": "A new sign-in from Chrome on Windows. If this was you, no action needed.",
+			"category": "updates"
+		},
+		{
+			"from": "no-reply@airline.example",
+			"subject": "Your flight is confirmed",
+			"body": "Booking confirmation for your flight to Lisbon. Check in opens 24 hours before.",
+			"category": "updates"
+		},
+		{
+			"from": "billing@cloud.example",
+			"subject": "Invoice available",
+			"body": "Your invoice for October is available. Payment due in 30 days.",
+			"category": "updates"
+		},
+		{
+			"from": "notifications@code.example",
+			"subject": "Build passed on main",
+			"body": "CI passed on all checks for your pull request.",
+			"category": "updates"
+		},
+		{
+			"from": "reminders@dentist.example",
+			"subject": "Appointment reminder",
+			"body": "Reminder: your appointment is on Tuesday at 9:30.",
+			"category": "updates"
+		},
+		{
+			"from": "no-reply@delivery.example",
+			"subject": "Delivered: your parcel",
+			"body": "Your parcel was delivered to the front door at 2:14pm.",
+			"category": "updates"
+		},
+		{
+			"from": "account@stream.example",
+			"subject": "Your password was changed",
+			"body": "Your password was changed successfully. Contact support if this was not you.",
+			"category": "updates"
+		},
+		{
+			"from": "no-reply@workspace.example",
+			"subject": "Your weekly summary is ready",
+			"body": "Here is what happened in your workspace this week.",
+			"category": "updates"
+		},
+		{
+			"from": "list@runners.example",
+			"subject": "[runners] Saturday long run route",
+			"body": "Meet at the park gate at 8. 14 km, easy pace.",
+			"category": "forums"
+		},
+		{
+			"from": "dev@lists.example",
+			"subject": "[dev] Proposal: drop old browser support",
+			"body": "Thoughts on dropping support next release? Reply to the list.",
+			"category": "forums"
+		},
+		{
+			"from": "garden@groups.example",
+			"subject": "[garden-club] Seed swap this month",
+			"body": "Bring your extra seeds to the swap. Reply to this thread.",
+			"category": "forums"
+		},
+		{
+			"from": "forum@makers.example",
+			"subject": "New reply in \"3D printer settings\"",
+			"body": "A member replied to a topic you follow in the forum.",
+			"category": "forums"
+		},
+		{
+			"from": "digest@community.example",
+			"subject": "Daily digest: 12 new topics",
+			"body": "Today in the community: 12 new topics and 40 replies.",
+			"category": "forums"
+		},
+		{
+			"from": "list@photo.example",
+			"subject": "[photo-club] Monthly challenge theme",
+			"body": "This month the theme is reflections. Post to the group.",
+			"category": "forums"
+		},
+		{
+			"from": "q-and-a@stacks.example",
+			"subject": "New answer to your question",
+			"body": "Someone answered your question about async iterators.",
+			"category": "forums"
+		},
+		{
+			"from": "list@parents.example",
+			"subject": "[school-parents] Bake sale volunteers",
+			"body": "We need volunteers for the bake sale. Reply to the group.",
+			"category": "forums"
+		},
+		{
+			"from": "discuss@books.example",
+			"subject": "Thread update: book club pick",
+			"body": "New posts in the discussion thread you follow.",
+			"category": "forums"
+		},
+		{
+			"from": "list@cycling.example",
+			"subject": "[cycling] Sunday ride cancelled",
+			"body": "Rain forecast, so the group ride is off. Unsubscribe from this list anytime.",
+			"category": "forums"
+		}
+	],
+	"categoryEval": [
+		{
+			"from": "rob@example.com",
+			"subject": "Dinner Friday?",
+			"body": "I booked a table for four at 8. Can you make it?",
+			"category": "primary"
+		},
+		{
+			"from": "nora@work.example",
+			"subject": "Slides for tomorrow",
+			"body": "Could you review the slides before the meeting?",
+			"category": "primary"
+		},
+		{
+			"from": "pat@example.org",
+			"subject": "Happy birthday!",
+			"body": "Hope you have a lovely day with the family.",
+			"category": "primary"
+		},
+		{
+			"from": "eve@example.net",
+			"subject": "Re: the report",
+			"body": "Thanks, I will send the final version tonight.",
+			"category": "primary"
+		},
+		{
+			"from": "max@example.com",
+			"subject": "Help with the move",
+			"body": "Could you help me carry the boxes on Saturday?",
+			"category": "primary"
+		},
+		{
+			"from": "deals@gadgets.example",
+			"subject": "Weekend sale: 25% off",
+			"body": "Save on laptops and tablets this weekend only. Shop now.",
+			"category": "promotions"
+		},
+		{
+			"from": "offers@beauty.example",
+			"subject": "Your coupon inside",
+			"body": "Use code GLOW15 for 15% off your next order.",
+			"category": "promotions"
+		},
+		{
+			"from": "news@shoes.example",
+			"subject": "New running shoes just dropped",
+			"body": "Shop the new collection with free shipping.",
+			"category": "promotions"
+		},
+		{
+			"from": "promo@pizza.example",
+			"subject": "Two for one tonight",
+			"body": "Order any large pizza and get a second free. Limited time.",
+			"category": "promotions"
+		},
+		{
+			"from": "store@toys.example",
+			"subject": "Holiday gift guide",
+			"body": "Our top picks and deals for the holidays. Shop early.",
+			"category": "promotions"
+		},
+		{
+			"from": "notify@friendly.example",
+			"subject": "Jo commented on your post",
+			"body": "Jo commented on your post. See the conversation.",
+			"category": "social"
+		},
+		{
+			"from": "no-reply@pixgram.example",
+			"subject": "New follower",
+			"body": "Ken started following you.",
+			"category": "social"
+		},
+		{
+			"from": "invitations@linkup.example",
+			"subject": "Invitation to connect",
+			"body": "Rae wants to connect with you. Accept the invitation.",
+			"category": "social"
+		},
+		{
+			"from": "notify@chirp.example",
+			"subject": "You were mentioned",
+			"body": "Bea mentioned you in a post.",
+			"category": "social"
+		},
+		{
+			"from": "events@friendly.example",
+			"subject": "Party invitation",
+			"body": "Ola invited you to a birthday party. Going?",
+			"category": "social"
+		},
+		{
+			"from": "orders@books.example",
+			"subject": "Order confirmed",
+			"body": "Your order #9921 is confirmed and will ship soon.",
+			"category": "updates"
+		},
+		{
+			"from": "no-reply@bank.example",
+			"subject": "Payment received",
+			"body": "We received your payment. Your balance is up to date.",
+			"category": "updates"
+		},
+		{
+			"from": "security@mail.example",
+			"subject": "Security alert",
+			"body": "A new device signed in to your account.",
+			"category": "updates"
+		},
+		{
+			"from": "no-reply@delivery.example",
+			"subject": "Out for delivery",
+			"body": "Your package is out for delivery today. Track it.",
+			"category": "updates"
+		},
+		{
+			"from": "billing@phone.example",
+			"subject": "Your bill is ready",
+			"body": "Your monthly bill is ready to view.",
+			"category": "updates"
+		},
+		{
+			"from": "list@chess.example",
+			"subject": "[chess-club] Tournament pairings",
+			"body": "Pairings for round 2 are posted. Reply to the list.",
+			"category": "forums"
+		},
+		{
+			"from": "forum@cooking.example",
+			"subject": "New reply in \"sourdough tips\"",
+			"body": "A member replied to a topic you follow.",
+			"category": "forums"
+		},
+		{
+			"from": "digest@community.example",
+			"subject": "Weekly digest: 8 new topics",
+			"body": "This week in the community: 8 new topics.",
+			"category": "forums"
+		},
+		{
+			"from": "list@hiking.example",
+			"subject": "[hiking] Trail closures",
+			"body": "The north trail is closed this weekend. Post to the group.",
+			"category": "forums"
+		},
+		{
+			"from": "q-and-a@stacks.example",
+			"subject": "Your question got an answer",
+			"body": "Someone answered your question about CSS grid.",
+			"category": "forums"
+		}
+	],
+	"composeSeed": [
+		"Thank you for your email.",
+		"Thank you for your help.",
+		"Thank you so much for getting back to me.",
+		"Thanks for getting back to me.",
+		"Thanks for the update.",
+		"Thanks for letting me know.",
+		"Let me know if you have any questions.",
+		"Let me know if you need anything else.",
+		"Let me know what you think.",
+		"Please let me know if you have any questions.",
+		"Please let me know what works for you.",
+		"Please find attached the latest version.",
+		"Please find attached the report.",
+		"I hope you are doing well.",
+		"I hope you had a great weekend.",
+		"I hope this helps.",
+		"I look forward to hearing from you.",
+		"Looking forward to hearing from you.",
+		"Looking forward to seeing you.",
+		"Have a great weekend.",
+		"Have a great day.",
+		"Talk to you soon.",
+		"See you tomorrow.",
+		"See you on Monday.",
+		"Sounds good to me.",
+		"Sounds good, thanks.",
+		"I will get back to you as soon as possible.",
+		"I will send it over by the end of the day.",
+		"I just wanted to follow up on my last email.",
+		"I just wanted to check in.",
+		"Would you be available for a quick call this week?",
+		"Are you free for a quick call tomorrow?",
+		"Can we move the meeting to next week?",
+		"Sorry for the late reply.",
+		"Sorry for the delay.",
+		"Happy to help.",
+		"Feel free to reach out if you have any questions.",
+		"Best regards.",
+		"Kind regards."
+	]
+}

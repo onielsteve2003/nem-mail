@@ -89,3 +89,15 @@ nem:
     # Shared with the nightly demo-reset GitHub Actions workflow; unset turns
     # POST /admin/demo/reset off.
     reset-key: ${DEMO_RESET_KEY:}
+  ai:
+    embeddings:
+      # Off: needs a -PwithEmbeddings build and ~150 MB more memory than Render
+      # free has to spare. The app computes MiniLM embeddings on the device.
+      enabled: ${AI_EMBEDDINGS:false}
+      model-url: djl://ai.djl.huggingface.onnxruntime/sentence-transformers/all-MiniLM-L6-v2
+      timeout: 5s
+    ollama:
+      # Local development only; blank turns it off. qwen2.5:0.5b is Apache-2.0.
+      url: ${OLLAMA_URL:}
+      model: qwen2.5:0.5b
+      timeout: 20s
