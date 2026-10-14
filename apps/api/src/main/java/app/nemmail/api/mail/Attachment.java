@@ -7,12 +7,14 @@ import java.util.UUID;
 
 /**
  * A file on a message. {@code messageId} is null while it only belongs to a draft, and {@code data}
- * is null for seeded files, which have a name and size but no content.
+ * is null for seeded files, which have a name and size but no content. {@code userId} is the
+ * uploader (null for seeded files).
  */
 @Entity
 @Table(name = "attachments")
 public class Attachment extends BaseEntity {
 
+  private UUID userId;
   private UUID messageId;
   private String filename;
   private String mime;
@@ -27,6 +29,14 @@ public class Attachment extends BaseEntity {
     this.filename = filename;
     this.mime = mime;
     this.size = size;
+  }
+
+  public UUID getUserId() {
+    return userId;
+  }
+
+  public void setUserId(UUID userId) {
+    this.userId = userId;
   }
 
   public UUID getMessageId() {

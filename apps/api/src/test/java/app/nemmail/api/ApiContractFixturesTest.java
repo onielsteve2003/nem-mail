@@ -16,7 +16,13 @@ import java.util.TreeMap;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -98,6 +104,18 @@ class ApiContractFixturesTest {
     String scrap = UUID.randomUUID().toString();
     ada.put().uri("/drafts/" + scrap).body(draft(scrap, graceEmail)).retrieve().toBodilessEntity();
     keep("deleteDraft", ada.delete().uri("/drafts/" + scrap), 200);
+
+    // Attachments (the bytes of GET /attachments/{id} are not JSON; AttachmentTest covers them)
+    HttpHeaders part = new HttpHeaders();
+    part.setContentType(MediaType.TEXT_PLAIN);
+    part.setContentDisposition(
+        ContentDisposition.formData().name("file").filename("notes.txt").build());
+    MultiValueMap<String, Object> upload = new LinkedMultiValueMap<>();
+    upload.add("file", new HttpEntity<>("Compiler notes".getBytes(), part));
+    keep(
+        "uploadAttachment",
+        ada.post().uri("/attachments").contentType(MediaType.MULTIPART_FORM_DATA).body(upload),
+        200);
 
     // Send, deliver (Grace gets it, the outside address bounces), then undo another send.
     JsonNode sent = keep("send", ada.post().uri("/send").body(Map.of("draft", draft)), 200);

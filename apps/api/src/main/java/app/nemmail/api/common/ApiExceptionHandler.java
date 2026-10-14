@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -115,6 +116,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
       case HttpRequestMethodNotSupportedException e ->
           "Method " + e.getMethod() + " is not allowed here.";
       case HttpMediaTypeNotSupportedException _ -> "Send the body as application/json.";
+      case MaxUploadSizeExceededException _ -> "Attachments can be up to 10 MB.";
       default -> "The request is not valid.";
     };
   }

@@ -31,6 +31,7 @@ public class SendService {
   private final MessageRecipientRepository recipients;
   private final MailboxEntryRepository entries;
   private final DraftService drafts;
+  private final AttachmentService attachments;
   private final DeliveryService delivery;
   private final TaskScheduler scheduler;
 
@@ -41,6 +42,7 @@ public class SendService {
       MessageRecipientRepository recipients,
       MailboxEntryRepository entries,
       DraftService drafts,
+      AttachmentService attachments,
       DeliveryService delivery,
       TaskScheduler scheduler) {
     this.users = users;
@@ -49,6 +51,7 @@ public class SendService {
     this.recipients = recipients;
     this.entries = entries;
     this.drafts = drafts;
+    this.attachments = attachments;
     this.delivery = delivery;
     this.scheduler = scheduler;
   }
@@ -91,6 +94,7 @@ public class SendService {
     addRecipients(message.getId(), draft.to(), RecipientKind.TO);
     addRecipients(message.getId(), draft.cc(), RecipientKind.CC);
     addRecipients(message.getId(), draft.bcc(), RecipientKind.BCC);
+    attachments.attach(userId, message.getId(), draft.attachments());
 
     MailboxEntry entry =
         new MailboxEntry(
@@ -140,7 +144,7 @@ public class SendService {
             addresses(sentTo, RecipientKind.BCC),
             message.getSubject(),
             message.getBodyHtml() != null ? message.getBodyHtml() : "",
-            List.of(),
+            attachments.detach(userId, messageId),
             null,
             null);
     messages.delete(message);

@@ -34,6 +34,11 @@ spring:
       ddl-auto: validate
   flyway:
     locations: classpath:db/migration
+  servlet:
+    multipart:
+      # MAX_ATTACHMENT_BYTES; a bigger upload is a 413 before it is read.
+      max-file-size: 10MB
+      max-request-size: 11MB
 
 server:
   # Render injects PORT; 8080 locally.
@@ -41,6 +46,10 @@ server:
   # Tomcat's RemoteIpValve: X-Forwarded-For counts only when an internal proxy
   # (Render's) sent it, so clients cannot fake their IP for the rate limiter.
   forward-headers-strategy: native
+  tomcat:
+    # Read the rest of an upload over the 10 MB limit, so the client gets the 413
+    # envelope instead of a dropped connection.
+    max-swallow-size: 12MB
   servlet:
     context-path: /api/v1
   error:
