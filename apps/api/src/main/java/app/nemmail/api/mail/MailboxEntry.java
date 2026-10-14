@@ -12,6 +12,7 @@ import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import org.hibernate.annotations.BatchSize;
 
 /** One user's copy of a message: its folder, tab, flags and labels. */
 @Entity
@@ -37,6 +38,8 @@ public class MailboxEntry extends BaseEntity {
   private Instant snoozedUntil;
   private Instant deletedAt;
 
+  // Lists load many entries at once; fetch their labels in batches, not one query each.
+  @BatchSize(size = 100)
   @ElementCollection
   @CollectionTable(name = "entry_labels", joinColumns = @JoinColumn(name = "entry_id"))
   @Column(name = "label_id")
