@@ -8,8 +8,10 @@ import java.io.UnsupportedEncodingException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -42,6 +44,7 @@ public class DeliveryService {
   private final MessageRepository messages;
   private final MessageRecipientRepository recipients;
   private final MailboxEntryRepository entries;
+  private final ContactRepository contacts;
   private final ObjectProvider<JavaMailSender> smtp;
 
   DeliveryService(
@@ -49,11 +52,13 @@ public class DeliveryService {
       MessageRepository messages,
       MessageRecipientRepository recipients,
       MailboxEntryRepository entries,
+      ContactRepository contacts,
       ObjectProvider<JavaMailSender> smtp) {
     this.threads = threads;
     this.messages = messages;
     this.recipients = recipients;
     this.entries = entries;
+    this.contacts = contacts;
     this.smtp = smtp;
   }
 
@@ -88,6 +93,7 @@ public class DeliveryService {
       }
     }
     members.forEach(userId -> deliverTo(userId, message));
+    collectContacts(message, to);
     if (!outside.isEmpty() && !sentOverSmtp(message, to)) {
       bounce(message, outside, now);
     }
@@ -115,6 +121,31 @@ public class DeliveryService {
             message.getSentAt());
     entry.setMuted(muted);
     entries.save(entry);
+  }
+
+  /**
+   * Auto-collected contacts: the sender gains each recipient, and each Nem Mail recipient gains the
+   * sender, one exchanged message each.
+   */
+  private void collectContacts(Message message, List<MessageRecipient> to) {
+    UUID senderId = message.getFromUserId();
+    Instant at = message.getSentAt();
+    Set<String> seen = new HashSet<>();
+    for (MessageRecipient recipient : to) {
+      String email = recipient.getEmail().toLowerCase(Locale.ROOT);
+      if (!seen.add(email) || senderId.equals(recipient.getUserId())) {
+        continue;
+      }
+      contacts.record(UUID.randomUUID(), senderId, recipient.getEmail(), recipient.getName(), at);
+      if (recipient.getUserId() != null) {
+        contacts.record(
+            UUID.randomUUID(),
+            recipient.getUserId(),
+            message.getFromEmail(),
+            message.getFromName(),
+            at);
+      }
+    }
   }
 
   /** False when SMTP is not configured or fails, so the caller bounces instead. */
