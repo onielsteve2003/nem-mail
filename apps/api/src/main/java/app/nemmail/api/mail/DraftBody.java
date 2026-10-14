@@ -44,6 +44,13 @@ public record DraftBody(
       @NotBlank String mime,
       @PositiveOrZero @Max(10_485_760) long size) {}
 
+  /** A 422 unless {@code mode} is a ComposeModeSchema value. */
+  void checkMode() {
+    if (!MODES.contains(mode)) {
+      throw Wire.invalid("mode", "Unknown value \"" + mode + "\".");
+    }
+  }
+
   DraftBody withUpdatedAt(Instant at) {
     return new DraftBody(
         id,

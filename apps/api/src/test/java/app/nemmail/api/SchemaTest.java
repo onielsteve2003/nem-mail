@@ -76,12 +76,24 @@ class SchemaTest {
     MailboxEntry loaded = entries.findByUserIdAndThreadId(user.getId(), thread.getId()).getFirst();
     assertThat(loaded.getMailbox()).isEqualTo(Mailbox.INBOX);
     assertThat(loaded.getLabelIds()).containsExactly(work.getId());
-    assertThat(jdbc.sql("select mailbox from mailbox_entries").query(String.class).single())
+    // Scoped to this test's rows: other test classes commit mail to the shared database.
+    assertThat(
+            jdbc.sql("select mailbox from mailbox_entries where id = :id")
+                .param("id", entry.getId())
+                .query(String.class)
+                .single())
         .isEqualTo("inbox");
-    assertThat(jdbc.sql("select ai ->> 'priority' from messages").query(String.class).single())
+    assertThat(
+            jdbc.sql("select ai ->> 'priority' from messages where id = :id")
+                .param("id", message.getId())
+                .query(String.class)
+                .single())
         .contains("0.8");
     assertThat(
-            jdbc.sql("select count(*) from messages where search @@ websearch_to_tsquery(:q)")
+            jdbc.sql(
+                    "select count(*) from messages"
+                        + " where id = :id and search @@ websearch_to_tsquery(:q)")
+                .param("id", message.getId())
                 .param("q", "engines")
                 .query(Long.class)
                 .single())

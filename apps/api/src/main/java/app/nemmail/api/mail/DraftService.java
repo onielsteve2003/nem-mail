@@ -43,10 +43,8 @@ public class DraftService {
     if (!draftId.toString().equals(body.id())) {
       throw Wire.invalid("id", "The id must match the URL.");
     }
-    if (!DraftBody.MODES.contains(body.mode())) {
-      throw Wire.invalid("mode", "Unknown value \"" + body.mode() + "\".");
-    }
-    UUID threadId = threadId(userId, body.threadId());
+    body.checkMode();
+    UUID threadId = ownThread(userId, body.threadId());
     Instant now = Instant.now();
     DraftBody saved = body.withUpdatedAt(now);
     String payload = json.writeValueAsString(saved);
@@ -68,6 +66,19 @@ public class DraftService {
     drafts.delete(own(userId, draftId));
   }
 
+  /** Removes a draft that was just sent; an unknown or foreign id is ignored. */
+  @Transactional
+  public void discard(UUID userId, String draftId) {
+    try {
+      drafts
+          .findById(UUID.fromString(draftId))
+          .filter(draft -> draft.getUserId().equals(userId))
+          .ifPresent(drafts::delete);
+    } catch (IllegalArgumentException e) {
+      // Not a UUID, so never saved here.
+    }
+  }
+
   private Draft own(UUID userId, UUID draftId) {
     return drafts
         .findById(draftId)
@@ -75,7 +86,8 @@ public class DraftService {
         .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Draft not found."));
   }
 
-  private UUID threadId(UUID userId, String raw) {
+  /** The id of one of the user's threads, or null; anything else is a 422. */
+  UUID ownThread(UUID userId, String raw) {
     if (raw == null) {
       return null;
     }
