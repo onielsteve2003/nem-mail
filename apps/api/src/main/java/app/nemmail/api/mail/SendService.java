@@ -17,8 +17,8 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 /**
  * Sending (FR-5.6): a draft becomes a message in the sender's Outbox, delivered after the undo
- * window by the task scheduler, or in Scheduled for a later time (the sweeper delivers those).
- * Until then {@link #cancel} turns it back into a draft.
+ * window by the task scheduler, or in Scheduled for a later time (the {@link MailSweeper} delivers
+ * those). Until then {@link #cancel} turns it back into a draft.
  */
 @Service
 public class SendService {

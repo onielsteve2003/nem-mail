@@ -1,6 +1,8 @@
 package app.nemmail.api.mail;
 
 import jakarta.persistence.LockModeType;
+import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -18,4 +20,10 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
   Optional<Message> lockById(UUID id);
 
   boolean existsByThreadIdAndIdNot(UUID threadId, UUID id);
+
+  /** Outbox and Scheduled messages due by {@code now}, oldest first, for the sweeper. */
+  @Query(
+      "select m.id from Message m where m.status in :statuses and m.sendAt <= :now"
+          + " order by m.sendAt")
+  List<UUID> findDueIds(Collection<MessageStatus> statuses, Instant now);
 }

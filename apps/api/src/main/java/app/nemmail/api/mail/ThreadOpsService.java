@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -152,6 +153,35 @@ public class ThreadOpsService {
     return forEachEntry(userId, threadIds, entry -> entry.setSnoozedUntil(null));
   }
 
+  /**
+   * Wakes every snooze due by {@code now}, for all users (FR-6.3): the snooze is cleared and a
+   * thread back in the inbox is unread again; one trashed or spammed meanwhile wakes quietly.
+   * Returns how many threads came back to an inbox.
+   */
+  @Transactional
+  public int wakeDue(Instant now) {
+    Map<UUID, Set<UUID>> byUser =
+        entries.findBySnoozedUntilLessThanEqualAndDeletedAtIsNull(now).stream()
+            .collect(
+                Collectors.groupingBy(
+                    MailboxEntry::getUserId,
+                    Collectors.mapping(
+                        MailboxEntry::getThreadId, Collectors.toCollection(LinkedHashSet::new))));
+    int woke = 0;
+    for (Map.Entry<UUID, Set<UUID>> user : byUser.entrySet()) {
+      List<UUID> threadIds = List.copyOf(user.getValue());
+      List<UUID> back =
+          load(user.getKey(), threadIds).entrySet().stream()
+              .filter(thread -> inInbox(thread.getValue()))
+              .map(Map.Entry::getKey)
+              .toList();
+      unsnooze(user.getKey(), threadIds);
+      markUnread(user.getKey(), back);
+      woke += back.size();
+    }
+    return woke;
+  }
+
   private List<UUID> forEachEntry(
       UUID userId, List<UUID> threadIds, Consumer<MailboxEntry> change) {
     Map<UUID, List<MailboxEntry>> byThread = load(userId, threadIds);
@@ -183,6 +213,13 @@ public class ThreadOpsService {
   private List<Message> messages(Collection<List<MailboxEntry>> byThread) {
     return messages.findAllById(
         byThread.stream().flatMap(List::stream).map(MailboxEntry::getMessageId).toList());
+  }
+
+  /** As the inbox list sees it: some entry in the inbox and none in spam or trash. */
+  private static boolean inInbox(List<MailboxEntry> threadEntries) {
+    return threadEntries.stream().anyMatch(e -> e.getMailbox() == Mailbox.INBOX)
+        && threadEntries.stream()
+            .noneMatch(e -> e.getMailbox() == Mailbox.SPAM || e.getMailbox() == Mailbox.TRASH);
   }
 
   private static void leaveInbox(MailboxEntry entry) {

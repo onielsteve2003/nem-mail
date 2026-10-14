@@ -1,5 +1,6 @@
 package app.nemmail.api.mail;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -12,4 +13,7 @@ public interface MailboxEntryRepository extends JpaRepository<MailboxEntry, UUID
   /** The user's live entries (not deleted forever) in these threads. */
   List<MailboxEntry> findByUserIdAndThreadIdInAndDeletedAtIsNull(
       UUID userId, Collection<UUID> threadIds);
+
+  /** Live entries whose snooze is over by {@code now}, for the sweeper. */
+  List<MailboxEntry> findBySnoozedUntilLessThanEqualAndDeletedAtIsNull(Instant now);
 }
