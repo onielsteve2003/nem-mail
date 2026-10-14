@@ -43,8 +43,9 @@ public class Draft extends BaseEntity {
     return payload;
   }
 
-  public void setPayload(String payload, Instant updatedAt) {
+  public void setPayload(String payload, UUID threadId, Instant updatedAt) {
     this.payload = payload;
+    this.threadId = threadId;
     this.updatedAt = updatedAt;
   }
 
