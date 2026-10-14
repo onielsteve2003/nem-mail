@@ -1,5 +1,6 @@
 package app.nemmail.api.auth;
 
+import app.nemmail.api.common.Ok;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -31,14 +32,11 @@ class AuthController {
     return auth.signIn(body);
   }
 
-  /** The {@code { ok: true }} body the shared contract (OkSchema) expects. */
-  record Ok(boolean ok) {}
-
   /** Ends this device's session only; other signed-in devices stay signed in. */
   @PostMapping("/auth/signout")
   Ok signOut(@AuthenticationPrincipal CurrentUser current) {
     sessions.revoke(current.sessionId());
-    return new Ok(true);
+    return Ok.OK;
   }
 
   @GetMapping("/me")
