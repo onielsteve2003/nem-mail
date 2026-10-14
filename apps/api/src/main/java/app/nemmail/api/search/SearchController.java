@@ -22,8 +22,8 @@ class SearchController {
   }
 
   /**
-   * {@code ?q=<query>&cursor&limit}. {@code semantic} is accepted for the contract and ignored
-   * until server embeddings (T18); semantic search runs on the device until then.
+   * {@code ?q=<query>&semantic&cursor&limit}. {@code semantic=true} adds matching by meaning when
+   * server embeddings are on, and is a plain keyword search when they are off.
    */
   @GetMapping("/search")
   PageResponse<ThreadSummaryResponse> search(
@@ -32,6 +32,6 @@ class SearchController {
       @RequestParam(defaultValue = "false") boolean semantic,
       @RequestParam(required = false) String cursor,
       @RequestParam(defaultValue = "50") @Min(1) @Max(100) int limit) {
-    return search.search(current.userId(), q.strip(), cursor, limit);
+    return search.search(current.userId(), q.strip(), semantic, cursor, limit);
   }
 }

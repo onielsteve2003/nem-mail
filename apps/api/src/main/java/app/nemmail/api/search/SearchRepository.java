@@ -23,6 +23,9 @@ class SearchRepository {
 
   record Hit(UUID threadId, Instant lastMessageAt, float rank) {}
 
+  /** MiniLM cosine below this is noise for short email texts (SEMANTIC_MIN in the app). */
+  static final double SEMANTIC_MIN = 0.3;
+
   /** Plain text: the client marks the terms itself. */
   private static final String HEADLINE_OPTIONS =
       "StartSel=\"\", StopSel=\"\", MaxWords=30, MinWords=12, MaxFragments=1";
@@ -79,6 +82,83 @@ class SearchRepository {
                     rs.getObject("last_at", OffsetDateTime.class).toInstant(),
                     rs.getFloat("rank")))
         .list();
+  }
+
+  /**
+   * Hybrid search (AI-7), the app's {@code hybridRank} in SQL. Operators still filter; the words
+   * match by keyword or by meaning. Keyword hits score {@code 0.5 * keyword + 0.5 * similarity},
+   * where {@code keyword} runs from 1 for the best {@code ts_rank} down to 0.5 for the last; a
+   * thread with no keyword hit gets in on meaning alone ({@code 0.5 * similarity}) when its best
+   * message is at least {@link #SEMANTIC_MIN} similar. Vectors are unit length, so cosine is {@code
+   * 1 - (a <=> b)}.
+   */
+  List<Hit> semanticPage(
+      UUID userId,
+      List<SearchClause> clauses,
+      String rankTerms,
+      float[] queryVector,
+      SearchCursor after,
+      int limit) {
+    Map<String, Object> params = new HashMap<>();
+    params.put("userId", userId);
+    params.put("limit", limit);
+    params.put("rankTerms", rankTerms);
+    params.put("vector", vectorLiteral(queryVector));
+    params.put("min", SEMANTIC_MIN);
+    StringBuilder having =
+        new StringBuilder("count(*) filter (where e.mailbox in ('spam', 'trash')) = 0");
+    StringBuilder keyword = new StringBuilder("true");
+    for (int i = 0; i < clauses.size(); i++) {
+      SearchClause clause = clauses.get(i);
+      String condition = condition(clause, "p" + i, params);
+      boolean words = clause.kind() == SearchClause.Kind.TEXT && !clause.negated();
+      (words ? keyword : having).append(" and ").append(condition);
+    }
+    StringBuilder sql =
+        new StringBuilder("select s.thread_id, s.last_at, s.rank from (")
+            .append("select k.thread_id, k.last_at, (case when k.keyword then 0.5 * (1 - 0.5 *")
+            .append(" (row_number() over (partition by k.keyword")
+            .append(" order by k.lex desc, k.last_at desc, k.thread_id desc) - 1)::float8")
+            .append(" / greatest(count(*) over (partition by k.keyword) - 1, 1)) else 0 end")
+            .append(" + 0.5 * greatest(k.sim, 0))::real as rank from (")
+            .append("select e.thread_id, max(e.last_message_at) as last_at,")
+            .append(" sum(ts_rank(m.search, plainto_tsquery('english', :rankTerms))) as lex, ")
+            .append(keyword)
+            .append(" as keyword,")
+            .append(" coalesce(max(1 - (v.vector <=> cast(:vector as vector))), 0) as sim")
+            .append(" from mailbox_entries e join messages m on m.id = e.message_id")
+            .append(" left join embeddings v on v.message_id = m.id")
+            .append(" where e.user_id = :userId and e.deleted_at is null")
+            .append(" group by e.thread_id having ")
+            .append(having)
+            .append(") k where k.keyword or k.sim >= :min) s");
+    if (after != null) {
+      params.put("afterRank", after.rank());
+      params.put("afterAt", utc(after.lastMessageAt()));
+      params.put("afterId", after.threadId());
+      sql.append(
+          " where (s.rank, s.last_at, s.thread_id)"
+              + " < (cast(:afterRank as real), :afterAt, :afterId)");
+    }
+    sql.append(" order by s.rank desc, s.last_at desc, s.thread_id desc limit :limit");
+    return jdbc.sql(sql.toString())
+        .params(params)
+        .query(
+            (rs, row) ->
+                new Hit(
+                    rs.getObject("thread_id", UUID.class),
+                    rs.getObject("last_at", OffsetDateTime.class).toInstant(),
+                    rs.getFloat("rank")))
+        .list();
+  }
+
+  /** pgvector's text form, {@code [0.1,0.2,...]}. */
+  private static String vectorLiteral(float[] vector) {
+    StringBuilder out = new StringBuilder("[");
+    for (int i = 0; i < vector.length; i++) {
+      out.append(i == 0 ? "" : ",").append(vector[i]);
+    }
+    return out.append(']').toString();
   }
 
   /**
