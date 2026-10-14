@@ -33,9 +33,10 @@ import tools.jackson.databind.json.JsonMapper;
  * Runs the mail models on each delivered message, after delivery commits, on its own virtual
  * thread, so sending never waits for AI. As the app does on device: spam goes to Spam; other mail
  * gets a tab (unless the thread already has one, which may be the user's choice) and the Important
- * marker when its priority score is high. The message keeps the content-level results (spam,
- * category, extractions) in {@code messages.ai}; priority depends on the reader, so it only sets
- * each reader's marker. Then, if server embeddings are on, the message gets its vector.
+ * marker when its priority score is high. Each reader is judged by their own models ({@link
+ * UserModels}), and their results (with priority) go on their copy in {@code mailbox_entries.ai};
+ * {@code messages.ai} keeps the seed models' verdict for everyone else, such as the sender. Then,
+ * if server embeddings are on, the message gets its vector.
  */
 @Component
 public class IngestPipeline {
@@ -46,6 +47,9 @@ public class IngestPipeline {
   private static final Logger log = LoggerFactory.getLogger(IngestPipeline.class);
 
   private final boolean enabled;
+  private final SeedModels seed;
+  private final UserModels models;
+  private final PriorityInputs priorityInputs;
   private final MessageRepository messages;
   private final EmbeddingRepository embeddings;
   private final Embedder embedder;
@@ -53,14 +57,12 @@ public class IngestPipeline {
   private final TransactionTemplate transactions;
   private final ApplicationEventPublisher events;
   private final JsonMapper json;
-  // Seed models, read-only here; per-user models replace them in T18.3.
-  private final NaiveBayes spam;
-  private final NaiveBayes category;
-  private final PriorityModel.Logistic priority;
 
   IngestPipeline(
       AiProperties properties,
       SeedModels seed,
+      UserModels models,
+      PriorityInputs priorityInputs,
       MessageRepository messages,
       EmbeddingRepository embeddings,
       Embedder embedder,
@@ -69,6 +71,9 @@ public class IngestPipeline {
       ApplicationEventPublisher events,
       JsonMapper json) {
     this.enabled = properties.ingest().enabled();
+    this.seed = seed;
+    this.models = models;
+    this.priorityInputs = priorityInputs;
     this.messages = messages;
     this.embeddings = embeddings;
     this.embedder = embedder;
@@ -76,9 +81,6 @@ public class IngestPipeline {
     this.transactions = transactions;
     this.events = events;
     this.json = json;
-    this.spam = seed.spam();
-    this.category = seed.category();
-    this.priority = seed.priority();
   }
 
   @TransactionalEventListener
@@ -102,7 +104,10 @@ public class IngestPipeline {
     }
   }
 
-  /** Classifies the message and files each reader's inbox copy; a repeat call does nothing. */
+  /**
+   * Classifies the message with the seed models (its stored, reader-free verdict), then each
+   * reader's copy with that reader's own models, and files it; a repeat call does nothing.
+   */
   public void ingest(UUID messageId, Set<UUID> readers) {
     transactions.executeWithoutResult(
         status -> {
@@ -110,46 +115,21 @@ public class IngestPipeline {
           if (message == null || message.getAi() != null) {
             return;
           }
-          AiInsight<SpamModel.Verdict> spamVerdict =
-              SpamModel.classify(
-                  spam,
-                  new Phishing.Input(
-                      Optional.ofNullable(message.getFromName()).orElse(""),
-                      message.getFromEmail(),
-                      message.getSubject(),
-                      message.getBodyText(),
-                      message.getBodyHtml()));
-          boolean isSpam = spamVerdict.value().isSpam();
-          AiInsight<String> tab =
-              isSpam
-                  ? null
-                  : CategoryModel.classify(
-                      category,
-                      new CategoryModel.Input(
-                          message.getFromEmail(), message.getSubject(), message.getBodyText()));
           AiInsight<List<Extractor.Extraction>> extractions =
               Extractor.extract(
                   new Extractor.Input(
                       message.getSubject(), message.getBodyText(), message.getSentAt()),
                   // The server has no reader's time zone yet; "Friday" counts from the UTC day.
                   ZoneOffset.UTC);
-
-          Map<String, Object> ai = new LinkedHashMap<>();
-          if (tab != null) {
-            ai.put("category", tab);
-          }
-          ai.put("spam", spamVerdict);
-          if (extractions != null) {
-            ai.put("extractions", extractions);
-          }
+          Insights ai = classify(message, seed.spam(), seed.category(), extractions);
           jdbc.sql("update messages set ai = cast(:ai as jsonb) where id = :id and ai is null")
-              .param("ai", json.writeValueAsString(ai))
+              .param("ai", json.writeValueAsString(ai.json()))
               .param("id", messageId)
               .update();
 
           Set<UUID> filed = new LinkedHashSet<>();
           for (UUID reader : readers) {
-            if (file(reader, message, isSpam, tab)) {
+            if (file(reader, message, extractions)) {
               filed.add(reader);
             }
           }
@@ -160,15 +140,72 @@ public class IngestPipeline {
         });
   }
 
+  /** One message's results; {@code tab} is null for spam. */
+  private record Insights(
+      AiInsight<SpamModel.Verdict> spam,
+      AiInsight<String> tab,
+      AiInsight<List<Extractor.Extraction>> extractions) {
+
+    /** The AIInsights JSON shape, plus a reader's priority when given. */
+    Map<String, Object> json(AiInsight<Double> priority) {
+      Map<String, Object> ai = new LinkedHashMap<>();
+      if (tab != null) {
+        ai.put("category", tab);
+      }
+      ai.put("spam", spam);
+      if (priority != null) {
+        ai.put("priority", priority);
+      }
+      if (extractions != null) {
+        ai.put("extractions", extractions);
+      }
+      return ai;
+    }
+
+    Map<String, Object> json() {
+      return json(null);
+    }
+  }
+
+  /** Spam (phishing rules included), then a tab unless spam. */
+  private static Insights classify(
+      Message message,
+      NaiveBayes spam,
+      NaiveBayes category,
+      AiInsight<List<Extractor.Extraction>> extractions) {
+    AiInsight<SpamModel.Verdict> verdict =
+        SpamModel.classify(
+            spam,
+            new Phishing.Input(
+                Optional.ofNullable(message.getFromName()).orElse(""),
+                message.getFromEmail(),
+                message.getSubject(),
+                message.getBodyText(),
+                message.getBodyHtml()));
+    AiInsight<String> tab =
+        verdict.value().isSpam()
+            ? null
+            : CategoryModel.classify(
+                category,
+                new CategoryModel.Input(
+                    message.getFromEmail(), message.getSubject(), message.getBodyText()));
+    return new Insights(verdict, tab, extractions);
+  }
+
   /**
-   * Files the reader's copy while it is still in their inbox; targeted updates, so a flag the
-   * reader changed in the meantime is not overwritten. Returns whether anything changed.
+   * Classifies the reader's copy with their models and files it while it is still in their inbox,
+   * storing their results on it. Targeted updates, so a flag the reader changed in the meantime is
+   * not overwritten. Returns whether anything changed.
    */
-  private boolean file(UUID reader, Message message, boolean isSpam, AiInsight<String> tab) {
-    if (isSpam) {
+  private boolean file(
+      UUID reader, Message message, AiInsight<List<Extractor.Extraction>> extractions) {
+    Insights ai = classify(message, models.spam(reader), models.category(reader), extractions);
+    if (ai.spam().value().isSpam()) {
       return jdbc.sql(
-                  "update mailbox_entries set mailbox = 'spam', category = null"
+                  "update mailbox_entries set mailbox = 'spam', category = null,"
+                      + " ai = cast(:ai as jsonb)"
                       + " where user_id = :reader and message_id = :message and mailbox = 'inbox'")
+              .param("ai", json.writeValueAsString(ai.json()))
               .param("reader", reader)
               .param("message", message.getId())
               .update()
@@ -185,7 +222,7 @@ public class IngestPipeline {
             .param("message", message.getId())
             .query(Boolean.class)
             .single();
-    String category = tab.value();
+    String category = ai.tab().value();
     if (!hasTab) {
       jdbc.sql(
               "update mailbox_entries set category = :category"
@@ -206,50 +243,27 @@ public class IngestPipeline {
               .orElse(category);
     }
     AiInsight<Double> score =
-        PriorityModel.score(priority, priorityInput(reader, message, category));
-    if (score.value() >= PriorityModel.IMPORTANT_THRESHOLD) {
-      jdbc.sql(
-              "update mailbox_entries set is_important = true"
-                  + " where user_id = :reader and message_id = :message and mailbox = 'inbox'")
-          .param("reader", reader)
-          .param("message", message.getId())
-          .update();
-    }
+        PriorityModel.score(
+            models.priority(reader),
+            priorityInputs.input(
+                reader,
+                new PriorityInputs.Mail(
+                    message.getId(),
+                    message.getThreadId(),
+                    message.getFromEmail(),
+                    message.getSubject(),
+                    message.getBodyText(),
+                    category)));
+    jdbc.sql(
+            "update mailbox_entries set ai = cast(:ai as jsonb),"
+                + " is_important = is_important or :important"
+                + " where user_id = :reader and message_id = :message and mailbox = 'inbox'")
+        .param("ai", json.writeValueAsString(ai.json(score)))
+        .param("important", score.value() >= PriorityModel.IMPORTANT_THRESHOLD)
+        .param("reader", reader)
+        .param("message", message.getId())
+        .update();
     return true;
-  }
-
-  private PriorityModel.Input priorityInput(UUID reader, Message message, String category) {
-    record Facts(
-        boolean direct, int recipients, int messageCount, boolean attachments, int frequency) {}
-    Facts facts =
-        jdbc.sql(
-                "select"
-                    + " exists (select 1 from message_recipients where message_id = :message"
-                    + "   and user_id = :reader and kind <> 'bcc') as direct,"
-                    + " (select count(*) from message_recipients where message_id = :message)"
-                    + "   as recipients,"
-                    + " (select message_count from threads where id = :thread) as message_count,"
-                    + " exists (select 1 from attachments where message_id = :message)"
-                    + "   as attachments,"
-                    // This delivery already counted the sender once; the model wants the history.
-                    + " coalesce((select greatest(frequency - 1, 0) from contacts"
-                    + "   where owner_id = :reader and lower(email) = lower(:from)), 0) as frequency")
-            .param("message", message.getId())
-            .param("reader", reader)
-            .param("thread", message.getThreadId())
-            .param("from", message.getFromEmail())
-            .query(Facts.class)
-            .single();
-    return new PriorityModel.Input(
-        message.getFromEmail(),
-        message.getSubject(),
-        message.getBodyText(),
-        facts.direct(),
-        facts.recipients(),
-        facts.messageCount(),
-        category,
-        facts.attachments(),
-        facts.frequency());
   }
 
   /** Stores the message's vector when server embeddings are on and loaded. */

@@ -13,6 +13,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /** One user's copy of a message: its folder, tab, flags and labels. */
 @Entity
@@ -37,6 +39,10 @@ public class MailboxEntry extends BaseEntity {
   private boolean isMuted;
   private Instant snoozedUntil;
   private Instant deletedAt;
+
+  /** The reader's own AI results for this copy (JSON), when ingest ran with their models. */
+  @JdbcTypeCode(SqlTypes.JSON)
+  private String ai;
 
   // Lists load many entries at once; fetch their labels in batches, not one query each.
   @BatchSize(size = 100)
@@ -146,6 +152,10 @@ public class MailboxEntry extends BaseEntity {
 
   public void setDeletedAt(Instant deletedAt) {
     this.deletedAt = deletedAt;
+  }
+
+  public String getAi() {
+    return ai;
   }
 
   public Set<UUID> getLabelIds() {

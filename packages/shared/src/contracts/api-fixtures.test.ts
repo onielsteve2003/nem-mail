@@ -12,12 +12,7 @@ const files = readdirSync(DIR).filter((name) => name.endsWith('.json'));
 const read = (file: string): unknown => JSON.parse(readFileSync(new URL(file, DIR), 'utf8'));
 
 /** Endpoints later backend tasks add (M18 AI) or not yet served. */
-const NOT_YET_SERVED: readonly EndpointName[] = [
-	'aiSummary',
-	'aiReplies',
-	'aiAssistant',
-	'aiFeedback'
-];
+const NOT_YET_SERVED: readonly EndpointName[] = ['aiSummary', 'aiReplies', 'aiAssistant'];
 
 /** Served, but not as JSON: file bytes and the SSE stream (AttachmentTest, EventStreamTest). */
 const NOT_JSON: readonly EndpointName[] = ['getAttachment', 'events'];

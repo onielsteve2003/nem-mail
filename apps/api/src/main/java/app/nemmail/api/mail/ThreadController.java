@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Min;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,10 +24,12 @@ class ThreadController {
 
   private final ThreadService threads;
   private final ThreadOpsService ops;
+  private final ApplicationEventPublisher events;
 
-  ThreadController(ThreadService threads, ThreadOpsService ops) {
+  ThreadController(ThreadService threads, ThreadOpsService ops, ApplicationEventPublisher events) {
     this.threads = threads;
     this.ops = ops;
+    this.events = events;
   }
 
   /** {@code ?mailbox=inbox&category=social} or {@code ?label=<id>}, exactly one of the two. */
@@ -104,6 +107,9 @@ class ThreadController {
           case ThreadOp.Snooze snooze -> ops.snooze(userId, ids, snooze.until());
           case ThreadOp.Unsnooze _ -> ops.unsnooze(userId, ids);
         };
+    if (!updated.isEmpty()) {
+      events.publishEvent(new MailEvents.OpApplied(userId, body.op(), updated));
+    }
     return new BulkThreadRequest.Response(updated);
   }
 }

@@ -1,5 +1,8 @@
 package app.nemmail.api.ai.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -25,11 +28,13 @@ public final class PriorityModel {
       int senderFrequency) {}
 
   /** Same JSON shape as the TS model: {@code version, kind, weights, bias}. */
+  @JsonIgnoreProperties(ignoreUnknown = true)
   public static final class Logistic {
     private final double[] weights;
     private double bias;
 
-    public Logistic(double[] weights, double bias) {
+    @JsonCreator
+    public Logistic(@JsonProperty("weights") double[] weights, @JsonProperty("bias") double bias) {
       this.weights = weights;
       this.bias = bias;
     }

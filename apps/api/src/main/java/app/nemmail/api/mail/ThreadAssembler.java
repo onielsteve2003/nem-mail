@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.springframework.stereotype.Component;
 
 /**
@@ -148,8 +149,8 @@ class ThreadAssembler {
             .flatMap(m -> loaded.attachments().getOrDefault(m.getId(), List.of()).stream())
             .map(a -> new AttachmentPreview(a.getFilename(), a.getMime()))
             .toList(),
-        threadMessages.reversed().stream()
-            .map(Message::getAi)
+        IntStream.iterate(threadMessages.size() - 1, i -> i >= 0, i -> i - 1)
+            .mapToObj(i -> ai(threadEntries.get(i), threadMessages.get(i)))
             .filter(Objects::nonNull)
             .findFirst()
             .orElse(null));
@@ -186,9 +187,14 @@ class ThreadAssembler {
                               a.getId(), a.getFilename(), a.getMime(), a.getSize()))
                   .toList(),
               loaded.entries().get(i).isRead(),
-              message.getAi()));
+              ai(loaded.entries().get(i), message)));
     }
     return new ThreadResponse(summary(loaded), threadMessages);
+  }
+
+  /** The reader's own results when ingest stored them, else the message's. */
+  private static String ai(MailboxEntry entry, Message message) {
+    return entry.getAi() != null ? entry.getAi() : message.getAi();
   }
 
   static Address sender(Message message) {

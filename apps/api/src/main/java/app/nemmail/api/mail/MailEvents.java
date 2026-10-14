@@ -21,6 +21,9 @@ public final class MailEvents {
   /** A message reached the inbox of each of {@code inbox} (Nem Mail recipients, not the sender). */
   public record MessageDelivered(UUID messageId, Set<UUID> inbox) {}
 
+  /** The user applied {@code op} to {@code threadIds}; the AI learns from some ops. */
+  public record OpApplied(UUID userId, ThreadOp op, List<UUID> threadIds) {}
+
   /** The user's snoozes came due; {@code threadIds} are the ones back in the inbox. */
   record SnoozeWoke(UUID userId, List<UUID> threadIds) {}
 }

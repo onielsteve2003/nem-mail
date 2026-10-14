@@ -40,6 +40,8 @@ class IngestPipelineTest {
   @Autowired private IngestPipeline pipeline;
   @Autowired private AiProperties properties;
   @Autowired private SeedModels seed;
+  @Autowired private UserModels userModels;
+  @Autowired private PriorityInputs priorityInputs;
   @Autowired private MessageRepository messages;
   @Autowired private EmbeddingRepository embeddings;
   @Autowired private JdbcClient jdbc;
@@ -118,8 +120,9 @@ class IngestPipelineTest {
     JsonNode second =
         deliverAndWait(threadId, "Re: Weekend sale", "Still 50% off. Use code SAVE50.");
     assertThat(second.get("category").asString()).isEqualTo("social");
+    // Grace's move also taught her category model, so her own verdict on the reply agrees.
     assertThat(second.get("messages").get(1).get("ai").get("category").get("value").asString())
-        .isEqualTo("promotions");
+        .isEqualTo("social");
   }
 
   @Test
@@ -185,7 +188,17 @@ class IngestPipelineTest {
         new AiProperties(
             new AiProperties.Ingest(true), properties.embeddings(), properties.ollama());
     return new IngestPipeline(
-        on, seed, messages, embeddings, embedder, jdbc, transactions, events, json);
+        on,
+        seed,
+        userModels,
+        priorityInputs,
+        messages,
+        embeddings,
+        embedder,
+        jdbc,
+        transactions,
+        events,
+        json);
   }
 
   /**
@@ -204,7 +217,9 @@ class IngestPipelineTest {
       JsonNode thread = get(graceToken, path);
       JsonNode latest = thread.get("messages").get(thread.get("messages").size() - 1);
       if (latest.get("id").asString().equals(messageId) && latest.has("ai")) {
-        return thread;
+        // The read may have straddled the ingest commit (entries before, messages after); now
+        // that the commit is visible, read again.
+        return get(graceToken, path);
       }
       Thread.sleep(50);
     }

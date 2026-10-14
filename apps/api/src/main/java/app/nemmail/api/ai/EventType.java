@@ -7,7 +7,10 @@ public enum EventType {
   OPEN,
   REPLY,
   SPAM,
-  MOVE_CATEGORY;
+  NOT_SPAM,
+  MOVE_CATEGORY,
+  IMPORTANT,
+  NOT_IMPORTANT;
 
   /** Stored as the lowercase name. */
   public static class Converter extends LowercaseEnumConverter<EventType> {
