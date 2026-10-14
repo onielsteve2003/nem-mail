@@ -2,12 +2,16 @@ package app.nemmail.api.mail;
 
 import app.nemmail.api.auth.CurrentUser;
 import app.nemmail.api.common.PageResponse;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -15,9 +19,11 @@ import org.springframework.web.bind.annotation.RestController;
 class ThreadController {
 
   private final ThreadService threads;
+  private final ThreadOpsService ops;
 
-  ThreadController(ThreadService threads) {
+  ThreadController(ThreadService threads, ThreadOpsService ops) {
     this.threads = threads;
+    this.ops = ops;
   }
 
   /** {@code ?mailbox=inbox&category=social} or {@code ?label=<id>}, exactly one of the two. */
@@ -46,5 +52,38 @@ class ThreadController {
   @GetMapping("/threads/{id}")
   ThreadResponse get(@AuthenticationPrincipal CurrentUser current, @PathVariable UUID id) {
     return threads.get(current.userId(), id);
+  }
+
+  /** Bulk actions: each op maps to its own transactional service method. */
+  @PatchMapping("/threads")
+  BulkThreadRequest.Response bulk(
+      @AuthenticationPrincipal CurrentUser current, @Valid @RequestBody BulkThreadRequest body) {
+    UUID userId = current.userId();
+    List<UUID> ids = body.ids();
+    List<UUID> updated =
+        switch (body.op()) {
+          case ThreadOp.MarkRead _ -> ops.markRead(userId, ids);
+          case ThreadOp.MarkUnread _ -> ops.markUnread(userId, ids);
+          case ThreadOp.Star _ -> ops.setStarred(userId, ids, true);
+          case ThreadOp.Unstar _ -> ops.setStarred(userId, ids, false);
+          case ThreadOp.MarkImportant _ -> ops.setImportant(userId, ids, true);
+          case ThreadOp.MarkNotImportant _ -> ops.setImportant(userId, ids, false);
+          case ThreadOp.Archive _ -> ops.archive(userId, ids);
+          case ThreadOp.Trash _ -> ops.move(userId, ids, Mailbox.TRASH);
+          case ThreadOp.Spam _ -> ops.move(userId, ids, Mailbox.SPAM);
+          case ThreadOp.NotSpam _ -> ops.move(userId, ids, Mailbox.INBOX);
+          case ThreadOp.Move move ->
+              ops.move(userId, ids, Wire.parse(Mailbox.class, move.to(), "op.to"));
+          case ThreadOp.Mute _ -> ops.setMuted(userId, ids, true);
+          case ThreadOp.Unmute _ -> ops.setMuted(userId, ids, false);
+          case ThreadOp.SetCategory set ->
+              ops.setCategory(
+                  userId, ids, Wire.parse(Category.class, set.category(), "op.category"));
+          case ThreadOp.AddLabels add -> ops.addLabels(userId, ids, add.labelIds());
+          case ThreadOp.RemoveLabels remove -> ops.removeLabels(userId, ids, remove.labelIds());
+          case ThreadOp.Snooze snooze -> ops.snooze(userId, ids, snooze.until());
+          case ThreadOp.Unsnooze _ -> ops.unsnooze(userId, ids);
+        };
+    return new BulkThreadRequest.Response(updated);
   }
 }

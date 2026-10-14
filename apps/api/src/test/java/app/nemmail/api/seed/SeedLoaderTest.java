@@ -9,6 +9,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -53,21 +54,23 @@ class SeedLoaderTest {
     assertThat(count("mailbox_entries") - entryRows).isEqualTo(messages);
     assertThat(count("settings") - settingsRows).isEqualTo(data.accounts().size());
 
-    // The newest delivered mail sits as far before now as it sat before generatedAt.
-    Instant newestSeed =
+    // The newest delivered mail sits as far before now as it sat before generatedAt. Other test
+    // classes add newer mail to the shared database, so look up the seed's own newest message.
+    SeedData.Message newestSeed =
         data.accounts().stream()
             .flatMap(a -> a.threads().stream())
             .flatMap(t -> t.messages().stream())
             .filter(m -> m.status().equals("sent"))
-            .map(SeedData.Message::sentAt)
-            .max(Instant::compareTo)
+            .max(Comparator.comparing(SeedData.Message::sentAt))
             .orElseThrow();
     Instant newest =
-        jdbc.sql("select max(sent_at) from messages where status = 'sent'")
+        jdbc.sql("select sent_at from messages where id = :id")
+            .param("id", SeedLoader.idOf(newestSeed.id()))
             .query(OffsetDateTime.class)
             .single()
             .toInstant();
-    assertThat(newest).isEqualTo(now.minus(Duration.between(newestSeed, data.generatedAt())));
+    assertThat(newest)
+        .isEqualTo(now.minus(Duration.between(newestSeed.sentAt(), data.generatedAt())));
 
     String demo = SeedLoader.idOf(data.accounts().getFirst().user().id()).toString();
     assertThat(
