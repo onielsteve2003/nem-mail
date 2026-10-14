@@ -1,0 +1,10 @@
+{
+  "error" : {
+    "code" : "VALIDATION_FAILED",
+    "message" : "Some fields are not valid.",
+    "details" : [ {
+      "field" : "name",
+      "message" : "Use 1 to 50 characters."
+    } ]
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "theme" : "light",
+  "density" : "default",
+  "swipe" : {
+    "left" : "archive",
+    "right" : "toggleRead"
+  },
+  "ai" : {
+    "categories" : true,
+    "spam" : true,
+    "summary" : false,
+    "smartReply" : true,
+    "smartCompose" : true,
+    "priority" : true,
+    "semanticSearch" : true,
+    "toneCheck" : true,
+    "followUp" : true,
+    "extraction" : true,
+    "assistant" : true,
+    "unsubscribe" : true
+  },
+  "signature" : "",
+  "vacation" : {
+    "enabled" : false,
+    "subject" : "",
+    "message" : "",
+    "startsAt" : null,
+    "endsAt" : null
+  },
+  "notifications" : {
+    "newMail" : true
+  },
+  "defaultReply" : "reply",
+  "confirm" : {
+    "delete" : true,
+    "archive" : false,
+    "send" : false
+  }
+}

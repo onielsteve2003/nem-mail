@@ -1,0 +1,12 @@
+[ {
+  "id" : "b86d211d-0528-4a45-9cfe-876451ce0fcf",
+  "email" : "bob@outside.example",
+  "lastContactedAt" : "2026-10-14T08:53:40.068Z",
+  "frequency" : 1
+}, {
+  "id" : "31a97507-83be-4c7d-8d71-9ce81aaa946e",
+  "email" : "grace-2@nemmail.example",
+  "name" : "Grace Hopper",
+  "lastContactedAt" : "2026-10-14T08:53:40.068Z",
+  "frequency" : 1
+} ]

@@ -1,0 +1,11 @@
+{
+  "token" : "JWwoF7Y4yrJzIpDtjAKQaWVCZ8InVu7OP2t3VAVOuSw",
+  "expiresAt" : "2026-11-13T08:53:34.566830700Z",
+  "user" : {
+    "id" : "845da748-8bf4-4410-87b4-55f7ce911cdf",
+    "email" : "ada-1@nemmail.example",
+    "name" : "Ada Lovelace",
+    "avatarSeed" : "ada-1@nemmail.example",
+    "createdAt" : "2026-10-14T08:53:34.532842200Z"
+  }
+}

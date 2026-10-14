@@ -1,0 +1,75 @@
+{
+  "id" : "d7cd530c-eb3f-4978-9c99-a6308b7ef228",
+  "subject" : "Compiler notes",
+  "snippet" : "Your message to bob@outside.example couldn't be delivered. Nem Mail delivers mail only between Nem Mail accounts.",
+  "participants" : [ {
+    "email" : "ada-1@nemmail.example",
+    "name" : "Ada Lovelace"
+  }, {
+    "email" : "mailer-daemon@nemmail.app",
+    "name" : "Mail Delivery Subsystem"
+  } ],
+  "recipients" : [ {
+    "email" : "grace-2@nemmail.example",
+    "name" : "Grace Hopper"
+  }, {
+    "email" : "bob@outside.example"
+  } ],
+  "messageCount" : 2,
+  "lastMessageAt" : "2026-10-14T08:53:40.069Z",
+  "mailboxes" : [ "inbox", "sent" ],
+  "category" : "updates",
+  "labelIds" : [ "e07d186b-5b6a-4a20-a521-c5bc8a4f0b24" ],
+  "isUnread" : true,
+  "isStarred" : true,
+  "isImportant" : false,
+  "isMuted" : false,
+  "snoozedUntil" : null,
+  "attachments" : [ ],
+  "messages" : [ {
+    "id" : "4973777c-765a-4889-be47-9348afd4da13",
+    "threadId" : "d7cd530c-eb3f-4978-9c99-a6308b7ef228",
+    "from" : {
+      "email" : "ada-1@nemmail.example",
+      "name" : "Ada Lovelace"
+    },
+    "to" : [ {
+      "email" : "grace-2@nemmail.example",
+      "name" : "Grace Hopper"
+    } ],
+    "cc" : [ {
+      "email" : "bob@outside.example"
+    } ],
+    "bcc" : [ ],
+    "subject" : "Compiler notes",
+    "bodyHtml" : "<p>Shall we compare <b>notes</b> on Friday?</p>",
+    "bodyText" : "Shall we compare notes on Friday?",
+    "snippet" : "Shall we compare notes on Friday?",
+    "sentAt" : "2026-10-14T08:53:40.068Z",
+    "sendAt" : null,
+    "status" : "sent",
+    "inReplyTo" : null,
+    "attachments" : [ ],
+    "isRead" : true
+  }, {
+    "id" : "6a310841-a648-4bad-b9a9-3a7fa2625681",
+    "threadId" : "d7cd530c-eb3f-4978-9c99-a6308b7ef228",
+    "from" : {
+      "email" : "mailer-daemon@nemmail.app",
+      "name" : "Mail Delivery Subsystem"
+    },
+    "to" : [ ],
+    "cc" : [ ],
+    "bcc" : [ ],
+    "subject" : "Delivery Status Notification (Failure)",
+    "bodyHtml" : null,
+    "bodyText" : "Your message to bob@outside.example couldn't be delivered. Nem Mail delivers mail only between Nem Mail accounts.",
+    "snippet" : "Your message to bob@outside.example couldn't be delivered. Nem Mail delivers mail only between Nem Mail accounts.",
+    "sentAt" : "2026-10-14T08:53:40.069Z",
+    "sendAt" : null,
+    "status" : "sent",
+    "inReplyTo" : "4973777c-765a-4889-be47-9348afd4da13",
+    "attachments" : [ ],
+    "isRead" : false
+  } ]
+}

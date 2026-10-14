@@ -1,0 +1,19 @@
+[ {
+  "id" : "22b809be-2a59-4c4c-9a89-9777b223ba7f",
+  "mode" : "new",
+  "threadId" : null,
+  "inReplyTo" : null,
+  "to" : [ {
+    "email" : "grace-2@nemmail.example",
+    "name" : "Grace Hopper"
+  } ],
+  "cc" : [ {
+    "email" : "bob@outside.example"
+  } ],
+  "bcc" : [ ],
+  "subject" : "Compiler notes",
+  "bodyHtml" : "<p>Shall we compare <b>notes</b> on Friday?</p>",
+  "attachments" : [ ],
+  "scheduledAt" : null,
+  "updatedAt" : "2026-10-14T08:53:34.961584800Z"
+} ]

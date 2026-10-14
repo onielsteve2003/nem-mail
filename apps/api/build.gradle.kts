@@ -45,6 +45,12 @@ tasks.withType<JavaCompile> {
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+	// ./gradlew test -PwriteApiFixtures: ApiContractFixturesTest writes the responses the
+	// shared Zod schemas are checked against in Vitest.
+	if (project.hasProperty("writeApiFixtures")) {
+		systemProperty("nem.apiFixtures", file("../../packages/shared/fixtures/api").absolutePath)
+		outputs.upToDateWhen { false }
+	}
 }
 
 spotless {
