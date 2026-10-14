@@ -157,6 +157,12 @@ class ApiContractFixturesTest {
     keep("aiSummary", ada.post().uri("/ai/summary").body(Map.of("threadId", thread)), 200);
     keep("aiReplies", ada.post().uri("/ai/replies").body(Map.of("threadId", thread)), 200);
     keep(
+        "aiAssistant",
+        ada.post()
+            .uri("/ai/assistant")
+            .body(Map.of("prompt", "Summarize my unread", "threadId", thread)),
+        200);
+    keep(
         "aiFeedback",
         ada.post().uri("/ai/feedback").body(Map.of("type", "open", "threadId", thread)),
         200);

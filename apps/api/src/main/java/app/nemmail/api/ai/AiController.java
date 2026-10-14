@@ -22,10 +22,12 @@ class AiController {
 
   private final ModelTrainer trainer;
   private final ThreadAi threadAi;
+  private final Assistant assistant;
 
-  AiController(ModelTrainer trainer, ThreadAi threadAi) {
+  AiController(ModelTrainer trainer, ThreadAi threadAi, Assistant assistant) {
     this.trainer = trainer;
     this.threadAi = threadAi;
+    this.assistant = assistant;
   }
 
   /** AI-3: an extractive summary with action items, cached until the thread changes. */
@@ -40,6 +42,13 @@ class AiController {
   AiInsight<List<String>> replies(
       @AuthenticationPrincipal CurrentUser current, @Valid @RequestBody ThreadRefRequest body) {
     return threadAi.replies(current.userId(), body.threadId());
+  }
+
+  /** AI-11: summarize unread, what needs a reply, or a drafted reply, picked by the prompt. */
+  @PostMapping("/ai/assistant")
+  AssistantResponse assistant(
+      @AuthenticationPrincipal CurrentUser current, @Valid @RequestBody AssistantRequest body) {
+    return assistant.answer(current.userId(), body.prompt(), body.threadId());
   }
 
   /**

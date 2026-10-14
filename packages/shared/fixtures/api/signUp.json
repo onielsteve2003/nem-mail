@@ -1,11 +1,11 @@
 {
-  "token" : "6wTCmPOl06hUeZAY4ULLYczwgZsyPDWw0YfxkOmCYec",
-  "expiresAt" : "2026-11-13T09:03:29.432711500Z",
+  "token" : "jTFYTRy_I6CRBb0stZhsZbD8nFrAclUmDGsZaH5UdqM",
+  "expiresAt" : "2026-11-13T10:42:43.216091500Z",
   "user" : {
-    "id" : "58927506-6912-4c7e-92a8-32372d350162",
+    "id" : "d41065ec-5be9-4aee-b541-c023f77643ca",
     "email" : "ada-1@nemmail.example",
     "name" : "Ada Lovelace",
     "avatarSeed" : "ada-1@nemmail.example",
-    "createdAt" : "2026-10-14T09:03:29.400899400Z"
+    "createdAt" : "2026-10-14T10:42:43.180870800Z"
   }
 }

@@ -1,6 +1,6 @@
 {
   "items" : [ {
-    "id" : "2068e031-6ce8-424d-b7f3-511aa75a70f4",
+    "id" : "6a1d5d2c-51cb-476b-9971-83d21e0dc7fb",
     "subject" : "Compiler notes",
     "snippet" : "Shall we compare notes on Friday?",
     "participants" : [ {
@@ -17,10 +17,10 @@
       "email" : "bob@outside.example"
     } ],
     "messageCount" : 2,
-    "lastMessageAt" : "2026-10-14T09:13:43.314Z",
+    "lastMessageAt" : "2026-10-14T10:42:48.691Z",
     "mailboxes" : [ "inbox", "sent" ],
     "category" : "updates",
-    "labelIds" : [ "a016efcc-9164-4c30-aa56-bd5152002237" ],
+    "labelIds" : [ "b1d71292-cb7f-4b62-95de-25faaa736405" ],
     "isUnread" : true,
     "isStarred" : true,
     "isImportant" : false,
