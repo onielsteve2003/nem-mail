@@ -60,7 +60,7 @@
     "@lucide/svelte": "1.45.0",
     "@nem/shared": "*",
     "comlink": "4.4.2",
-    "dompurify": "3.4.16",
+    "dompurify": "3.4.17",
     "idb": "8.0.3"
   }
 }
