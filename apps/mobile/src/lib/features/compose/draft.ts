@@ -22,9 +22,9 @@ export interface DraftMeta {
 	inReplyTo: string | null;
 }
 
-/** A client-side id for a new draft. */
+/** A client-side id for a new draft: a bare UUID, which the API requires (`PUT /drafts/:id`). */
 export function newDraftId(): string {
-	return `draft-${crypto.randomUUID()}`;
+	return crypto.randomUUID();
 }
 
 /** Builds the draft to save. Invalid recipients are left out; they are still chips on screen. */

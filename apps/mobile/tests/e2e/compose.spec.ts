@@ -46,7 +46,7 @@ test('F5 compose: closing saves a draft, and a message can be scheduled', async 
 	await expect(toast(page, /Scheduled for/)).toBeVisible();
 
 	await page.goto('/mail/drafts');
-	await expect(page.getByText('E2E saved draft')).toBeVisible({ timeout: 10_000 });
+	await expect(page.getByText('E2E saved draft').first()).toBeVisible({ timeout: 10_000 });
 	await page.goto('/mail/scheduled');
-	await expect(page.getByText('E2E scheduled message')).toBeVisible({ timeout: 10_000 });
+	await expect(page.getByText('E2E scheduled message').first()).toBeVisible({ timeout: 10_000 });
 });

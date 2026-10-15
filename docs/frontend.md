@@ -45,9 +45,9 @@ When two features need the same part, move it down into `components/` or `utils/
 ## Data layer
 
 - `data/repositories.ts` defines the interfaces: auth, mail, labels, contacts, drafts, settings and search.
-- `data/provider.ts` creates them from `PUBLIC_DATA_SOURCE` (`mock` or `api`) and puts them in Svelte context.
+- `data/provider.ts` creates them from `PUBLIC_DATA_SOURCE` (`mock` or `api`; when unset, `api` if `PUBLIC_API_URL` is set, else `mock`) and puts them in Svelte context.
 - `data/mock/` is the Phase 1 backend: seeded mail in IndexedDB (`idb`), cursor pagination, the shared error envelope, and a simulator that delivers new mail, finishes undo-send delays, and wakes snoozed threads.
-- `data/http/` is where the Phase 2 HTTP repositories go.
+- `data/http/` is the Phase 2 backend: `HttpClient`, the HTTP repositories, the SSE stream client (`event-stream.ts`), the offline action queue (`offline-queue.ts`) and the `/health` wake-up ping (`wake.ts`).
 
 Every method returns domain types from `@nem/shared` and throws `AppError` with an `ApiErrorCode`. The mock adds 150–600 ms of latency. Add `?fail=0.1` to the URL to fail 10% of calls, which is handy for testing error states.
 
@@ -117,6 +117,7 @@ The service worker (`utils/sw-cache.ts` picks the strategy) precaches the build 
 - e2e runs against the production build (`npm run build && vite preview`). Shared steps such as `openInbox` and `toast` are in `tests/e2e/helpers.ts`.
 - The visual baselines were taken on Windows (`-win32` suffix). Update them with `npx playwright test visual --update-snapshots` from `apps/mobile`.
 - CI (GitHub Actions) runs lint, check, unit tests and the build on every push. e2e runs locally.
+- e2e against the real API: start `apps/api` (`docker compose up -d`, then the jar with `SPRING_PROFILES_ACTIVE=local,demo`, `DEMO_RESET_KEY` set, and `NEM_RATE_LIMIT_REQUESTS_PER_MINUTE=100000` because every test shares one IP), reset the demo with `POST /api/v1/admin/demo/reset`, then run `PUBLIC_API_URL=http://localhost:8080/api/v1 npx playwright test --workers=1 --grep-invert visual`. One worker, because all tests share the demo account; visual baselines are for mock data only.
 
 ## Conventions
 

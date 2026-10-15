@@ -18,9 +18,12 @@ export const variables = defineEnvVars({
 	PUBLIC_DATA_SOURCE: {
 		public: true,
 		static: true,
-		description: 'Where mail data comes from: "mock" (Phase 1) or "api" (Phase 2).',
-		schema: (value): DataSource => {
-			const source = blankToUndefined(value) ?? 'mock';
+		description:
+			'Where mail data comes from: "mock" (Phase 1) or "api" (Phase 2). When unset: "api" if PUBLIC_API_URL is set, else "mock".',
+		// Blank stays '' here; createConfig picks the default, since it depends on PUBLIC_API_URL.
+		schema: (value): DataSource | '' => {
+			const source = blankToUndefined(value);
+			if (source === undefined) return '';
 			if (!(DATA_SOURCES as readonly string[]).includes(source)) {
 				throw new Error(`PUBLIC_DATA_SOURCE must be one of ${DATA_SOURCES.join(', ')}`);
 			}

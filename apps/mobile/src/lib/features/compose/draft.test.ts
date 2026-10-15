@@ -39,5 +39,8 @@ describe('compose drafts', () => {
 
 	it('makes unique draft ids', () => {
 		expect(newDraftId()).not.toBe(newDraftId());
+		expect(newDraftId()).toMatch(
+			/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+		);
 	});
 });

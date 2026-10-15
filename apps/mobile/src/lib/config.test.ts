@@ -18,9 +18,9 @@ async function parse(name: VarName, value: string | undefined) {
 }
 
 describe('env variables', () => {
-	it('defaults the data source to mock and accepts api', async () => {
-		expect(await parse('PUBLIC_DATA_SOURCE', undefined)).toEqual({ value: 'mock' });
-		expect(await parse('PUBLIC_DATA_SOURCE', '  ')).toEqual({ value: 'mock' });
+	it('leaves a blank data source unset and accepts api', async () => {
+		expect(await parse('PUBLIC_DATA_SOURCE', undefined)).toEqual({ value: '' });
+		expect(await parse('PUBLIC_DATA_SOURCE', '  ')).toEqual({ value: '' });
 		expect(await parse('PUBLIC_DATA_SOURCE', 'api')).toEqual({ value: 'api' });
 	});
 
@@ -58,5 +58,18 @@ describe('config', () => {
 		expect(
 			createConfig({ dataSource: 'api', apiUrl: 'https://api.example.com', appVersion: '1.0.0' })
 		).toMatchObject({ dataSource: 'api' });
+	});
+
+	it('defaults to the API when there is an API URL, else to the mock', () => {
+		const version = { appVersion: '1.0.0' };
+		expect(
+			createConfig({ dataSource: '', apiUrl: 'https://api.example.com', ...version })
+		).toMatchObject({ dataSource: 'api' });
+		expect(createConfig({ dataSource: '', apiUrl: '', ...version })).toMatchObject({
+			dataSource: 'mock'
+		});
+		expect(
+			createConfig({ dataSource: 'mock', apiUrl: 'https://api.example.com', ...version })
+		).toMatchObject({ dataSource: 'mock' });
 	});
 });

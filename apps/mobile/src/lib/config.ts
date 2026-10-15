@@ -13,17 +13,19 @@ export interface AppConfig {
 
 /**
  * Builds the app config from validated env values and checks rules that span variables.
+ * An unset data source means the API when there is an API URL, else the mock (Phase 2 default).
  * @throws Error when the API data source is chosen without an API URL.
  */
 export function createConfig(env: {
-	dataSource: DataSource;
+	dataSource: DataSource | '';
 	apiUrl: string;
 	appVersion: string;
 }): AppConfig {
-	if (env.dataSource === 'api' && !env.apiUrl) {
+	const dataSource = env.dataSource || (env.apiUrl ? 'api' : 'mock');
+	if (dataSource === 'api' && !env.apiUrl) {
 		throw new Error('PUBLIC_API_URL is required when PUBLIC_DATA_SOURCE is "api"');
 	}
-	return Object.freeze({ ...env });
+	return Object.freeze({ ...env, dataSource });
 }
 
 export const config: AppConfig = createConfig({

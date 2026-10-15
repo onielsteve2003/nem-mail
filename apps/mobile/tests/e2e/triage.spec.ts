@@ -22,6 +22,11 @@ async function stableBox(locator: Locator) {
 
 test('F2: swipe archives with Undo, and snoozed mail moves to Snoozed', async ({ page }) => {
 	await openInbox(page);
+	// Nudges above the list can push the first row under the Compose button; swipe it mid-screen.
+	await page
+		.locator('.swipe')
+		.first()
+		.evaluate((el) => el.scrollIntoView({ block: 'center' }));
 	const box = await stableBox(page.locator('.swipe').first());
 	const row = await rowLink(page, 0);
 

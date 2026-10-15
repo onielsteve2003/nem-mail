@@ -184,7 +184,8 @@ public class DeliveryService {
                     Collectors.mapping(MessageRecipient::getEmail, Collectors.toList())));
     try {
       MimeMessage mime = new ThreadedMimeMessage(messageId(message.getId()));
-      MimeMessageHelper helper = new MimeMessageHelper(mime, "UTF-8");
+      // Multipart, because the mail carries both a text and an HTML part.
+      MimeMessageHelper helper = new MimeMessageHelper(mime, true, "UTF-8");
       helper.setFrom(new InternetAddress(message.getFromEmail(), message.getFromName(), "UTF-8"));
       helper.setTo(outside.getOrDefault(RecipientKind.TO, List.of()).toArray(String[]::new));
       helper.setCc(outside.getOrDefault(RecipientKind.CC, List.of()).toArray(String[]::new));
