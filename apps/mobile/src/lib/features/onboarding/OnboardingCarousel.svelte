@@ -2,6 +2,7 @@
 	import Hand from '@lucide/svelte/icons/hand';
 	import Inbox from '@lucide/svelte/icons/inbox';
 	import Sparkles from '@lucide/svelte/icons/sparkles';
+	import { resolve } from '$app/paths';
 	import Button from '#components/ui/Button.svelte';
 	import Icon from '#components/ui/Icon.svelte';
 	import { prefersReducedMotion } from '#lib/motion/index.js';
@@ -10,6 +11,8 @@
 	const CAROUSEL_LABEL = 'Welcome to Nem Mail';
 	const NEXT_LABEL = 'Next';
 	const START_LABEL = 'Try the demo';
+	const ACCOUNT_PROMPT = 'Have an account?';
+	const SIGN_IN_LABEL = 'Sign in';
 	const ICONS = { inbox: Inbox, ai: Sparkles, gestures: Hand };
 
 	interface Props {
@@ -78,12 +81,16 @@
 		{/if}
 		<Button size="lg" loading={starting} onclick={onstart}>{START_LABEL}</Button>
 	</div>
+
+	<p class="account nm-text-muted">
+		{ACCOUNT_PROMPT} <a href={resolve('/onboarding/sign-in')}>{SIGN_IN_LABEL}</a>
+	</p>
 </section>
 
 <style>
 	.carousel {
 		display: grid;
-		grid-template-rows: 1fr auto auto auto;
+		grid-template-rows: 1fr auto auto auto auto;
 		gap: var(--nm-space-4);
 		block-size: 100%;
 	}
@@ -162,5 +169,16 @@
 	}
 	.actions :global(> *) {
 		flex: 1;
+	}
+	.account {
+		margin: 0;
+		text-align: center;
+	}
+	.account a {
+		display: inline-block;
+		min-block-size: var(--nm-size-touch);
+		padding-block: var(--nm-space-3);
+		color: var(--nm-color-accent-text);
+		font-weight: 600;
 	}
 </style>
