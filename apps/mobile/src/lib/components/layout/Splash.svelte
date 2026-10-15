@@ -1,19 +1,26 @@
 <script lang="ts">
 	import { APP_NAME, APP_TAGLINE } from '@nem/shared';
 	import AuroraBackground from '#components/ui/AuroraBackground.svelte';
+	import Button from '#components/ui/Button.svelte';
 	import ErrorState from '#components/ui/ErrorState.svelte';
 	import { fadeScale } from '#lib/motion/index.js';
 
 	const LOADING_LABEL = 'Opening Nem Mail…';
 	const ERROR_TITLE = "Couldn't open your mail";
+	const WAKING_LABEL = 'Waking up the server…';
+	const WAKING_HINT = 'The free server sleeps when idle. It can take up to a minute.';
+	const OFFLINE_DEMO = 'Use the offline demo';
 
 	interface Props {
 		/** Shown with a Retry button when starting up failed. */
 		error?: string | null;
 		onretry?: () => void;
+		/** Cold start: `waking` says so; `slow` also offers the offline demo. */
+		waking?: 'waking' | 'slow' | null;
+		onofflinedemo?: () => void;
 	}
 
-	let { error = null, onretry }: Props = $props();
+	let { error = null, onretry, waking = null, onofflinedemo }: Props = $props();
 </script>
 
 <!-- First launch (F1): the aurora plays while the session restores. -->
@@ -27,8 +34,18 @@
 		{:else}
 			<p class="status" role="status">
 				<span class="pulse" aria-hidden="true"></span>
-				<span class="nm-visually-hidden">{LOADING_LABEL}</span>
+				{#if waking}
+					<span class="nm-text-body">{WAKING_LABEL}</span>
+				{:else}
+					<span class="nm-visually-hidden">{LOADING_LABEL}</span>
+				{/if}
 			</p>
+			{#if waking}
+				<p class="nm-text-caption nm-text-muted">{WAKING_HINT}</p>
+			{/if}
+			{#if waking === 'slow' && onofflinedemo}
+				<Button variant="glass" onclick={onofflinedemo}>{OFFLINE_DEMO}</Button>
+			{/if}
 		{/if}
 	</div>
 </div>
@@ -55,9 +72,11 @@
 		margin: 0;
 	}
 	.status {
-		block-size: var(--nm-size-touch);
-		display: grid;
-		place-items: center;
+		min-block-size: var(--nm-size-touch);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--nm-space-3);
 	}
 	.pulse {
 		inline-size: var(--nm-space-3);

@@ -3,6 +3,7 @@ import type { Repositories } from '../repositories.js';
 import { HttpAuthRepository } from './auth.js';
 import { HttpClient, type HttpClientOptions } from './client.js';
 import { EventStreamClient } from './event-stream.js';
+import { OfflineQueue } from './offline-queue.js';
 import {
 	HttpAIRepository,
 	HttpContactRepository,
@@ -36,8 +37,22 @@ export interface HttpRepositoryOptions extends Omit<HttpClientOptions, 'baseUrl'
 /** The Phase 2 repositories: every call goes to the API at `apiUrl` with the active token. */
 export function createHttpRepositories(
 	apiUrl: string,
-	{ storage = browserStorage(), ...options }: HttpRepositoryOptions = {}
+	options?: HttpRepositoryOptions
 ): Repositories {
+	return createHttpBackend(apiUrl, options).repos;
+}
+
+export interface HttpBackend {
+	repos: Repositories;
+	/** Changes made offline, waiting to be replayed. */
+	queue: OfflineQueue;
+}
+
+/** The repositories plus the offline queue behind them. */
+export function createHttpBackend(
+	apiUrl: string,
+	{ storage = browserStorage(), ...options }: HttpRepositoryOptions = {}
+): HttpBackend {
 	const tokens = new SessionTokens(storage);
 	const onUnauthorized = () => {
 		// The server no longer accepts this token (expired or signed out elsewhere).
@@ -51,7 +66,8 @@ export function createHttpRepositories(
 		token: () => tokens.token,
 		onUnauthorized
 	});
-	const mail = new HttpMailRepository(http);
+	const queue = new OfflineQueue({ http, storage, userId: () => tokens.activeId });
+	const mail = new HttpMailRepository(http, queue);
 	mail.connectStream(
 		new EventStreamClient({
 			url: http.url(ENDPOINTS.events.path),
@@ -61,16 +77,21 @@ export function createHttpRepositories(
 			onUnauthorized
 		})
 	);
-	return {
-		auth: new HttpAuthRepository(http, tokens, () => mail.sessionChanged()),
+	const repos: Repositories = {
+		auth: new HttpAuthRepository(http, tokens, () => {
+			mail.sessionChanged();
+			// Changes another account queued go out once it is active again.
+			void queue.flush();
+		}),
 		mail,
 		labels: new HttpLabelRepository(http),
-		drafts: new HttpDraftRepository(http),
+		drafts: new HttpDraftRepository(http, queue),
 		contacts: new HttpContactRepository(http),
-		settings: new HttpSettingsRepository(http),
+		settings: new HttpSettingsRepository(http, queue),
 		search: new HttpSearchRepository(http),
-		ai: new HttpAIRepository(http)
+		ai: new HttpAIRepository(http, queue)
 	};
+	return { repos, queue };
 }
 
 /** localStorage, or nothing where it is missing or blocked (tokens then last until reload). */

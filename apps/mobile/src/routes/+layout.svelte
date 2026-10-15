@@ -14,12 +14,19 @@
 	import Toaster from '#components/ui/Toaster.svelte';
 	import ComposeSheet from '#features/compose/ComposeSheet.svelte';
 	import { config } from '#lib/config.js';
-	import { createRepositories, setDataLayer, setRepositories } from '#lib/data/provider.js';
+	import {
+		createRepositories,
+		setDataLayer,
+		setRepositories,
+		switchToOfflineDemo,
+		withOfflineDemo
+	} from '#lib/data/provider.js';
 	import { setupIonic } from '#lib/ionic.js';
 	import { prefersReducedMotion, slideStack } from '#lib/motion/index.js';
 	import { createAppStores, resetOnUserChange, setAppStores } from '#lib/stores/app.svelte.js';
 	import { connectMailAI } from '#lib/stores/mail-ai.js';
 	import { connectMailAlerts } from '#lib/stores/mail-alerts.js';
+	import { ServerWake } from '#lib/stores/server-wake.svelte.js';
 	import { ThemeStore, setThemeStore } from '#lib/stores/theme.svelte.js';
 	import { exitApp, listenBackButton } from '#lib/utils/back-button.js';
 	import { errorMessage } from '#lib/utils/errors.js';
@@ -55,12 +62,15 @@
 	$effect(() => watchLowPower(document.documentElement));
 
 	// One data layer and one set of stores for the whole app (architecture §8).
-	const data = createRepositories(config, { search: location.search });
+	const data = createRepositories(withOfflineDemo(config), { search: location.search });
 	setRepositories(data.repos);
 	setDataLayer(data);
 	const stores = createAppStores(data.repos, data.sync);
 	setAppStores(stores);
-	void stores.session.restore();
+	// The API may be asleep (free host): wait for /health before restoring the session.
+	const wake = new ServerWake();
+	void wake.run(() => data.wake()).then(() => stores.session.restore());
+	const waking = $derived(wake.status === 'waking' || wake.status === 'slow' ? wake.status : null);
 
 	$effect(() => data.start());
 	$effect(() => stores.mailbox.connect());
@@ -167,6 +177,8 @@
 		<Splash
 			error={session.status === 'error' ? errorMessage(session.error) : null}
 			onretry={() => void session.restore()}
+			{waking}
+			onofflinedemo={switchToOfflineDemo}
 		/>
 	{/if}
 	<OfflineBanner class="nm-offline" />

@@ -36,6 +36,7 @@ import type {
 	SettingsRepository
 } from '../repositories.js';
 import type { HttpClient } from './client.js';
+import type { OfflineQueue } from './offline-queue.js';
 
 /** The realtime stream the mail repository opens while anyone listens. */
 export interface MailStream {
@@ -49,11 +50,13 @@ const NONE: BulkThreadResponse = { updatedIds: [] };
 /** Threads over the API. The realtime stream feeds `subscribe` while there are listeners. */
 export class HttpMailRepository implements MailRepository {
 	readonly #http: HttpClient;
+	readonly #queue: OfflineQueue;
 	readonly #listeners = new Set<(event: ServerEvent) => void>();
 	#stream: MailStream | null = null;
 
-	constructor(http: HttpClient) {
+	constructor(http: HttpClient, queue: OfflineQueue) {
 		this.#http = http;
+		this.#queue = queue;
 	}
 
 	/** Attaches the stream; it runs whenever someone is subscribed. */
@@ -82,16 +85,21 @@ export class HttpMailRepository implements MailRepository {
 	// The API rejects an empty id list; the mock treats it as nothing to do, and so do we.
 	async apply(threadIds: string[], op: ThreadOp): Promise<BulkThreadResponse> {
 		if (threadIds.length === 0) return NONE;
-		return this.#http.call('bulkThreads', { body: { ids: threadIds, op } });
+		return this.#queue.call('bulkThreads', { body: { ids: threadIds, op } }, () => ({
+			updatedIds: threadIds
+		}));
 	}
 
 	async deleteForever(threadIds: string[]): Promise<BulkThreadResponse> {
 		if (threadIds.length === 0) return NONE;
-		return this.#http.call('deleteThreads', { body: { ids: threadIds } });
+		return this.#queue.call('deleteThreads', { body: { ids: threadIds } }, () => ({
+			updatedIds: threadIds
+		}));
 	}
 
 	empty(mailbox: BinMailbox): Promise<BulkThreadResponse> {
-		return this.#http.call('emptyMailbox', { params: { mailbox } });
+		// Offline, the lists already dropped the rows; the ids come back when the queue replays.
+		return this.#queue.call('emptyMailbox', { params: { mailbox } }, () => NONE);
 	}
 
 	counts(): Promise<CountsResponse> {
@@ -143,9 +151,11 @@ export class HttpLabelRepository implements LabelRepository {
 
 export class HttpDraftRepository implements DraftRepository {
 	readonly #http: HttpClient;
+	readonly #queue: OfflineQueue;
 
-	constructor(http: HttpClient) {
+	constructor(http: HttpClient, queue: OfflineQueue) {
 		this.#http = http;
+		this.#queue = queue;
 	}
 
 	list(): Promise<Draft[]> {
@@ -157,11 +167,14 @@ export class HttpDraftRepository implements DraftRepository {
 	}
 
 	save(draft: Draft): Promise<Draft> {
-		return this.#http.call('saveDraft', { params: { id: draft.id }, body: draft });
+		return this.#queue.call('saveDraft', { params: { id: draft.id }, body: draft }, () => ({
+			...draft,
+			updatedAt: new Date().toISOString()
+		}));
 	}
 
 	async remove(draftId: string): Promise<void> {
-		await this.#http.call('deleteDraft', { params: { id: draftId } });
+		await this.#queue.call('deleteDraft', { params: { id: draftId } }, () => ({ ok: true }));
 	}
 
 	/** Multipart upload in the `file` part. @throws AppError PAYLOAD_TOO_LARGE over 10 MB. */
@@ -194,9 +207,11 @@ export class HttpContactRepository implements ContactRepository {
 
 export class HttpSettingsRepository implements SettingsRepository {
 	readonly #http: HttpClient;
+	readonly #queue: OfflineQueue;
 
-	constructor(http: HttpClient) {
+	constructor(http: HttpClient, queue: OfflineQueue) {
 		this.#http = http;
+		this.#queue = queue;
 	}
 
 	get(): Promise<Settings> {
@@ -204,7 +219,7 @@ export class HttpSettingsRepository implements SettingsRepository {
 	}
 
 	save(settings: Settings): Promise<Settings> {
-		return this.#http.call('putSettings', { body: settings });
+		return this.#queue.call('putSettings', { body: settings }, () => settings);
 	}
 }
 
@@ -222,9 +237,11 @@ export class HttpSearchRepository implements SearchRepository {
 
 export class HttpAIRepository implements AIRepository {
 	readonly #http: HttpClient;
+	readonly #queue: OfflineQueue;
 
-	constructor(http: HttpClient) {
+	constructor(http: HttpClient, queue: OfflineQueue) {
 		this.#http = http;
+		this.#queue = queue;
 	}
 
 	summary(threadId: string): Promise<SummaryResponse> {
@@ -240,6 +257,6 @@ export class HttpAIRepository implements AIRepository {
 	}
 
 	async feedback(request: FeedbackRequest): Promise<void> {
-		await this.#http.call('aiFeedback', { body: request });
+		await this.#queue.call('aiFeedback', { body: request }, () => ({ ok: true }));
 	}
 }
