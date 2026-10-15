@@ -5,7 +5,7 @@ services:
     name: nem-mail-api
     runtime: docker
     plan: free
-    region: oregon
+    region: frankfurt # same as the Neon database (AWS eu-central-1)
     rootDir: apps/api
     dockerfilePath: ./Dockerfile
     dockerContext: .
