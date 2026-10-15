@@ -46,7 +46,7 @@ jobs:
           url=${url#psql}
           url=$(printf '%s' "$url" | sed -E \
             -e 's#^postgres(ql)?://([^@/]*@)?#jdbc:postgresql://#' \
-            -e 's#([?&])channel_binding=[^&]*&?#\1##' -e 's#[?&]$##')
+            -e 's#([?&])channel_binding=[^&]*&?#\1#' -e 's#[?&]$##')
           case "$url" in
             jdbc:postgresql://*) ;;
             *) echo "::error::DATABASE_URL must look like jdbc:postgresql://<host>/<db>?sslmode=require (it starts with '${url%%://*}')."; exit 1 ;;
