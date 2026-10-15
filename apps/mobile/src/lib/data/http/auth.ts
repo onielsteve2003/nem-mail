@@ -17,16 +17,20 @@ import type { SessionTokens } from './session-tokens.js';
 export class HttpAuthRepository implements AuthRepository {
 	readonly #http: HttpClient;
 	readonly #tokens: SessionTokens;
+	readonly #onchange: () => void;
 
-	constructor(http: HttpClient, tokens: SessionTokens) {
+	/** `onchange` runs when the active account changes (sign in, sign out, switch). */
+	constructor(http: HttpClient, tokens: SessionTokens, onchange: () => void = () => {}) {
 		this.#http = http;
 		this.#tokens = tokens;
+		this.#onchange = onchange;
 	}
 
 	/** @throws AppError CONFLICT when the email is taken. */
 	async signUp(request: SignUpRequest): Promise<SessionResponse> {
 		const session = await this.#http.call('signUp', { body: request });
 		this.#tokens.add(session);
+		this.#onchange();
 		return session;
 	}
 
@@ -34,6 +38,7 @@ export class HttpAuthRepository implements AuthRepository {
 	async signIn(request: SignInRequest): Promise<SessionResponse> {
 		const session = await this.#http.call('signIn', { body: request });
 		this.#tokens.add(session);
+		this.#onchange();
 		return session;
 	}
 
@@ -48,6 +53,7 @@ export class HttpAuthRepository implements AuthRepository {
 			if (!isUnauthorized(error)) throw error;
 		} finally {
 			this.#tokens.remove(userId);
+			this.#onchange();
 		}
 	}
 
@@ -71,6 +77,7 @@ export class HttpAuthRepository implements AuthRepository {
 	/** @throws AppError NOT_FOUND unless the account is signed in on this device. */
 	async switchAccount(accountId: string): Promise<User> {
 		this.#tokens.switchTo(accountId);
+		this.#onchange();
 		const user = await this.me();
 		if (!user) throw new AppError('UNAUTHORIZED', 'That account was signed out');
 		return user;

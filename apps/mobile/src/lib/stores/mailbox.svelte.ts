@@ -18,6 +18,7 @@ import {
 import { createContext } from 'svelte';
 import type { MailRepository } from '#lib/data/repositories.js';
 import { errorMessage, toAppError } from '#lib/utils/errors.js';
+import { alertContent } from '#lib/utils/notifications.js';
 import type { ThreadStore } from './thread.svelte.js';
 import { toastStore, type ToastStore } from './toast.svelte.js';
 
@@ -323,10 +324,18 @@ export class MailboxStore {
 	/** Follows server events: new mail and count changes. Returns an unsubscribe function. */
 	connect(): () => void {
 		return this.#mail.subscribe((event) => {
-			if (event.type === 'mail.new') this.ingest(event.summary);
+			if (event.type === 'mail.new') this.#arrive(event.summary);
 			else if (event.type === 'snooze.woke') this.#wake(event.summaries);
 			else this.counts = event.counts;
 		});
+	}
+
+	/** New mail (FR-10.1): into the lists, with a toast naming the sender when it reached the inbox. */
+	#arrive(summary: ThreadSummary): void {
+		this.ingest(summary);
+		if (!summary.mailboxes.includes('inbox')) return;
+		const { title, body } = alertContent(summary);
+		this.#toasts.show({ message: `${title}: ${body}` });
 	}
 
 	/** Snoozed threads came due: they leave Snoozed, return to the inbox, and a toast says so. */

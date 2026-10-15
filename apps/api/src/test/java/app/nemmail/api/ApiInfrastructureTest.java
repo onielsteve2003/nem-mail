@@ -242,7 +242,7 @@ class ApiInfrastructureTest {
         .uri("/probe/ping")
         .header("Origin", origin)
         .header("Access-Control-Request-Method", "GET")
-        .header("Access-Control-Request-Headers", "authorization")
+        .header("Access-Control-Request-Headers", "authorization, last-event-id")
         .retrieve()
         .toBodilessEntity();
   }

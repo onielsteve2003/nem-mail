@@ -164,6 +164,22 @@ describe('MailboxStore optimistic updates', () => {
 		);
 	});
 
+	it('shows a toast for new mail in the inbox, none for mail elsewhere', async () => {
+		const [id = ''] = inboxIds();
+		const listener = vi.spyOn(repos.mail, 'subscribe');
+		mailbox.connect();
+		const emit = listener.mock.calls[0]?.[0];
+		const summary = await repos.mail.get(id);
+		const sender = summary.participants.at(-1);
+		toasts.clear();
+		emit?.({ type: 'mail.new', summary: { ...summary, mailboxes: ['spam'] } });
+		expect(toasts.current).toBeUndefined();
+		emit?.({ type: 'mail.new', summary });
+		expect(toasts.current?.message).toBe(
+			`${sender?.name || sender?.email}: ${summary.subject || '(no subject)'}`
+		);
+	});
+
 	it('counts several woken snoozes in one toast', async () => {
 		const ids = inboxIds().slice(0, 2);
 		await mailbox.apply(ids, { op: 'snooze', until: new Date(NOW + 60_000).toISOString() });

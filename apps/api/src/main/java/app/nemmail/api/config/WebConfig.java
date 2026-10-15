@@ -32,7 +32,8 @@ class WebConfig {
     CorsConfiguration cors = new CorsConfiguration();
     cors.setAllowedOrigins(properties.cors().allowedOrigins());
     cors.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE"));
-    cors.setAllowedHeaders(List.of("Authorization", "Content-Type", RequestIdFilter.HEADER));
+    cors.setAllowedHeaders(
+        List.of("Authorization", "Content-Type", "Last-Event-ID", RequestIdFilter.HEADER));
     cors.setExposedHeaders(List.of(RequestIdFilter.HEADER, "Retry-After", "RateLimit-Remaining"));
     // Bearer tokens, not cookies (Capacitor runs cross-origin).
     cors.setAllowCredentials(false);

@@ -37,15 +37,34 @@ import type {
 } from '../repositories.js';
 import type { HttpClient } from './client.js';
 
+/** The realtime stream the mail repository opens while anyone listens. */
+export interface MailStream {
+	start(): void;
+	stop(): void;
+	restart(): void;
+}
+
 const NONE: BulkThreadResponse = { updatedIds: [] };
 
-/** Threads over the API. The realtime stream (T19.4) feeds `subscribe`. */
+/** Threads over the API. The realtime stream feeds `subscribe` while there are listeners. */
 export class HttpMailRepository implements MailRepository {
 	readonly #http: HttpClient;
 	readonly #listeners = new Set<(event: ServerEvent) => void>();
+	#stream: MailStream | null = null;
 
 	constructor(http: HttpClient) {
 		this.#http = http;
+	}
+
+	/** Attaches the stream; it runs whenever someone is subscribed. */
+	connectStream(stream: MailStream): void {
+		this.#stream = stream;
+		if (this.#listeners.size > 0) stream.start();
+	}
+
+	/** The signed-in account changed: reconnect as the new one (or stop when signed out). */
+	sessionChanged(): void {
+		if (this.#listeners.size > 0) this.#stream?.restart();
 	}
 
 	list(filter: ThreadListFilter, page: PageQuery = {}): Promise<Page<ThreadSummary>> {
@@ -85,7 +104,11 @@ export class HttpMailRepository implements MailRepository {
 
 	subscribe(listener: (event: ServerEvent) => void): () => void {
 		this.#listeners.add(listener);
-		return () => this.#listeners.delete(listener);
+		this.#stream?.start();
+		return () => {
+			this.#listeners.delete(listener);
+			if (this.#listeners.size === 0) this.#stream?.stop();
+		};
 	}
 
 	/** Hands a server event to every subscriber. */

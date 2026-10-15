@@ -1,7 +1,8 @@
-import { AppError } from '@nem/shared';
+import { AppError, ENDPOINTS } from '@nem/shared';
 import type { Repositories } from '../repositories.js';
 import { HttpAuthRepository } from './auth.js';
 import { HttpClient, type HttpClientOptions } from './client.js';
+import { EventStreamClient } from './event-stream.js';
 import {
 	HttpAIRepository,
 	HttpContactRepository,
@@ -38,20 +39,31 @@ export function createHttpRepositories(
 	{ storage = browserStorage(), ...options }: HttpRepositoryOptions = {}
 ): Repositories {
 	const tokens = new SessionTokens(storage);
+	const onUnauthorized = () => {
+		// The server no longer accepts this token (expired or signed out elsewhere).
+		const userId = tokens.activeId;
+		if (userId) tokens.remove(userId);
+		options.onUnauthorized?.();
+	};
 	const http = new HttpClient({
 		...options,
 		baseUrl: apiUrl,
 		token: () => tokens.token,
-		onUnauthorized: () => {
-			// The server no longer accepts this token (expired or signed out elsewhere).
-			const userId = tokens.activeId;
-			if (userId) tokens.remove(userId);
-			options.onUnauthorized?.();
-		}
+		onUnauthorized
 	});
+	const mail = new HttpMailRepository(http);
+	mail.connectStream(
+		new EventStreamClient({
+			url: http.url(ENDPOINTS.events.path),
+			token: () => tokens.token,
+			fetch: options.fetch,
+			onevent: (event) => mail.emit(event),
+			onUnauthorized
+		})
+	);
 	return {
-		auth: new HttpAuthRepository(http, tokens),
-		mail: new HttpMailRepository(http),
+		auth: new HttpAuthRepository(http, tokens, () => mail.sessionChanged()),
+		mail,
 		labels: new HttpLabelRepository(http),
 		drafts: new HttpDraftRepository(http),
 		contacts: new HttpContactRepository(http),
