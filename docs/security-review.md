@@ -50,4 +50,6 @@ Against the live API (Render free, 0.1 CPU and 512 MB, Neon free in the same reg
 | Errors     | none (100 × 200)                               |
 | Slowest    | inbox list and search, p50 about 850 to 900 ms |
 
+Then 15 wrong passwords at once: 12 answered 401 (a token refills every 6 s while queued hashes run) and 3 answered 429, and the server stayed up. Right after a deploy, before the JIT warms up, the same read test runs at about half the speed (p50 1.7 s).
+
 The free instance is the limit: one shared CPU serves every request. That is fine for a portfolio demo. A paid instance or caching the inbox list would be the first steps if traffic grew.
