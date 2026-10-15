@@ -26,7 +26,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-security")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("org.springframework.boot:spring-boot-starter-webmvc")
-	implementation("com.bucket4j:bucket4j_jdk17-core:8.20.0")
+	implementation("com.bucket4j:bucket4j_jdk17-core:8.21.0")
 	implementation("com.github.ben-manes.caffeine:caffeine")
 	implementation("org.bouncycastle:bcprov-jdk18on:1.86")
 	implementation("org.flywaydb:flyway-database-postgresql")
