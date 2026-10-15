@@ -49,7 +49,7 @@ jobs:
         working-directory: apps/mobile/android
         run: ./gradlew assembleDebug --no-daemon
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: nem-mail-debug-apk
           path: apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
@@ -79,7 +79,7 @@ jobs:
             ! grep -E "FATAL EXCEPTION|AndroidRuntime: Process: com.onahstephen.nemmail" logcat.txt
             grep -E "Capacitor" logcat.txt | tail -40
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: emulator-launch
