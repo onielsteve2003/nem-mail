@@ -1,8 +1,10 @@
 # Nem Mail
 
-An AI-powered, Gmail-style mail app for phones, with its own visual identity called **Aurora Noir**. One SvelteKit codebase runs as a web demo, an installable PWA, and a Capacitor app for Android and iOS. The AI features run on the device.
+An AI-powered, Gmail-style mail app for phones, with its own visual identity called **Aurora Noir**. One SvelteKit codebase runs as a web demo, an installable PWA, and a Capacitor app for Android and iOS, backed by a Java 25 + Spring Boot 4 API. Its AI runs on the device and on the server, with no paid AI service, and the whole stack is live for $0 a month.
 
-**Live demo:** [nem-mail.vercel.app](https://nem-mail.vercel.app). Tap **Try the demo**; no sign-up is needed.
+**Live demo:** [nem-mail.vercel.app](https://nem-mail.vercel.app). Tap **Try the demo**; no sign-up is needed. The free API sleeps when idle, so the first open can take up to a minute.
+
+**API docs:** [Swagger UI](https://nem-mail-api.onrender.com/api/v1/swagger-ui.html)
 
 <p>
   <img src="docs/media/triage.gif" width="250" alt="Swiping a mail to archive it, undoing, then selecting two mails and archiving them" />
@@ -15,13 +17,15 @@ An AI-powered, Gmail-style mail app for phones, with its own visual identity cal
 <p><img src="docs/media/walkthrough.gif" width="276" alt="Onboarding, inbox, a thread with a smart reply sent, the drawer, search and settings" /></p>
 </details>
 
-Case study: [docs/case-study.md](docs/case-study.md)
+Case study: [docs/case-study.md](docs/case-study.md) · Architecture: [docs/architecture.md](docs/architecture.md) · Security review and load test: [docs/security-review.md](docs/security-review.md)
 
-> Phase 1 (this release) is the full frontend against a realistic mock backend in IndexedDB. Phase 2 adds a Java + Spring Boot API with no UI changes, thanks to the repository layer.
+> v2.0 is the full stack: the app talks to the real API, with realtime updates over SSE and an offline action queue. Without `PUBLIC_API_URL` it still runs on its built-in mock backend.
 
 ## Features
 
 **Mail**
+
+- Real accounts (sign up and sign in) plus a one-tap demo, with new mail pushed live over Server-Sent Events.
 
 - Inbox categories (Primary, Promotions, Social, Updates, Forums) with category bundles and unread counts.
 - Swipe to archive, delete, snooze or mark read (configurable), long press for multi-select with bulk actions, and Undo on every destructive action.
@@ -47,7 +51,7 @@ Case study: [docs/case-study.md](docs/case-study.md)
 | Smart extraction                             | Codes, tracking numbers and dates as action chips            |
 | AI assistant sheet                           | "Summarize unread", "What needs a reply?", "Draft reply"     |
 
-Models run in a Web Worker, so scrolling and typing never wait for them. The optional transformer models are free, Apache-2.0, and downloaded only when you turn them on. In Phase 1 no mail content leaves the device.
+Models run in a Web Worker, so scrolling and typing never wait for them. The optional transformer models are free, Apache-2.0, and downloaded only when you turn them on. On the server the classic models retrain per user from their feedback, and search ranks full text and pgvector similarity together.
 
 **App feel**
 
@@ -69,9 +73,9 @@ flowchart TD
     R[Routes] --> F[Features and components]
     F --> S[Stores: Svelte 5 runes]
     S --> I[Repository interfaces]
-    I --> M[Mock repositories<br/>IndexedDB + seed, Phase 1]
-    I -.-> H[HTTP repositories<br/>Phase 2]
-    H -.-> API[apps/api: Java 25 + Spring Boot 4<br/>PostgreSQL + pgvector]
+    I --> M[Mock repositories<br/>IndexedDB + seed]
+    I --> H[HTTP repositories<br/>offline queue, SSE]
+    H --> API[apps/api: Java 25 + Spring Boot 4<br/>PostgreSQL + pgvector]
     F --> A[AI service]
     A --> W[Web Worker<br/>classic ML + Transformers.js]
     SH[packages/shared<br/>Zod schemas, types, seed, query parser] --- I
@@ -79,30 +83,32 @@ flowchart TD
 ```
 
 - **Repository pattern.** UI and stores only see interfaces in `data/repositories.ts`. `PUBLIC_DATA_SOURCE` picks the mock or the HTTP implementation. A lint rule blocks imports of a concrete backend outside `src/lib/data`.
-- **Shared contracts.** Zod schemas in `packages/shared` define every request, response and error. The mock validates against them, and the Phase 2 API mirrors them.
+- **Shared contracts.** Zod schemas in `packages/shared` define every request, response and error. The mock validates against them, the API mirrors them as Java records, and CI checks both sides against recorded API responses.
 - **Mock backend.** Seeded mail in IndexedDB with simulated latency, errors, new arrivals, send delays and snooze wake-ups.
 
-More detail: [docs/frontend.md](docs/frontend.md).
+More detail: [docs/architecture.md](docs/architecture.md) (deployment, API and AI diagrams) and [docs/frontend.md](docs/frontend.md).
 
 ## Tech stack
 
-| Layer             | Tech                                                   |
-| ----------------- | ------------------------------------------------------ |
-| Web + mobile      | SvelteKit 3, Svelte 5 (runes), TypeScript strict       |
-| Native shell      | Ionic core (`@ionic/core`) + Capacitor 8               |
-| Styling           | Aurora Noir tokens, vanilla CSS                        |
-| Data              | Zod contracts, IndexedDB (`idb`) mock backend          |
-| ML                | Hand-written classic ML + Transformers.js, Comlink     |
-| Tests             | Vitest + Testing Library, Playwright + axe             |
-| Backend (Phase 2) | Java 25 + Spring Boot 4, PostgreSQL + pgvector, Flyway |
-| Hosting           | Vercel (web), Render free tier (API, Phase 2)          |
+| Layer        | Tech                                                   |
+| ------------ | ------------------------------------------------------ |
+| Web + mobile | SvelteKit 3, Svelte 5 (runes), TypeScript strict       |
+| Native shell | Ionic core (`@ionic/core`) + Capacitor 8               |
+| Styling      | Aurora Noir tokens, vanilla CSS                        |
+| Data         | Zod contracts, IndexedDB (`idb`) mock backend          |
+| ML           | Hand-written classic ML + Transformers.js, Comlink     |
+| Tests        | Vitest + Testing Library, Playwright + axe             |
+| Backend      | Java 25 + Spring Boot 4, PostgreSQL + pgvector, Flyway |
+| API docs     | springdoc OpenAPI + Swagger UI                         |
+| Hosting      | Vercel (web), Render (API), Neon (Postgres), all free  |
 
 ## Repository layout
 
 ```
 apps/mobile      SvelteKit SPA: web demo, PWA and Capacitor app (android/, ios/)
+apps/api         Java 25 + Spring Boot 4 API (Gradle, Docker, Flyway)
 packages/shared  Zod schemas, types, seed generator, search query parser
-docs/            Frontend guide, iOS guide, README media
+docs/            Case study, architecture, security review, frontend and iOS guides
 ```
 
 ## Getting started
@@ -123,6 +129,14 @@ npm run dev          # http://localhost:5173
 | `npm run test:e2e` | Playwright on iPhone 14 (WebKit) and Pixel 7 (Chrome) |
 
 Settings live in `apps/mobile/.env` (copy `.env.example`). Every variable is public; the defaults run the mock backend.
+
+To run the API too (needs JDK 25 and Docker), start Postgres and Mailpit, then the API, and set `PUBLIC_API_URL=http://localhost:8080/api/v1` in `apps/mobile/.env`:
+
+```bash
+cd apps/api
+docker compose up -d
+./gradlew bootRun --args='--spring.profiles.active=local,demo'
+```
 
 ## Viewing on an iPhone
 

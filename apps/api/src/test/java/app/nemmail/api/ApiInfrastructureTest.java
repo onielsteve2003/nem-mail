@@ -152,6 +152,21 @@ class ApiInfrastructureTest {
   }
 
   @Test
+  void swaggerUiIsOpenAndOnlyItMayLoadItsOwnAssets() {
+    ResponseEntity<String> page =
+        http.get().uri("/swagger-ui/index.html").retrieve().toEntity(String.class);
+    ResponseEntity<String> spec = http.get().uri("/v3/api-docs").retrieve().toEntity(String.class);
+
+    assertThat(page.getStatusCode().value()).isEqualTo(200);
+    assertThat(page.getHeaders().getFirst("Content-Security-Policy"))
+        .contains("default-src 'self'")
+        .contains("frame-ancestors 'none'");
+    assertThat(spec.getBody()).contains("\"title\":\"Nem Mail API\"").contains("\"bearer\"");
+    assertThat(spec.getHeaders().getFirst("Content-Security-Policy"))
+        .startsWith("default-src 'none'");
+  }
+
+  @Test
   void corsAllowsTheAppOriginsOnly() {
     ResponseEntity<Void> vercel = preflight("https://nem-mail.vercel.app");
     ResponseEntity<Void> capacitor = preflight("capacitor://localhost");

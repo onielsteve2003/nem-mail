@@ -50,8 +50,14 @@ class SecurityConfig {
                     // Guarded by its own key in DemoController, for the nightly cron.
                     .requestMatchers(HttpMethod.POST, "/admin/demo/reset")
                     .permitAll()
-                    // The OpenAPI spec describes the API, not anyone's data.
-                    .requestMatchers("/health", "/error", "/v3/api-docs", "/v3/api-docs/**")
+                    // The OpenAPI spec and Swagger UI describe the API, not anyone's data.
+                    .requestMatchers(
+                        "/health",
+                        "/error",
+                        "/v3/api-docs",
+                        "/v3/api-docs/**",
+                        "/swagger-ui.html",
+                        "/swagger-ui/**")
                     .permitAll()
                     // The re-dispatch that ends an SSE stream; its request was authorized already,
                     // and BearerTokenFilter does not run again for it.
