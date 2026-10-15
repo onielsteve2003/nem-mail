@@ -65,6 +65,7 @@ class WebConfig {
     return register(
         new RateLimitFilter(
             properties.rateLimit().requestsPerMinute(),
+            properties.rateLimit().clientIpHeader(),
             request -> !request.getServletPath().equals("/health"),
             "Too many requests. Try again in a moment.",
             json),
@@ -77,6 +78,7 @@ class WebConfig {
     return register(
         new RateLimitFilter(
             properties.rateLimit().authRequestsPerMinute(),
+            properties.rateLimit().clientIpHeader(),
             request ->
                 HttpMethod.POST.matches(request.getMethod())
                     && AUTH_PATHS.contains(request.getServletPath()),

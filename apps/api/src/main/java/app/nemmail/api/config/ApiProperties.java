@@ -12,9 +12,11 @@ public record ApiProperties(Cors cors, RateLimit rateLimit, Demo demo) {
 
   /**
    * Requests per minute for each client IP: across the whole API, and (stricter) on sign-in and
-   * sign-up, which also count toward the first.
+   * sign-up, which also count toward the first. {@code clientIpHeader} names a header the edge
+   * proxy overwrites with the client's IP; blank uses the connection's remote address.
    */
-  public record RateLimit(int requestsPerMinute, int authRequestsPerMinute) {}
+  public record RateLimit(
+      int requestsPerMinute, int authRequestsPerMinute, String clientIpHeader) {}
 
   /**
    * The seeded demo accounts. {@code password} is public on purpose: it is {@code DEMO_PASSWORD} in

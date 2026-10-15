@@ -209,6 +209,27 @@ class ApiInfrastructureTest {
     assertThat(signIn("203.0.113.21").getStatusCode().value()).isEqualTo(401);
   }
 
+  @Test
+  void behindCloudflareTheClientIsCfConnectingIpNotTheEdgeAddress() {
+    // Each request arrives from a different edge IP, as on Render; the client is the same.
+    int[] edge = {0};
+    List<ResponseEntity<String>> responses =
+        untilLimited(
+            () ->
+                http.post()
+                    .uri("/auth/signin")
+                    .header("X-Forwarded-For", "172.64.0." + ++edge[0])
+                    .header("CF-Connecting-IP", "198.51.100.9")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body("{\"email\":\"nobody@nemmail.example\",\"password\":\"guess-guess\"}")
+                    .retrieve()
+                    .toEntity(String.class),
+            20);
+
+    assertThat(responses).hasSizeBetween(11, 13);
+    assertThat(responses.getLast().getStatusCode().value()).isEqualTo(429);
+  }
+
   /** Calls until the first 429 (or {@code max} calls), returning every response in order. */
   private static List<ResponseEntity<String>> untilLimited(
       Supplier<ResponseEntity<String>> call, int max) {

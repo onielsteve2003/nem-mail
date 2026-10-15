@@ -93,6 +93,10 @@ nem:
     requests-per-minute: 120
     # Sign-in and sign-up: enough for typos, too few to guess passwords.
     auth-requests-per-minute: 10
+    # Render serves through Cloudflare, which sets this to the client's IP and
+    # overwrites any value the client sent. On a host without Cloudflare, set
+    # CLIENT_IP_HEADER to blank (or that host's own header), or it can be faked.
+    client-ip-header: ${CLIENT_IP_HEADER:CF-Connecting-IP}
   demo:
     # Public: the same DEMO_PASSWORD the app sends for "Try the demo".
     password: demo-account
