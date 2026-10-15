@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ENDPOINTS, type EndpointName } from './endpoints';
 import { ApiErrorSchema } from './errors';
@@ -36,5 +36,26 @@ describe('API contract fixtures', () => {
 			(name) => !NOT_YET_SERVED.includes(name) && !NOT_JSON.includes(name)
 		);
 		expect(endpoints.map((file) => file.replace(/\.json$/, '')).sort()).toEqual(served.sort());
+	});
+});
+
+/**
+ * fixtures/endpoints.json: the method and path of every endpoint, so the Java build can check its
+ * springdoc OpenAPI spec against them and the recorded fixtures (OpenApiContractTest).
+ * `WRITE_ENDPOINTS=1 npx vitest run api-fixtures` in packages/shared rewrites it.
+ */
+describe('fixtures/endpoints.json', () => {
+	it('matches ENDPOINTS', () => {
+		const file = new URL('../../fixtures/endpoints.json', import.meta.url);
+		const endpoints = Object.fromEntries(
+			Object.entries(ENDPOINTS).map(([name, { method, path }]) => [name, { method, path }])
+		);
+		const json = `${JSON.stringify(endpoints, null, '	')}
+`;
+		if (process.env.WRITE_ENDPOINTS) writeFileSync(file, json);
+		expect(
+			JSON.parse(readFileSync(file, 'utf8')),
+			'run WRITE_ENDPOINTS=1 npx vitest run api-fixtures'
+		).toEqual(JSON.parse(json));
 	});
 });

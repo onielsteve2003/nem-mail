@@ -8,15 +8,14 @@ import { createRepositories } from './provider.js';
 afterEach(() => vi.useRealTimers());
 
 describe('createRepositories', () => {
-	it('returns HTTP stubs that reject with NOT_IMPLEMENTED in api mode', async () => {
+	it('returns the HTTP repositories in api mode', async () => {
 		const { repos, start } = createRepositories({
 			dataSource: 'api',
 			apiUrl: 'https://api.example'
 		});
-		await expect(repos.mail.list({ mailbox: 'inbox' })).rejects.toMatchObject({
-			code: 'NOT_IMPLEMENTED'
-		});
-		await expect(repos.auth.me()).rejects.toThrow('HttpAuthRepository');
+		// No token on the device yet, so nobody is signed in and no request is made.
+		await expect(repos.auth.me()).resolves.toBeNull();
+		expect(await repos.auth.listAccounts()).toEqual([]);
 		start()();
 	});
 

@@ -1,0 +1,126 @@
+{
+  "signUp": {
+    "method": "POST",
+    "path": "/auth/signup"
+  },
+  "signIn": {
+    "method": "POST",
+    "path": "/auth/signin"
+  },
+  "signOut": {
+    "method": "POST",
+    "path": "/auth/signout"
+  },
+  "me": {
+    "method": "GET",
+    "path": "/me"
+  },
+  "listThreads": {
+    "method": "GET",
+    "path": "/threads"
+  },
+  "getThread": {
+    "method": "GET",
+    "path": "/threads/:id"
+  },
+  "bulkThreads": {
+    "method": "PATCH",
+    "path": "/threads"
+  },
+  "deleteThreads": {
+    "method": "POST",
+    "path": "/threads/delete"
+  },
+  "emptyMailbox": {
+    "method": "DELETE",
+    "path": "/mailboxes/:mailbox"
+  },
+  "listLabels": {
+    "method": "GET",
+    "path": "/labels"
+  },
+  "createLabel": {
+    "method": "POST",
+    "path": "/labels"
+  },
+  "updateLabel": {
+    "method": "PATCH",
+    "path": "/labels/:id"
+  },
+  "deleteLabel": {
+    "method": "DELETE",
+    "path": "/labels/:id"
+  },
+  "listDrafts": {
+    "method": "GET",
+    "path": "/drafts"
+  },
+  "getDraft": {
+    "method": "GET",
+    "path": "/drafts/:id"
+  },
+  "saveDraft": {
+    "method": "PUT",
+    "path": "/drafts/:id"
+  },
+  "deleteDraft": {
+    "method": "DELETE",
+    "path": "/drafts/:id"
+  },
+  "send": {
+    "method": "POST",
+    "path": "/send"
+  },
+  "cancelSend": {
+    "method": "DELETE",
+    "path": "/send/:id"
+  },
+  "search": {
+    "method": "GET",
+    "path": "/search"
+  },
+  "uploadAttachment": {
+    "method": "POST",
+    "path": "/attachments"
+  },
+  "getAttachment": {
+    "method": "GET",
+    "path": "/attachments/:id"
+  },
+  "listContacts": {
+    "method": "GET",
+    "path": "/contacts"
+  },
+  "getSettings": {
+    "method": "GET",
+    "path": "/settings"
+  },
+  "putSettings": {
+    "method": "PUT",
+    "path": "/settings"
+  },
+  "counts": {
+    "method": "GET",
+    "path": "/counts"
+  },
+  "aiSummary": {
+    "method": "POST",
+    "path": "/ai/summary"
+  },
+  "aiReplies": {
+    "method": "POST",
+    "path": "/ai/replies"
+  },
+  "aiAssistant": {
+    "method": "POST",
+    "path": "/ai/assistant"
+  },
+  "aiFeedback": {
+    "method": "POST",
+    "path": "/ai/feedback"
+  },
+  "events": {
+    "method": "GET",
+    "path": "/events/stream"
+  }
+}

@@ -73,6 +73,11 @@ logging:
     format:
       console: ecs
 
+springdoc:
+  # Several response records are nested classes called Response; full names keep their
+  # schemas apart instead of one overwriting the others.
+  use-fqn: true
+
 nem:
   cors:
     allowed-origins:

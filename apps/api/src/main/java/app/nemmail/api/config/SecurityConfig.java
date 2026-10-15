@@ -50,7 +50,8 @@ class SecurityConfig {
                     // Guarded by its own key in DemoController, for the nightly cron.
                     .requestMatchers(HttpMethod.POST, "/admin/demo/reset")
                     .permitAll()
-                    .requestMatchers("/health", "/error")
+                    // The OpenAPI spec describes the API, not anyone's data.
+                    .requestMatchers("/health", "/error", "/v3/api-docs", "/v3/api-docs/**")
                     .permitAll()
                     // The re-dispatch that ends an SSE stream; its request was authorized already,
                     // and BearerTokenFilter does not run again for it.

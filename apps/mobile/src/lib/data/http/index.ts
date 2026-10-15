@@ -1,10 +1,21 @@
 import { AppError } from '@nem/shared';
 import type { Repositories } from '../repositories.js';
+import { HttpAuthRepository } from './auth.js';
+import { HttpClient, type HttpClientOptions } from './client.js';
+import {
+	HttpAIRepository,
+	HttpContactRepository,
+	HttpDraftRepository,
+	HttpLabelRepository,
+	HttpMailRepository,
+	HttpSearchRepository,
+	HttpSettingsRepository
+} from './repositories.js';
+import { SessionTokens, type TokenStorage } from './session-tokens.js';
 
 /**
- * A repository whose every method fails with NOT_IMPLEMENTED. Phase 2 (M19)
- * replaces these with real HTTP clients; until then `PUBLIC_DATA_SOURCE=api`
- * boots but every call reports the missing backend instead of crashing.
+ * A repository whose every method fails with NOT_IMPLEMENTED, for a data source that has no
+ * implementation of it (mock mode runs AI on the device, not through a repository).
  */
 export function notImplemented<T extends object>(name: string): T {
 	return new Proxy({} as T, {
@@ -16,17 +27,45 @@ export function notImplemented<T extends object>(name: string): T {
 	});
 }
 
-/** The Phase 2 HTTP repositories, stubbed until the API exists. */
-export function createHttpRepositories(apiUrl: string): Repositories {
-	const stub = <T extends object>(name: string) => notImplemented<T>(`${name} (${apiUrl})`);
+export interface HttpRepositoryOptions extends Omit<HttpClientOptions, 'baseUrl' | 'token'> {
+	/** Where the bearer tokens are kept; localStorage in the app, a fake in tests. */
+	storage?: TokenStorage;
+}
+
+/** The Phase 2 repositories: every call goes to the API at `apiUrl` with the active token. */
+export function createHttpRepositories(
+	apiUrl: string,
+	{ storage = browserStorage(), ...options }: HttpRepositoryOptions = {}
+): Repositories {
+	const tokens = new SessionTokens(storage);
+	const http = new HttpClient({
+		...options,
+		baseUrl: apiUrl,
+		token: () => tokens.token,
+		onUnauthorized: () => {
+			// The server no longer accepts this token (expired or signed out elsewhere).
+			const userId = tokens.activeId;
+			if (userId) tokens.remove(userId);
+			options.onUnauthorized?.();
+		}
+	});
 	return {
-		auth: stub('HttpAuthRepository'),
-		mail: stub('HttpMailRepository'),
-		labels: stub('HttpLabelRepository'),
-		drafts: stub('HttpDraftRepository'),
-		contacts: stub('HttpContactRepository'),
-		settings: stub('HttpSettingsRepository'),
-		search: stub('HttpSearchRepository'),
-		ai: stub('HttpAIRepository')
+		auth: new HttpAuthRepository(http, tokens),
+		mail: new HttpMailRepository(http),
+		labels: new HttpLabelRepository(http),
+		drafts: new HttpDraftRepository(http),
+		contacts: new HttpContactRepository(http),
+		settings: new HttpSettingsRepository(http),
+		search: new HttpSearchRepository(http),
+		ai: new HttpAIRepository(http)
 	};
+}
+
+/** localStorage, or nothing where it is missing or blocked (tokens then last until reload). */
+function browserStorage(): TokenStorage | undefined {
+	try {
+		return globalThis.localStorage;
+	} catch {
+		return undefined;
+	}
 }

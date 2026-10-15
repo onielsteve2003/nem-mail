@@ -30,6 +30,8 @@ dependencies {
 	implementation("com.github.ben-manes.caffeine:caffeine")
 	implementation("org.bouncycastle:bcprov-jdk18on:1.86")
 	implementation("org.flywaydb:flyway-database-postgresql")
+	// OpenAPI spec at /v3/api-docs (springdoc, Apache-2.0); OpenApiContractTest checks it.
+	implementation("org.springdoc:springdoc-openapi-starter-webmvc-api:3.1.1")
 	implementation("org.hibernate.orm:hibernate-vector")
 	runtimeOnly("org.postgresql:postgresql")
 	// Server embeddings (MiniLM on ONNX Runtime, Apache-2.0/MIT). The runtime jar alone is 137 MB,
@@ -85,6 +87,13 @@ tasks.processResources {
 tasks.processTestResources {
 	from("../../packages/shared/fixtures/search-queries.json") {
 		into("shared")
+	}
+	// OpenApiContractTest: the endpoint map and the recorded responses, against the spec.
+	from("../../packages/shared/fixtures/endpoints.json") {
+		into("shared")
+	}
+	from("../../packages/shared/fixtures/api") {
+		into("shared/api")
 	}
 	// ModelFixturesTest: what the TS models answer, for the Java ports to match.
 	from("../../packages/shared/fixtures/ai/models.json") {
