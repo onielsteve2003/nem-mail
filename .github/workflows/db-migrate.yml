@@ -39,10 +39,22 @@ jobs:
             echo "::notice::DATABASE_URL, DB_USER or DB_PASSWORD is not set yet; skipping."
             exit 0
           fi
+          # Accept Neon's own string too (psql '...', postgresql://user:pass@host/db):
+          # strip quotes and the psql prefix, drop the credentials (passed apart)
+          # and channel_binding (not a JDBC parameter), and add the jdbc: scheme.
+          url=$(printf '%s' "$DATABASE_URL" | tr -d "\"'[:space:]")
+          url=${url#psql}
+          url=$(printf '%s' "$url" | sed -E \
+            -e 's#^postgres(ql)?://([^@/]*@)?#jdbc:postgresql://#' \
+            -e 's#([?&])channel_binding=[^&]*&?#\1##' -e 's#[?&]$##')
+          case "$url" in
+            jdbc:postgresql://*) ;;
+            *) echo "::error::DATABASE_URL must look like jdbc:postgresql://<host>/<db>?sslmode=require (it starts with '${url%%://*}')."; exit 1 ;;
+          esac
           # connectRetries covers Neon waking a suspended compute.
           docker run --rm \
             -v "$PWD/apps/api/src/main/resources/db/migration:/flyway/sql:ro" \
-            -e FLYWAY_URL="$DATABASE_URL" \
+            -e FLYWAY_URL="$url" \
             -e FLYWAY_USER="$DB_USER" \
             -e FLYWAY_PASSWORD="$DB_PASSWORD" \
             flyway/flyway:11 \
