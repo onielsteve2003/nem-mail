@@ -1,0 +1,9 @@
+# Only apps/api's Docker build uses the repo root as its context.
+*
+!apps/api
+!packages/shared/fixtures
+apps/api/.gradle
+apps/api/build
+apps/api/bin
+.idea
+*.iml

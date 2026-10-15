@@ -6,14 +6,15 @@ services:
     runtime: docker
     plan: free
     region: frankfurt # same as the Neon database (AWS eu-central-1)
-    rootDir: apps/api
-    dockerfilePath: ./Dockerfile
+    # Repo root as the context: the build needs packages/shared/fixtures too.
+    dockerfilePath: ./apps/api/Dockerfile
     dockerContext: .
     healthCheckPath: /api/v1/health
     autoDeploy: true
     buildFilter:
       paths:
         - apps/api/**
+        - packages/shared/fixtures/**
     envVars:
       # Seeds the demo accounts on first boot and resets them nightly.
       - key: SPRING_PROFILES_ACTIVE
