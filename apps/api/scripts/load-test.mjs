@@ -82,14 +82,15 @@ for (const path of paths) {
 	console.log(`  ${path.padEnd(36)} p50 ${percentile(own, 50).toFixed(0)} ms`);
 }
 
-// Brute force: 12 wrong passwords in a row; the auth limit is 10 a minute per IP.
-const wrong = [];
-for (let i = 0; i < 12; i++) {
-	const { status } = await timed('/auth/signin', {
-		method: 'POST',
-		headers: json,
-		body: JSON.stringify({ email: DEMO.email, password: `wrong-${i}` })
-	});
-	wrong.push(status);
-}
-console.log('12 wrong sign-ins:', wrong.join(' '));
+// Brute force: 15 wrong passwords at once. The auth limit is 10 a minute per IP
+// (one token back every 6 s), so some must come back 429.
+const wrong = await Promise.all(
+	Array.from({ length: 15 }, (_, i) =>
+		timed('/auth/signin', {
+			method: 'POST',
+			headers: json,
+			body: JSON.stringify({ email: DEMO.email, password: `wrong-${i}` })
+		}).then((r) => r.status)
+	)
+);
+console.log('15 wrong sign-ins at once:', wrong.sort().join(' '));

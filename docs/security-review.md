@@ -2,11 +2,15 @@
 
 Review of the Nem Mail API (`apps/api`) and its live deployment against the OWASP Top 10 (2021), done on 2026-10-15 for v2.0. Live checks ran against `https://nem-mail-api.onrender.com/api/v1`.
 
-## Finding fixed in this review
+## Findings fixed in this review
 
-**Rate limiting did nothing in production.** Render serves the API through Cloudflare, and every request reached the app from a different edge IP. The limiter keyed its buckets on that address, so each request got a fresh bucket: `RateLimit-Remaining` stayed at 119, and 12 wrong passwords in a row all came back 401 instead of being throttled after 10.
+**1. Rate limiting did nothing in production.** Render serves the API through Cloudflare, and every request reached the app from a different edge IP. The limiter keyed its buckets on that address, so each request got a fresh bucket: `RateLimit-Remaining` stayed at 119, and 12 wrong passwords in a row all came back 401 instead of being throttled after 10.
 
 Fix: the limiter now keys on `CF-Connecting-IP` (`nem.rate-limit.client-ip-header`, env `CLIENT_IP_HEADER`). Cloudflare overwrites that header, so a client cannot fake it. Without the header it falls back to the remote address as before. `ApiInfrastructureTest` covers one client arriving from changing edge IPs. If the API moves to a host without Cloudflare, `CLIENT_IP_HEADER` must be set to blank or to that host's header.
+
+**2. Ten sign-ins at once could restart the server.** Each Argon2 hash takes 16 MiB. Once rate limiting worked, the load test sent 15 wrong passwords at once to prove it: 10 were let through, they hashed in parallel, and the 512 MB container ran out of memory and restarted (Render answered 502 for about a minute).
+
+Fix: `BoundedPasswordEncoder` lets two hashes run at once and queues the rest on virtual threads, so sign-in memory stays at about 32 MiB however many arrive. `BoundedPasswordEncoderTest` checks the cap.
 
 ## OWASP Top 10 checklist
 

@@ -79,11 +79,11 @@ class SecurityConfig {
 
   /**
    * Argon2id with Spring Security's current defaults (16 MiB, 2 iterations, 1 lane): about 50 ms a
-   * hash, and small enough for the 512 MB free host.
+   * hash, and small enough for the 512 MB free host as long as only two run at once.
    */
   @Bean
   PasswordEncoder passwordEncoder() {
-    return Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8();
+    return new BoundedPasswordEncoder(Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8(), 2);
   }
 
   private static void write(
