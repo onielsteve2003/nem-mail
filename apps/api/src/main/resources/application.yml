@@ -65,6 +65,11 @@ management:
   endpoint:
     health:
       show-details: never
+  health:
+    db:
+      # The keep-warm ping hits /health every few minutes; a database check would
+      # keep the Neon compute awake too and use up its free compute hours.
+      enabled: false
 
 logging:
   structured:

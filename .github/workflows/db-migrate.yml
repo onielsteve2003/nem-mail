@@ -1,0 +1,49 @@
+name: DB migrate
+
+# Applies apps/api's Flyway migrations to the production database (Neon) before
+# the API boots on them. The API also migrates on startup, so this is the early
+# check: a broken migration fails here, not on the free host. Needs the
+# DATABASE_URL (jdbc:postgresql://<host>/<db>?sslmode=require), DB_USER and
+# DB_PASSWORD secrets; until they are set it skips with a notice.
+on:
+  push:
+    branches: [main]
+    paths:
+      - apps/api/src/main/resources/db/migration/**
+      - .github/workflows/db-migrate.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Never two migrations against the same database at once.
+concurrency:
+  group: db-migrate
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: Flyway migrate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          if [ -z "$DATABASE_URL" ] || [ -z "$DB_USER" ] || [ -z "$DB_PASSWORD" ]; then
+            echo "::notice::DATABASE_URL, DB_USER or DB_PASSWORD is not set yet; skipping."
+            exit 0
+          fi
+          # connectRetries covers Neon waking a suspended compute.
+          docker run --rm \
+            -v "$PWD/apps/api/src/main/resources/db/migration:/flyway/sql:ro" \
+            -e FLYWAY_URL="$DATABASE_URL" \
+            -e FLYWAY_USER="$DB_USER" \
+            -e FLYWAY_PASSWORD="$DB_PASSWORD" \
+            flyway/flyway:11 \
+            -locations=filesystem:/flyway/sql -connectRetries=6 migrate info

@@ -1,0 +1,29 @@
+# Render Blueprint for the API (free web service, Docker). Secrets marked
+# sync: false are entered in the Render dashboard when the Blueprint is created.
+services:
+  - type: web
+    name: nem-mail-api
+    runtime: docker
+    plan: free
+    region: oregon
+    rootDir: apps/api
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - apps/api/**
+    envVars:
+      # Seeds the demo accounts on first boot and resets them nightly.
+      - key: SPRING_PROFILES_ACTIVE
+        value: demo
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      # Copy this value into the DEMO_RESET_KEY GitHub secret.
+      - key: DEMO_RESET_KEY
+        generateValue: true

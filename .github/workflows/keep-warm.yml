@@ -1,0 +1,34 @@
+name: Keep warm
+
+# Render's free web service sleeps after 15 idle minutes and then takes about a
+# minute to wake. Pinging /health every 10 minutes keeps it up (one service fits
+# the free 750 hours a month). /health does not touch the database, so Neon can
+# still suspend. Needs the API_URL variable; until it is set it skips.
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: keep-warm
+  cancel-in-progress: true
+
+jobs:
+  ping:
+    name: Ping /health
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: GET /api/v1/health
+        env:
+          API_URL: ${{ vars.API_URL }}
+        run: |
+          if [ -z "$API_URL" ]; then
+            echo "::notice::API_URL is not set yet; skipping."
+            exit 0
+          fi
+          curl --fail --silent --show-error --max-time 120 \
+            --retry 2 --retry-delay 20 --retry-all-errors \
+            "$API_URL/api/v1/health"
