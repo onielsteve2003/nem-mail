@@ -37,7 +37,7 @@ dependencies {
 	runtimeOnly("org.postgresql:postgresql")
 	// Server embeddings (MiniLM on ONNX Runtime, Apache-2.0/MIT). The runtime jar alone is 137 MB,
 	// so it ships only in a build with -PwithEmbeddings; otherwise the app embeds on the device.
-	val djl = "0.38.0"
+	val djl = "0.39.0"
 	if (project.hasProperty("withEmbeddings")) {
 		implementation("ai.djl:api:$djl")
 		implementation("ai.djl.huggingface:tokenizers:$djl")
