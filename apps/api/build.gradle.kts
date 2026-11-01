@@ -32,7 +32,7 @@ dependencies {
 	implementation("org.flywaydb:flyway-database-postgresql")
 	// OpenAPI spec at /v3/api-docs and Swagger UI at /swagger-ui.html (springdoc, Apache-2.0);
 	// OpenApiContractTest checks the spec.
-	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1")
+	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.2.0")
 	implementation("org.hibernate.orm:hibernate-vector")
 	runtimeOnly("org.postgresql:postgresql")
 	// Server embeddings (MiniLM on ONNX Runtime, Apache-2.0/MIT). The runtime jar alone is 137 MB,
